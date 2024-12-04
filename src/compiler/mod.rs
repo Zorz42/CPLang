@@ -1,6 +1,8 @@
+use crate::compiler::parser::parse_tokens;
 use crate::compiler::tokenizer::parse_blocks;
 
 mod tokenizer;
+mod parser;
 
 // splits input into lines and parses indentation levels
 fn parse_indentation(input: &str) -> Vec<(i32, String)> {
@@ -13,7 +15,10 @@ fn parse_indentation(input: &str) -> Vec<(i32, String)> {
         }
 
         indent = (leading_spaces / 4) as i32;
-        lines.push((indent, line.trim().to_string()));
+        let line = line.trim().to_string();
+        if !line.is_empty() {
+            lines.push((indent, line));
+        }
     }
     lines
 }
@@ -23,7 +28,8 @@ pub fn compile(input_file: &str, output_file: &str) {
     let input = std::fs::read_to_string(input_file).unwrap();
 
     let lines = parse_indentation(&input);
-    let master_block = parse_blocks(lines);
-
-    println!("{:?}", master_block);
+    println!("{:?}", lines);
+    let program_block = parse_blocks(lines);
+    println!("{:?}", program_block);
+    parse_tokens(&program_block);
 }

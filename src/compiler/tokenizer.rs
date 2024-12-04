@@ -1,5 +1,5 @@
-#[derive(Debug)]
-enum Keyword {
+#[derive(Debug, PartialEq, Clone)]
+pub enum Keyword {
     If,
     Else,
     While,
@@ -20,8 +20,8 @@ impl Keyword {
     }
 }
 
-#[derive(Debug)]
-enum Symbol {
+#[derive(Debug, PartialEq, Clone)]
+pub enum Symbol {
     Plus,
     LeftBracket,
     RightBracket,
@@ -40,8 +40,8 @@ impl Symbol {
     }
 }
 
-#[derive(Debug)]
-enum Constant {
+#[derive(Debug, PartialEq, Clone)]
+pub enum Constant {
     Integer(i32),
     Float(f32),
     String(String),
@@ -50,13 +50,13 @@ enum Constant {
 
 // a block is usually in an if statement, while loop, or function
 // the whole program is also a block
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Block {
-    children: Vec<Token>,
+    pub(crate) children: Vec<Token>,
 }
 
-#[derive(Debug)]
-enum Token {
+#[derive(Debug, PartialEq, Clone)]
+pub enum Token {
     Keyword(Keyword),
     Identifier(String),
     Symbol(Symbol),
@@ -124,7 +124,6 @@ fn parse_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> Block {
     };
 
     let curr_ident = lines[*curr_idx].0;
-    let mut curr_token = String::new();
 
     while *curr_idx < lines.len() {
         let ident = lines[*curr_idx].0;
@@ -134,6 +133,7 @@ fn parse_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> Block {
             for i in tokens {
                 block.children.push(i);
             }
+            *curr_idx += 1;
 
         } else if ident == curr_ident + 1 {
             let child_block = parse_block(lines, curr_idx);
@@ -145,8 +145,6 @@ fn parse_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> Block {
         } else {
             panic!("Invalid indentation");
         }
-
-        *curr_idx += 1;
     }
 
     block
