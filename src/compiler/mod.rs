@@ -1,5 +1,5 @@
 use crate::compiler::parser::parse_tokens;
-use crate::compiler::tokenizer::parse_blocks;
+use crate::compiler::tokenizer::tokenize_blocks;
 
 mod tokenizer;
 mod parser;
@@ -29,7 +29,7 @@ pub fn compile(input_file: &str, output_file: &str) {
 
     let lines = parse_indentation(&input);
     println!("{:?}", lines);
-    let program_block = parse_blocks(lines);
+    let program_block = tokenize_blocks(lines);
     println!("{:?}", program_block);
     parse_tokens(&program_block);
 }

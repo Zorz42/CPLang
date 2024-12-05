@@ -23,6 +23,7 @@ impl Keyword {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Symbol {
     Plus,
+    Star,
     LeftBracket,
     RightBracket,
     Equals,
@@ -32,6 +33,7 @@ impl Symbol {
     fn from_char(c: char) -> Option<Symbol> {
         match c {
             '+' => Some(Symbol::Plus),
+            '*' => Some(Symbol::Star),
             '(' => Some(Symbol::LeftBracket),
             ')' => Some(Symbol::RightBracket),
             '=' => Some(Symbol::Equals),
@@ -50,8 +52,9 @@ pub enum Constant {
 
 // a block is usually in an if statement, while loop, or function
 // the whole program is also a block
+// blocks are formed by indentation levels
 #[derive(Debug, PartialEq, Clone)]
-pub struct Block {
+pub struct TokenBlock {
     pub(crate) children: Vec<Token>,
 }
 
@@ -61,7 +64,7 @@ pub enum Token {
     Identifier(String),
     Symbol(Symbol),
     Constant(Constant),
-    Block(Block),
+    Block(TokenBlock),
 }
 
 fn string_to_token(string: &str) -> Token {
@@ -88,8 +91,7 @@ fn string_to_token(string: &str) -> Token {
     Token::Identifier(string.to_string())
 }
 
-// turns a line into tokens
-fn parse_line(line: &str) -> Vec<Token> {
+fn tokenize_line(line: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
     let mut curr_token = String::new();
 
@@ -117,9 +119,8 @@ fn parse_line(line: &str) -> Vec<Token> {
     tokens
 }
 
-// parses one block
-fn parse_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> Block {
-    let mut block = Block {
+fn tokenize_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> TokenBlock {
+    let mut block = TokenBlock {
         children: Vec::new(),
     };
 
@@ -129,14 +130,14 @@ fn parse_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> Block {
         let ident = lines[*curr_idx].0;
 
         if ident == curr_ident {
-            let tokens = parse_line(&lines[*curr_idx].1);
+            let tokens = tokenize_line(&lines[*curr_idx].1);
             for i in tokens {
                 block.children.push(i);
             }
             *curr_idx += 1;
 
         } else if ident == curr_ident + 1 {
-            let child_block = parse_block(lines, curr_idx);
+            let child_block = tokenize_block(lines, curr_idx);
             block.children.push(Token::Block(child_block));
 
         } else if ident == curr_ident - 1 {
@@ -151,7 +152,7 @@ fn parse_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> Block {
 }
 
 // parses indentation into blocks: a block is a list of lines with the same indentation level
-pub fn parse_blocks(lines: Vec<(i32, String)>) -> Block {
+pub fn tokenize_blocks(lines: Vec<(i32, String)>) -> TokenBlock {
     let mut idx = 0;
-    parse_block(&lines, &mut idx)
+    tokenize_block(&lines, &mut idx)
 }

@@ -1,15 +1,15 @@
-use crate::compiler::tokenizer::{Block, Keyword, Token};
+use crate::compiler::tokenizer::{TokenBlock, Keyword, Token};
 
 #[derive(Debug)]
 pub struct FunctionDeclaration {
     pub name: String,
-    pub block: Block,
+    pub block: TokenBlock,
 }
 
-pub fn parse_function_declaration(block: &Block, curr_idx: &mut usize) -> FunctionDeclaration {
+pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> FunctionDeclaration {
     let mut res = FunctionDeclaration {
         name: String::new(),
-        block: Block { children: Vec::new() },
+        block: TokenBlock { children: Vec::new() },
     };
 
     assert_eq!(block.children[*curr_idx], Token::Keyword(Keyword::Fn));
