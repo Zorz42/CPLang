@@ -1,3 +1,4 @@
+use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::Statement;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
@@ -19,7 +20,8 @@ pub fn parse_block(block: &TokenBlock, curr_idx: &mut usize) -> Block {
                 *curr_idx += 1;
             },
             _ => {
-                
+                let expression = parse_expression(block, curr_idx);
+                res.children.push(Statement::Expression(expression));
             },
         }
     }

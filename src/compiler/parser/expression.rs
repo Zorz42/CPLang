@@ -1,4 +1,4 @@
-use crate::compiler::tokenizer::{TokenBlock, Constant, Token};
+use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 
 #[derive(Debug)]
 pub enum Operator {
@@ -44,23 +44,28 @@ fn parse_value(block: &TokenBlock, curr_idx: &mut usize) -> Expression {
 }
 
 // looks for operators and values
-fn parse_expression(block: &TokenBlock, curr_idx: &mut usize) -> Expression {
-    let val1 = parse_value(block, curr_idx);
-    if *curr_idx >= block.children.len() {
-        return val1;
+pub fn parse_expression(block: &TokenBlock, curr_idx: &mut usize) -> Expression {
+    let mut res = parse_value(block, curr_idx);
+    while *curr_idx < block.children.len() {
+        match &block.children[*curr_idx] {
+            Token::Symbol(symbol) => {
+                match symbol {
+                    Symbol::Plus => {
+                        *curr_idx += 1;
+                        let right = parse_value(block, curr_idx);
+                        res = Expression::BinaryOperation(Box::new(res), Operator::Plus, Box::new(right));
+                    },
+                    Symbol::Star => {
+                        *curr_idx += 1;
+                        let right = parse_value(block, curr_idx);
+                        res = Expression::BinaryOperation(Box::new(res), Operator::Times, Box::new(right));
+                    },
+                    _ => break,
+                }
+            },
+            _ => break,
+        }
     }
 
-    match &block.children[*curr_idx] {
-        Token::Symbol(symbol) => {
-            let operator = match symbol {
-                crate::compiler::tokenizer::Symbol::Plus => Operator::Plus,
-                crate::compiler::tokenizer::Symbol::Star => Operator::Times,
-                _ => return val1,
-            };
-            *curr_idx += 1;
-            let val2 = parse_value(block, curr_idx);
-            Expression::BinaryOperation(Box::new(val1), operator, Box::new(val2))
-        },
-        _ => val1,
-    }
+    res
 }
