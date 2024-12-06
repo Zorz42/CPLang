@@ -1,8 +1,10 @@
+use crate::compiler::generator::generate_code;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::tokenizer::tokenize_blocks;
 
 mod tokenizer;
 mod parser;
+mod generator;
 
 // splits input into lines and parses indentation levels
 fn parse_indentation(input: &str) -> Vec<(i32, String)> {
@@ -31,5 +33,7 @@ pub fn compile(input_file: &str, output_file: &str) {
     println!("{:?}", lines);
     let program_block = tokenize_blocks(lines);
     println!("{:?}", program_block);
-    parse_tokens(&program_block);
+    let functions = parse_tokens(&program_block);
+
+    generate_code(&functions);
 }

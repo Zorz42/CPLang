@@ -1,15 +1,16 @@
 use crate::compiler::tokenizer::{TokenBlock, Keyword, Token};
 
 #[derive(Debug)]
-pub struct FunctionDeclaration {
+pub struct FunctionSignature {
     pub name: String,
-    pub block: TokenBlock,
 }
 
-pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> FunctionDeclaration {
-    let mut res = FunctionDeclaration {
+pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> (FunctionSignature, TokenBlock) {
+    let mut res_signature = FunctionSignature {
         name: String::new(),
-        block: TokenBlock { children: Vec::new() },
+    };
+    let mut res_block = TokenBlock {
+        children: Vec::new(),
     };
 
     assert_eq!(block.children[*curr_idx], Token::Keyword(Keyword::Fn));
@@ -17,7 +18,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> F
 
     match &block.children[*curr_idx] {
         Token::Identifier(name) => {
-            res.name = name.clone();
+            res_signature.name = name.clone();
         },
         _ => panic!("Expected function name identifier"),
     }
@@ -25,11 +26,11 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> F
     *curr_idx += 1;
     match &block.children[*curr_idx] {
         Token::Block(block) => {
-            res.block = block.clone();
+            res_block = block.clone();
         },
         _ => panic!("Expected block after function name"),
     }
     *curr_idx += 1;
 
-    res
+    (res_signature, res_block)
 }
