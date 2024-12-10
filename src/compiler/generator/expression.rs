@@ -52,7 +52,7 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             (val.to_string(), ValueType::Boolean)
         }
         Expression::Identifier(ident) => {
-            (ident.clone(), ValueType::I32)
+            context.get_variable_type(ident).map_or_else(|| panic!("Variable {} not found", ident), |val| (ident.clone(), val))
         }
         Expression::BinaryOperation(val1, op, val2) => {
             let (val1_code, val1_type) = generate_expression(context, val1);
