@@ -30,9 +30,9 @@ pub fn compile(input_file: &str, output_file: &str) {
     let input = std::fs::read_to_string(input_file).unwrap();
 
     let lines = parse_indentation(&input);
-    println!("{:?}", lines);
+    //println!("{:?}", lines);
     let program_block = tokenize_blocks(lines);
-    println!("{:?}", program_block);
+    //println!("{:?}", program_block);
     let functions = parse_tokens(&program_block);
 
     let code = generate_code(&functions);

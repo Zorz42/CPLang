@@ -1,6 +1,6 @@
 use crate::compiler::tokenizer::{TokenBlock, Keyword, Token};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionSignature {
     pub name: String,
 }

@@ -26,7 +26,7 @@ pub enum Symbol {
     Star,
     LeftBracket,
     RightBracket,
-    Equals,
+    Equal,
 }
 
 impl Symbol {
@@ -36,7 +36,7 @@ impl Symbol {
             '*' => Some(Symbol::Star),
             '(' => Some(Symbol::LeftBracket),
             ')' => Some(Symbol::RightBracket),
-            '=' => Some(Symbol::Equals),
+            '=' => Some(Symbol::Equal),
             _ => None,
         }
     }

@@ -1,0 +1,71 @@
+use crate::compiler::generator::GlobalContext;
+use crate::compiler::parser::expression::{Expression, Operator};
+
+#[derive(Clone, Eq, Hash, PartialEq, Debug)]
+pub enum ValueType {
+    I32,
+    I64,
+    F32,
+    F64,
+    String,
+    Boolean,
+    Void,
+}
+
+impl ValueType {
+    pub fn to_c_type(&self) -> String {
+        match self {
+            ValueType::I32 => "int".to_owned(),
+            ValueType::I64 => "long".to_owned(),
+            ValueType::F32 => "float".to_owned(),
+            ValueType::F64 => "double".to_owned(),
+            ValueType::String => "char*".to_owned(),
+            ValueType::Boolean => "bool".to_owned(),
+            ValueType::Void => "void".to_owned(),
+        }
+    }
+}
+
+fn add_operator(context: &mut GlobalContext, val1: ValueType, val2: ValueType, return_val: ValueType, op: Operator, op_str: &str) {
+    let op_str = op_str.to_owned();
+    let func = move |str1, str2| { format!("({str1} {op_str} {str2})") };
+    context.operators.insert((val1, op, val2), (Box::new(func), return_val));
+}
+
+pub fn setup_default_operators(context: &mut GlobalContext) {
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Plus, "+");
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Times, "*");
+}
+
+pub fn generate_expression(context: &mut GlobalContext, expression: &Expression) -> (String, ValueType) {
+    match expression {
+        Expression::Integer(val) => {
+            (val.to_string(), ValueType::I32)
+        }
+        Expression::Float(val) => {
+            (val.to_string(), ValueType::F32)
+        }
+        Expression::String(val) => {
+            (format!("\"{}\"", val), ValueType::String)
+        }
+        Expression::Boolean(val) => {
+            (val.to_string(), ValueType::Boolean)
+        }
+        Expression::Identifier(ident) => {
+            (ident.clone(), ValueType::I32)
+        }
+        Expression::BinaryOperation(val1, op, val2) => {
+            let (val1_code, val1_type) = generate_expression(context, val1);
+            let (val2_code, val2_type) = generate_expression(context, val2);
+
+            let opt = context.operators.get(&(val1_type.clone(), op.clone(), val2_type.clone()));
+
+            let (func, return_val) = match opt {
+                Some(val) => val,
+                None => panic!("Operator for {:?} {:?} {:?} not found", val1_type, op, val2_type),
+            };
+
+            (func(val1_code, val2_code), return_val.clone())
+        }
+    }
+}

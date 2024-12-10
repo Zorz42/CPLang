@@ -1,12 +1,12 @@
 use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum Operator {
     Plus,
     Times,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Integer(i32),
     Float(f32),
