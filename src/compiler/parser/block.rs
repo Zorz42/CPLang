@@ -1,4 +1,5 @@
 use crate::compiler::parser::expression::parse_expression;
+use crate::compiler::parser::print::parse_print_statement;
 use crate::compiler::parser::Statement;
 use crate::compiler::parser::variable::parse_variable_declaration;
 use crate::compiler::tokenizer::{Token, TokenBlock};
@@ -23,6 +24,8 @@ pub fn parse_block(block: &TokenBlock, curr_idx: &mut usize) -> Block {
             _ => {
                 if let Some(statement) = parse_variable_declaration(block, curr_idx) {
                     res.children.push(Statement::VariableDeclaration(statement));
+                } else if let Some(statement) = parse_print_statement(block, curr_idx) {
+                    res.children.push(Statement::Print(statement));
                 } else {
                     let expression = parse_expression(block, curr_idx);
                     res.children.push(Statement::Expression(expression));

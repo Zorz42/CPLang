@@ -1,5 +1,6 @@
 use crate::compiler::generator::expression::generate_expression;
 use crate::compiler::generator::GlobalContext;
+use crate::compiler::generator::print::generate_print_statement;
 use crate::compiler::generator::variable::generate_variable_declaration;
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::Statement;
@@ -17,6 +18,9 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> String {
             }
             Statement::Expression(expression) => {
                 generate_expression(context, expression).0
+            }
+            Statement::Print(expression) => {
+                generate_print_statement(context, expression)
             }
         };
 

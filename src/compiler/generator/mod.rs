@@ -2,6 +2,7 @@ mod function;
 mod block;
 mod expression;
 mod variable;
+mod print;
 
 use std::collections::HashMap;
 use crate::compiler::generator::expression::{setup_default_operators, ValueType};
@@ -22,7 +23,14 @@ impl GlobalContext {
 }
 
 pub fn generate_code(functions: &Vec<(FunctionSignature, Block)>) -> String {
-    let mut code = "#include<stdio.h>\nint main(){fmain();return 0;}\n".to_owned();
+    let mut code = "#include<stdio.h>\n".to_owned();
+
+    for (signature, _) in functions {
+        code.push_str(&function::generate_function_signature(signature));
+        code.push_str(";\n");
+    }
+
+    code.push_str("int main(){fmain();return 0;}\n\n");
 
     let mut context = GlobalContext {
         functions: Vec::new(),

@@ -8,6 +8,10 @@ pub struct VariableDeclaration {
 }
 
 pub fn parse_variable_declaration(block: &TokenBlock, curr_idx: &mut usize) -> Option<VariableDeclaration> {
+    if *curr_idx + 1 >= block.children.len() {
+        return None;
+    }
+
     let token1 = &block.children[*curr_idx];
     let token2 = &block.children[*curr_idx + 1];
 

@@ -5,6 +5,7 @@ pub enum Keyword {
     While,
     For,
     Fn,
+    Print,
 }
 
 impl Keyword {
@@ -15,6 +16,7 @@ impl Keyword {
             "while" => Some(Keyword::While),
             "for" => Some(Keyword::For),
             "fn" => Some(Keyword::Fn),
+            "print" => Some(Keyword::Print),
             _ => None,
         }
     }
@@ -81,7 +83,10 @@ fn string_to_token(string: &str) -> Token {
     }
 
     if string.starts_with("\"") && string.ends_with("\"") {
-        return Token::Constant(Constant::String(string.to_string()));
+        let mut res = string.to_string();
+        res.pop();
+        res.remove(0);
+        return Token::Constant(Constant::String(res));
     }
 
     if string == "true" || string == "false" {
@@ -91,12 +96,28 @@ fn string_to_token(string: &str) -> Token {
     Token::Identifier(string.to_string())
 }
 
-fn tokenize_line(line: &str) -> Vec<Token> {
+fn tokenize_string(string: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
     let mut curr_token = String::new();
 
-    for c in line.chars() {
-        if Symbol::from_char(c).is_some() {
+    let mut in_string = false;
+
+    for c in string.chars() {
+        if in_string {
+            curr_token.push(c);
+            if c == '"' {
+                tokens.push(string_to_token(&curr_token));
+                curr_token.clear();
+                in_string = false;
+            }
+        } else if c == '"' {
+            in_string = true;
+            if curr_token.len() > 0 {
+                tokens.push(string_to_token(&curr_token));
+                curr_token.clear();
+            }
+            curr_token.push(c);
+        } else if Symbol::from_char(c).is_some() {
             if curr_token.len() > 0 {
                 tokens.push(string_to_token(&curr_token));
                 curr_token.clear();
@@ -130,7 +151,7 @@ fn tokenize_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> TokenBloc
         let ident = lines[*curr_idx].0;
 
         if ident == curr_ident {
-            let tokens = tokenize_line(&lines[*curr_idx].1);
+            let tokens = tokenize_string(&lines[*curr_idx].1);
             for i in tokens {
                 block.children.push(i);
             }

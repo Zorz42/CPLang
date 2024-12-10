@@ -1,6 +1,7 @@
 use crate::compiler::parser::block::{parse_block, Block};
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::function::{parse_function_declaration, FunctionSignature};
+use crate::compiler::parser::print::PrintStatement;
 use crate::compiler::parser::variable::VariableDeclaration;
 use crate::compiler::tokenizer::TokenBlock;
 
@@ -8,12 +9,14 @@ pub mod function;
 pub mod block;
 pub mod expression;
 pub mod variable;
+pub mod print;
 
 #[derive(Debug)]
 pub enum Statement {
     VariableDeclaration(VariableDeclaration),
     Block(Block),
     Expression(Expression),
+    Print(PrintStatement),
 }
 
 pub fn parse_tokens(program_block: &TokenBlock) -> Vec<(FunctionSignature, Block)> {
