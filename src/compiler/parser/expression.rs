@@ -3,7 +3,7 @@ use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum Operator {
     Plus,
-    Times,
+    Mul,
 }
 
 #[derive(Debug, Clone)]
@@ -39,33 +39,72 @@ fn parse_value(block: &TokenBlock, curr_idx: &mut usize) -> Expression {
             *curr_idx += 1;
             Expression::Identifier(identifier.clone())
         },
+        Token::Symbol(Symbol::LeftBracket) => {
+            *curr_idx += 1;
+            let res = parse_expression(block, curr_idx);
+            match &block.children[*curr_idx] {
+                Token::Symbol(Symbol::RightBracket) => {
+                    *curr_idx += 1;
+                    res
+                },
+                _ => panic!("Expected right bracket"),
+            }
+        },
         _ => panic!("Expected value"),
     }
 }
 
 // looks for operators and values
 pub fn parse_expression(block: &TokenBlock, curr_idx: &mut usize) -> Expression {
-    let mut res = parse_value(block, curr_idx);
+    let mut vals = Vec::new();
+    let mut ops = Vec::new();
+    vals.push(parse_value(block, curr_idx));
     while *curr_idx < block.children.len() {
         match &block.children[*curr_idx] {
             Token::Symbol(symbol) => {
                 match symbol {
                     Symbol::Plus => {
                         *curr_idx += 1;
-                        let right = parse_value(block, curr_idx);
-                        res = Expression::BinaryOperation(Box::new(res), Operator::Plus, Box::new(right));
+                        ops.push(Operator::Plus);
                     },
                     Symbol::Star => {
                         *curr_idx += 1;
-                        let right = parse_value(block, curr_idx);
-                        res = Expression::BinaryOperation(Box::new(res), Operator::Times, Box::new(right));
+                        ops.push(Operator::Mul);
                     },
                     _ => break,
                 }
+                let right = parse_value(block, curr_idx);
+                vals.push(right);
             },
             _ => break,
         }
     }
 
-    res
+    let operator_precedence = vec![vec![Operator::Mul], vec![Operator::Plus]];
+
+    for operators in operator_precedence {
+        // merge values with operators
+        loop {
+            let mut idx = None;
+            for (i, op) in ops.iter().enumerate() {
+                if operators.contains(op) {
+                    idx = Some(i);
+                }
+            }
+
+            if let Some(i) = idx {
+                let left = vals.remove(i);
+                let right = vals.remove(i);
+                let op = ops.remove(i);
+                vals.insert(i, Expression::BinaryOperation(Box::new(left), op, Box::new(right)));
+            } else {
+                break;
+            }
+        }
+    }
+
+    assert_eq!(vals.len(), 1);
+    assert_eq!(ops.len(), 0);
+
+    vals.pop().unwrap()
 }

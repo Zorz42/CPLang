@@ -34,7 +34,7 @@ fn add_operator(context: &mut GlobalContext, val1: ValueType, val2: ValueType, r
 
 pub fn setup_default_operators(context: &mut GlobalContext) {
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Plus, "+");
-    add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Times, "*");
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Mul, "*");
 }
 
 pub fn generate_expression(context: &mut GlobalContext, expression: &Expression) -> (String, ValueType) {
