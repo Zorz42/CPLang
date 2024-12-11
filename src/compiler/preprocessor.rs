@@ -18,15 +18,44 @@ pub fn add_file_positions(test: &str) -> Vec<(char, FilePosition)> {
     res
 }
 
-pub fn remove_comments(input: Vec<(char, FilePosition)>) -> Vec<(char, FilePosition)> {
+pub fn remove_comments(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec<(char, FilePosition)>> {
     let mut res = Vec::new();
 
     let mut in_comment_depth = 0;
+    let mut multiline_comment_positions = Vec::new();
     let mut in_single_line_comment = false;
     let mut in_string = false;
 
     let mut chars = input.iter().peekable();
     while let Some((c, pos)) = chars.next() {
+        if *c != '\n' {
+            for i in &mut multiline_comment_positions {
+                *i = merge_file_positions(i, pos);
+            }
+        }
+
+        if !in_string && !in_single_line_comment {
+            if *c == '/' {
+                // check for /*
+                if let Some(('*', _)) = chars.peek() {
+                    in_comment_depth += 1;
+                    multiline_comment_positions.push(pos.clone());
+                    continue;
+                }
+            } else if *c == '*' {
+                // check for */
+                if let Some(('/', _)) = chars.peek() {
+                    let (_, pos) = chars.next().unwrap();
+                    for i in &mut multiline_comment_positions {
+                        *i = merge_file_positions(i, pos);
+                    }
+                    in_comment_depth -= 1;
+                    multiline_comment_positions.pop().unwrap();
+                    continue;
+                }
+            }
+        }
+
         if in_comment_depth == 0 {
             if *c == '"' {
                 in_string = !in_string;
@@ -37,38 +66,26 @@ pub fn remove_comments(input: Vec<(char, FilePosition)>) -> Vec<(char, FilePosit
                         chars.next();
                         in_single_line_comment = true;
                         continue;
-                    } else if let Some(('*', _)) = chars.peek() {
-                        chars.next();
-                        if !in_single_line_comment {
-                            in_comment_depth += 1;
-                        }
-                        continue;
                     }
                 } else if *c == '\n' {
                     in_single_line_comment = false;
                 }
             }
-        } else {
-            if *c == '/' {
-                if let Some(('*', _)) = chars.peek() {
-                    chars.next();
-                    in_comment_depth += 1;
-                    continue;
-                }
-            } else if *c == '*' {
-                if let Some(('/', _)) = chars.peek() {
-                    chars.next();
-                    in_comment_depth -= 1;
-                    continue;
-                }
-            }
         }
+
         if in_comment_depth == 0 && !in_single_line_comment {
             res.push((c.clone(), pos.clone()));
         }
     }
 
-    res
+    if in_comment_depth > 0 {
+        return Err(CompilerError {
+            message: "Unclosed multiline comment".to_string(),
+            position: multiline_comment_positions.pop().unwrap(),
+        });
+    }
+
+    Ok(res)
 }
 
 // splits input into lines and parses indentation levels

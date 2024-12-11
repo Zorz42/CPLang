@@ -43,12 +43,13 @@ pub fn display_error(error: &CompilerError, input: &str) {
     println!("{BOLD_TEXT}{RED_TEXT}Error: {}{RESET}", error.message);
 
     for line in line_start.saturating_sub(2)..=(line_end + 2).min(lines.len() - 1) {
-        // first, print line number
-        print!("{}{} |{}", GREY_TEXT, line + 1, RESET);
+        // first, print line number and leave space after that for longer line numbers
+        let spacing = " ".repeat((line_end + 1).to_string().len() - (line + 1).to_string().len());
+        print!("{GREY_TEXT}{}{spacing}|{RESET}", line + 1);
 
         for (idx, ch) in lines[line].chars().enumerate() {
             if positions.contains(&(line, idx)) {
-                print!("{}{}{}", RED_BG, ch, RESET);
+                print!("{RED_BG}{}{RESET}", ch);
             } else {
                 print!("{}", ch);
             }

@@ -7,7 +7,7 @@ fn /* even between tokens */ main
     comments can be multiline
     /* and nested */
     */
-    print /* */ "it works!" // or after statements
+    print/* */"it works!" // or after statements
     print "/* not here */"
     print "// also not here"
 // or in the end of the file

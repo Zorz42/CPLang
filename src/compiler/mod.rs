@@ -15,7 +15,7 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let input = std::fs::read_to_string(input_file).unwrap();
 
     let input_with_positions = add_file_positions(&input);
-    let without_comments = remove_comments(input_with_positions);
+    let without_comments = remove_comments(input_with_positions)?;
     let lines = parse_indentation(without_comments)?;
     //println!("{:?}", lines);
     let program_block = tokenize_blocks(lines);
