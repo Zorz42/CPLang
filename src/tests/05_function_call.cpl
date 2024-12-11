@@ -1,0 +1,5 @@
+fn test a b c
+    return a + b + c
+
+fn main
+    print "{test 10 20 30}"

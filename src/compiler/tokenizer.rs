@@ -6,6 +6,7 @@ pub enum Keyword {
     For,
     Fn,
     Print,
+    Return,
 }
 
 impl Keyword {
@@ -17,6 +18,7 @@ impl Keyword {
             "for" => Some(Keyword::For),
             "fn" => Some(Keyword::Fn),
             "print" => Some(Keyword::Print),
+            "return" => Some(Keyword::Return),
             _ => None,
         }
     }

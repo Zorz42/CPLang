@@ -36,4 +36,24 @@ mod tests {
     fn print_variable() {
         run_test("01_print_variable.cpl", "hello 10\n");
     }
+
+    #[test]
+    fn expression() {
+        run_test("02_expression.cpl", "210\n");
+    }
+
+    #[test]
+    fn print_expression() {
+        run_test("03_print_expression.cpl", "230\n");
+    }
+
+    #[test]
+    fn parentheses() {
+        run_test("04_parentheses.cpl", "450\n");
+    }
+
+    #[test]
+    fn function_call() {
+        run_test("05_function_call.cpl", "60\n");
+    }
 }

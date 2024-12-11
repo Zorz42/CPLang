@@ -1,3 +1,4 @@
+use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
@@ -12,12 +13,13 @@ pub enum Expression {
     Float(f32),
     String(String),
     Boolean(bool),
-    Identifier(String),
+    Variable(String),
+    FunctionCall(String, Vec<Expression>),
     BinaryOperation(Box<Expression>, Operator, Box<Expression>),
 }
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
-fn parse_value(block: &TokenBlock, curr_idx: &mut usize) -> Expression {
+fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> Expression {
     match &block.children[*curr_idx] {
         Token::Constant(Constant::Integer(int)) => {
             *curr_idx += 1;
@@ -37,11 +39,22 @@ fn parse_value(block: &TokenBlock, curr_idx: &mut usize) -> Expression {
         },
         Token::Identifier(identifier) => {
             *curr_idx += 1;
-            Expression::Identifier(identifier.clone())
+
+            // we need to know if this is a function call or a variable
+            if let Some(function) = functions.iter().find(|f| f.name == *identifier) {
+                let num_args = function.args.len();
+                let mut args = Vec::new();
+                for _ in 0..num_args {
+                    args.push(parse_expression(functions, block, curr_idx));
+                }
+                Expression::FunctionCall(identifier.clone(), args)
+            } else {
+                Expression::Variable(identifier.clone())
+            }
         },
         Token::Symbol(Symbol::LeftBracket) => {
             *curr_idx += 1;
-            let res = parse_expression(block, curr_idx);
+            let res = parse_expression(functions, block, curr_idx);
             match &block.children[*curr_idx] {
                 Token::Symbol(Symbol::RightBracket) => {
                     *curr_idx += 1;
@@ -55,10 +68,10 @@ fn parse_value(block: &TokenBlock, curr_idx: &mut usize) -> Expression {
 }
 
 // looks for operators and values
-pub fn parse_expression(block: &TokenBlock, curr_idx: &mut usize) -> Expression {
+pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> Expression {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
-    vals.push(parse_value(block, curr_idx));
+    vals.push(parse_value(functions, block, curr_idx));
     while *curr_idx < block.children.len() {
         match &block.children[*curr_idx] {
             Token::Symbol(symbol) => {
@@ -73,7 +86,7 @@ pub fn parse_expression(block: &TokenBlock, curr_idx: &mut usize) -> Expression 
                     },
                     _ => break,
                 }
-                let right = parse_value(block, curr_idx);
+                let right = parse_value(functions, block, curr_idx);
                 vals.push(right);
             },
             _ => break,
@@ -89,6 +102,7 @@ pub fn parse_expression(block: &TokenBlock, curr_idx: &mut usize) -> Expression 
             for (i, op) in ops.iter().enumerate() {
                 if operators.contains(op) {
                     idx = Some(i);
+                    break;
                 }
             }
 

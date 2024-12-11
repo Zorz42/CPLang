@@ -4,16 +4,20 @@ mod expression;
 mod variable;
 mod print;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use crate::compiler::generator::expression::{setup_default_operators, ValueType};
+use crate::compiler::generator::function::generate_function;
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::Operator;
 use crate::compiler::parser::function::FunctionSignature;
 
 pub struct GlobalContext {
-    pub functions: Vec<FunctionSignature>,
+    pub functions: Vec<(FunctionSignature, Block)>,
     pub operators: HashMap<(ValueType, Operator, ValueType), (Box<dyn Fn(String, String) -> String>, ValueType)>,
     pub variables: HashMap<String, ValueType>,
+    pub code: String, // the code generated so far
+    pub taken_function_names: HashSet<String>,
+    pub return_type: ValueType,
 }
 
 impl GlobalContext {
@@ -22,32 +26,29 @@ impl GlobalContext {
     }
 }
 
-pub fn generate_code(functions: &Vec<(FunctionSignature, Block)>) -> String {
-    let mut code = "#include<stdio.h>\n".to_owned();
-
-    for (signature, _) in functions {
-        code.push_str(&function::generate_function_signature(signature));
-        code.push_str(";\n");
-    }
-
-    code.push_str("int main(){fmain();return 0;}\n\n");
-
+pub fn generate_code(functions: Vec<(FunctionSignature, Block)>) -> String {
     let mut context = GlobalContext {
-        functions: Vec::new(),
+        functions,
         operators: HashMap::new(),
         variables: HashMap::new(),
+        code: "#include<stdio.h>\n\n".to_owned(),
+        taken_function_names: HashSet::new(),
+        return_type: ValueType::Void,
     };
-
-    for (signature, _) in functions {
-        context.functions.push(signature.clone());
-    }
 
     setup_default_operators(&mut context);
 
-    for (signature, block) in functions {
-        let function_code = function::generate_function(&mut context, signature, block);
-        code.push_str(&function_code);
+    // find main function
+    let (main_signature, main_block) = context.functions.iter().find(|f| f.0.name == "main").expect("No main function found").clone();
+    if main_signature.args.len() != 0 {
+        panic!("Main function should not have arguments");
     }
 
-    code
+    let (main_name, main_return_type) = generate_function(&mut context, &main_signature, &main_block, &vec![]);
+
+    assert_eq!(main_return_type, ValueType::Void, "Main function should not return anything");
+
+    context.code.push_str(&format!("int main(){{{main_name}();return 0;}}\n\n"));
+
+    context.code
 }

@@ -1,4 +1,4 @@
-use crate::compiler::generator::expression::generate_expression;
+use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::generator::print::generate_print_statement;
 use crate::compiler::generator::variable::generate_variable_declaration;
@@ -21,6 +21,15 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> String {
             }
             Statement::Print(expression) => {
                 generate_print_statement(context, expression)
+            }
+            Statement::Return(expression) => {
+                let (code, typ) = generate_expression(context, expression);
+                if context.return_type != ValueType::Void && typ != context.return_type {
+                    panic!("Return type mismatch");
+                }
+
+                context.return_type = typ;
+                format!("return {}", code)
             }
         };
 

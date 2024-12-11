@@ -10,13 +10,15 @@ pub mod block;
 pub mod expression;
 pub mod variable;
 pub mod print;
+mod return_statement;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     VariableDeclaration(VariableDeclaration),
     Block(Block),
     Expression(Expression),
     Print(PrintStatement),
+    Return(Expression),
 }
 
 pub fn parse_tokens(program_block: &TokenBlock) -> Vec<(FunctionSignature, Block)> {
@@ -31,11 +33,12 @@ pub fn parse_tokens(program_block: &TokenBlock) -> Vec<(FunctionSignature, Block
 
     let mut res = Vec::new();
 
+    let functions = function_declarations.iter().map(|(signature, _)| signature.clone()).collect::<Vec<_>>();
+
     let mut found_main = false;
     for (signature, function_block) in function_declarations {
         //println!("Parsing {}", signature.name);
-        let mut idx = 0;
-        let parsed_block = parse_block(&function_block, &mut idx);
+        let parsed_block = parse_block(&functions, &function_block, &mut 0);
 
         if signature.name == "main" {
             found_main = true;

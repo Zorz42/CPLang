@@ -35,7 +35,7 @@ pub fn compile(input_file: &str, output_file: &str) {
     //println!("{:?}", program_block);
     let functions = parse_tokens(&program_block);
 
-    let code = generate_code(&functions);
+    let code = generate_code(functions);
     // write code to output file
     std::fs::write(output_file, code).unwrap();
 }

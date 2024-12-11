@@ -1,3 +1,4 @@
+use crate::compiler::generator::function::generate_function;
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::expression::{Expression, Operator};
 
@@ -51,8 +52,32 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
         Expression::Boolean(val) => {
             (val.to_string(), ValueType::Boolean)
         }
-        Expression::Identifier(ident) => {
+        Expression::Variable(ident) => {
             context.get_variable_type(ident).map_or_else(|| panic!("Variable {} not found", ident), |val| (ident.clone(), val))
+        }
+        Expression::FunctionCall(name, args) => {
+            let (signature, block) = context.functions.iter().find(|f| f.0.name == *name).expect("Function not found").clone();
+            let mut arg_types = Vec::new();
+            let mut arg_codes = Vec::new();
+            for arg in args {
+                let res = generate_expression(context, arg);
+                arg_types.push(res.1);
+                arg_codes.push(res.0);
+            }
+
+            let (func_name, return_val) = generate_function(context, &signature, &block, &arg_types);
+
+            let mut code = func_name;
+            code.push_str("(");
+            for arg in &arg_codes {
+                code.push_str(arg);
+                code.push_str(",");
+            }
+            if !arg_codes.is_empty() {
+                assert_eq!(code.pop(), Some(','));
+            }
+            code.push_str(")");
+            (code, return_val)
         }
         Expression::BinaryOperation(val1, op, val2) => {
             let (val1_code, val1_type) = generate_expression(context, val1);

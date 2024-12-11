@@ -1,0 +1,5 @@
+fn main
+    a = 10
+    b = 20
+    res = a+b*10
+    print "{res}"
