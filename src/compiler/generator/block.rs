@@ -6,6 +6,8 @@ use crate::compiler::parser::block::Block;
 use crate::compiler::parser::Statement;
 
 pub fn generate_block(context: &mut GlobalContext, block: &Block) -> String {
+    let prev_variables = context.variables.clone();
+
     let mut code = "{\n".to_owned();
 
     for statement in &block.children {
@@ -37,6 +39,8 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> String {
         code.push_str(";\n");
 
     }
+
+    context.variables = prev_variables;
 
     code.push_str("}");
     code

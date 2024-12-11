@@ -1,0 +1,13 @@
+// Comments can be anywhere
+
+fn /* even between tokens */ main
+    // or in /* functions
+
+    /*
+    comments can be multiline
+    /* and nested */
+    */
+    print /* */ "it works!" // or after statements
+    print "/* not here */"
+    print "// also not here"
+// or in the end of the file

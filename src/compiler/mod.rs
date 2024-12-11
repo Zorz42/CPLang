@@ -25,11 +25,66 @@ fn parse_indentation(input: &str) -> Vec<(i32, String)> {
     lines
 }
 
+fn remove_comments(input: &str) -> String {
+    let mut res = String::new();
+
+    let mut in_comment_depth = 0;
+    let mut in_single_line_comment = false;
+    let mut in_string = false;
+
+    let mut chars = input.chars().peekable();
+    while let Some(c) = chars.next() {
+        if in_comment_depth == 0 {
+            if c == '"' {
+                in_string = !in_string;
+            }
+            if !in_string {
+                if c == '/' {
+                    if let Some('/') = chars.peek() {
+                        chars.next();
+                        in_single_line_comment = true;
+                        continue;
+                    } else if let Some('*') = chars.peek() {
+                        chars.next();
+                        if !in_single_line_comment {
+                            in_comment_depth += 1;
+                        }
+                        continue;
+                    }
+                } else if c == '\n' {
+                    in_single_line_comment = false;
+                }
+            }
+        } else {
+            if c == '/' {
+                if let Some('*') = chars.peek() {
+                    chars.next();
+                    in_comment_depth += 1;
+                    continue;
+                }
+            } else if c == '*' {
+                if let Some('/') = chars.peek() {
+                    chars.next();
+                    in_comment_depth -= 1;
+                    continue;
+                }
+            }
+        }
+        if in_comment_depth == 0 && !in_single_line_comment {
+            res.push(c);
+        }
+    }
+
+    res
+}
+
 pub fn compile(input_file: &str, output_file: &str) {
     // read input file into a string
     let input = std::fs::read_to_string(input_file).unwrap();
 
-    let lines = parse_indentation(&input);
+
+    let without_comments = remove_comments(&input);
+    let lines = parse_indentation(&without_comments);
     //println!("{:?}", lines);
     let program_block = tokenize_blocks(lines);
     //println!("{:?}", program_block);

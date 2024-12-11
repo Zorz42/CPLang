@@ -56,4 +56,19 @@ mod tests {
     fn function_call() {
         run_test("05_function_call.cpl", "60\n");
     }
+
+    #[test]
+    fn function_overloading() {
+        run_test("06_function_overloading.cpl", "Hello, 10\nHello, World!\n");
+    }
+
+    #[test]
+    fn scopes() {
+        run_test("07_scopes.cpl", "20\n");
+    }
+
+    #[test]
+    fn comments() {
+        run_test("08_comments.cpl", "it works!\n/* not here */\n// also not here\n");
+    }
 }
