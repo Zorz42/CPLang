@@ -3,24 +3,28 @@ mod tests {
     use crate::compiler::compile;
 
     fn run_test(test_file: &str, expected_output: &str) {
-        compile(&format!("src/tests/{test_file}"), "test.c");
+        let c_file = test_file.replace(".cpl", ".c");
+        let exec_file = test_file.replace(".cpl", "");
+        compile(&format!("src/tests/{test_file}"), &c_file);
         let output = std::process::Command::new("gcc")
-            .arg("test.c")
+            .arg(&c_file)
             .arg("-o")
-            .arg("test")
+            .arg(&exec_file)
             .output()
             .expect("failed to compile test");
 
-        assert!(output.status.success());
-
-        let output = std::process::Command::new("./test")
+        if !output.status.success() {
+            println!("{}", String::from_utf8(output.stderr).unwrap());
+            panic!("failed to compile test");
+        }
+        let output = std::process::Command::new(format!("./{exec_file}"))
             .output()
             .expect("failed to run test");
 
         assert_eq!(String::from_utf8(output.stdout).unwrap(), expected_output);
 
-        std::fs::remove_file("test.c").unwrap();
-        std::fs::remove_file("test").unwrap();
+        std::fs::remove_file(&c_file).unwrap();
+        std::fs::remove_file(&exec_file).unwrap();
     }
 
     #[test]

@@ -96,7 +96,7 @@ fn string_to_token(string: &str) -> Token {
     Token::Identifier(string.to_string())
 }
 
-fn tokenize_string(string: &str) -> Vec<Token> {
+pub fn tokenize_string(string: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
     let mut curr_token = String::new();
 
@@ -174,6 +174,5 @@ fn tokenize_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> TokenBloc
 
 // parses indentation into blocks: a block is a list of lines with the same indentation level
 pub fn tokenize_blocks(lines: Vec<(i32, String)>) -> TokenBlock {
-    let mut idx = 0;
-    tokenize_block(&lines, &mut idx)
+    tokenize_block(&lines, &mut 0)
 }

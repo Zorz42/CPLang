@@ -1,3 +1,4 @@
+use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::print::PrintStatement;
@@ -6,26 +7,19 @@ pub fn generate_print_statement(context: &mut GlobalContext, expression: &PrintS
     let mut parts = Vec::new();
 
     for val in &expression.values {
-        parts.push(match val {
-            Expression::Integer(val) => {
-                (format!("{}", val), "d")
-            }
-            Expression::Float(val) => {
-                (format!("{}", val), "f")
-            }
-            Expression::String(val) => {
-                (format!("\"{}\"", val), "s")
-            }
-            Expression::Boolean(val) => {
-                ((if *val { "true" } else { "false" }).to_owned(), "s")
-            }
-            Expression::Identifier(val) => {
-                unimplemented!()
-            }
-            Expression::BinaryOperation(_, _, _) => {
-                unimplemented!()
-            }
-        });
+        let (code, typ) = generate_expression(context, val);
+
+        let printf_format = match typ {
+            ValueType::I32 => "d",
+            ValueType::F32 => "f",
+            ValueType::String => "s",
+            ValueType::I64 => "ld",
+            ValueType::F64 => "lf",
+            ValueType::Boolean => "d",
+            ValueType::Void => panic!("Cannot print void"),
+        };
+
+        parts.push((code, printf_format));
     }
 
     let mut code = "printf(\"".to_owned();
