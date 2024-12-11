@@ -11,9 +11,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> (
         name: String::new(),
         args: Vec::new(),
     };
-    let mut res_block = TokenBlock {
-        children: Vec::new(),
-    };
+    let res_block;
 
     assert_eq!(block.children[*curr_idx], Token::Keyword(Keyword::Fn));
     *curr_idx += 1;

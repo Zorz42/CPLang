@@ -20,7 +20,7 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
     // create new function name for c
     let function_prefix = format!("cplang_{}", signature.name);
     let mut counter = 0;
-    let mut function_name = String::new();
+    let mut function_name;
     loop {
         function_name = format!("{}{}", function_prefix, counter);
         if !context.taken_function_names.contains(&function_name) {

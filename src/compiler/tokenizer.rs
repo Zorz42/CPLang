@@ -1,3 +1,5 @@
+use crate::compiler::error::FilePosition;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Keyword {
     If,
@@ -142,7 +144,7 @@ pub fn tokenize_string(string: &str) -> Vec<Token> {
     tokens
 }
 
-fn tokenize_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> TokenBlock {
+fn tokenize_block(lines: &Vec<(i32, Vec<(char, FilePosition)>)>, curr_idx: &mut usize) -> TokenBlock {
     let mut block = TokenBlock {
         children: Vec::new(),
     };
@@ -153,21 +155,20 @@ fn tokenize_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> TokenBloc
         let ident = lines[*curr_idx].0;
 
         if ident == curr_ident {
-            let tokens = tokenize_string(&lines[*curr_idx].1);
+            let string = lines[*curr_idx].1.iter().map(|x| x.0).collect::<String>();
+
+            let tokens = tokenize_string(&string);
             for i in tokens {
                 block.children.push(i);
             }
             *curr_idx += 1;
 
-        } else if ident == curr_ident + 1 {
+        } else if ident > curr_ident {
             let child_block = tokenize_block(lines, curr_idx);
             block.children.push(Token::Block(child_block));
 
-        } else if ident == curr_ident - 1 {
+        } else if ident < curr_ident {
             return block;
-
-        } else {
-            panic!("Invalid indentation");
         }
     }
 
@@ -175,6 +176,7 @@ fn tokenize_block(lines: &Vec<(i32, String)>, curr_idx: &mut usize) -> TokenBloc
 }
 
 // parses indentation into blocks: a block is a list of lines with the same indentation level
-pub fn tokenize_blocks(lines: Vec<(i32, String)>) -> TokenBlock {
+// line is (indentation, line)
+pub fn tokenize_blocks(lines: Vec<(i32, Vec<(char, FilePosition)>)>) -> TokenBlock {
     tokenize_block(&lines, &mut 0)
 }

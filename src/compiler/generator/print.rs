@@ -1,6 +1,5 @@
 use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
-use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::print::PrintStatement;
 
 pub fn generate_print_statement(context: &mut GlobalContext, expression: &PrintStatement) -> String {

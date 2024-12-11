@@ -16,7 +16,7 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &To
     let token1 = &block.children[*curr_idx];
     let token2 = &block.children[*curr_idx + 1];
 
-    let mut name = String::new();
+    let name;
 
     // check if first token is identifier and second token is assignment
     match token1 {

@@ -1,9 +1,15 @@
+use std::collections::HashSet;
+
 // this struct stores file position so the error can be displayed
+#[derive(Debug, Clone)]
 pub struct FilePosition {
-    pub line_start: usize,
-    pub line_end: usize,
-    pub column_start: usize,
-    pub column_end: usize,
+    pub positions: Vec<(usize, usize)>,
+}
+
+pub fn merge_file_positions(position1: &FilePosition, position2: &FilePosition) -> FilePosition {
+    let mut merged = position1.clone();
+    merged.positions.extend(position2.clone().positions);
+    merged
 }
 
 pub struct CompilerError {
@@ -17,31 +23,36 @@ pub type CompilerResult<T> = Result<T, CompilerError>;
 const RED_BG: &str = "\x1b[41m";
 const GREY_TEXT: &str = "\x1b[90m";
 const RESET: &str = "\x1b[0m";
+const RED_TEXT: &str = "\x1b[31m";
+const BOLD_TEXT: &str = "\x1b[1m";
 
 pub fn display_error(error: &CompilerError, input: &str) {
+    let mut positions = HashSet::new();
+
+    let mut line_start = usize::MAX;
+    let mut line_end = 0;
+
+    for (line, column) in &error.position.positions {
+        positions.insert((*line, *column));
+        line_start = line_start.min(*line);
+        line_end = line_end.max(*line);
+    }
+
     let lines: Vec<&str> = input.lines().collect();
-    let line_start = error.position.line_start;
-    let line_end = error.position.line_end;
-    let column_start = error.position.column_start;
-    let column_end = error.position.column_end;
 
-    println!("Error: {}", error.message);
+    println!("{BOLD_TEXT}{RED_TEXT}Error: {}{RESET}", error.message);
 
-    for line in line_start.saturating_sub(2)..=(error.position.line_end + 2).min(lines.len() - 1) {
+    for line in line_start.saturating_sub(2)..=(line_end + 2).min(lines.len() - 1) {
         // first, print line number
         print!("{}{} |{}", GREY_TEXT, line + 1, RESET);
 
-        if line < line_start || line > line_end {
-            // no red background
-            println!("{}", lines[line]);
-            continue;
+        for (idx, ch) in lines[line].chars().enumerate() {
+            if positions.contains(&(line, idx)) {
+                print!("{}{}{}", RED_BG, ch, RESET);
+            } else {
+                print!("{}", ch);
+            }
         }
-
-        let begin = if line == line_start { column_start } else { 0 };
-        let end = if line == line_end { column_end } else { lines[line].len() };
-
-        // have red background from begin to end
-        println!("{}{}{}{}{}", &lines[line][..begin], RED_BG, &lines[line][begin..end], RESET, &lines[line][end..]);
-
+        println!();
     }
 }
