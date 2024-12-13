@@ -8,6 +8,8 @@ pub enum Keyword {
     For,
     Print,
     Return,
+    And,
+    Or,
 }
 
 impl Keyword {
@@ -19,6 +21,8 @@ impl Keyword {
             "for" => Some(Keyword::For),
             "print" => Some(Keyword::Print),
             "return" => Some(Keyword::Return),
+            "and" => Some(Keyword::And),
+            "or" => Some(Keyword::Or),
             _ => None,
         }
     }
@@ -30,7 +34,13 @@ pub enum Symbol {
     Star,
     LeftBracket,
     RightBracket,
-    Equal,
+    Assign,
+    Equals,
+    NotEquals,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
 }
 
 impl Symbol {
@@ -40,7 +50,19 @@ impl Symbol {
             '*' => Some(Symbol::Star),
             '(' => Some(Symbol::LeftBracket),
             ')' => Some(Symbol::RightBracket),
-            '=' => Some(Symbol::Equal),
+            '=' => Some(Symbol::Assign),
+            '<' => Some(Symbol::LessThan),
+            '>' => Some(Symbol::GreaterThan),
+            _ => None,
+        }
+    }
+
+    fn from_two_chars(c1: char, c2: char) -> Option<Symbol> {
+        match (c1, c2) {
+            ('=', '=') => Some(Symbol::Equals),
+            ('!', '=') => Some(Symbol::NotEquals),
+            ('<', '=') => Some(Symbol::LessThanOrEqual),
+            ('>', '=') => Some(Symbol::GreaterThanOrEqual),
             _ => None,
         }
     }
@@ -105,12 +127,12 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
     let mut in_string = false;
     let mut token_pos = FilePosition::invalid();
 
-    let mut new_token = |tokens: &mut Vec<(Token, FilePosition)>, curr_token: &mut String, token_pos: &mut FilePosition| {
+    let new_token = |tokens: &mut Vec<(Token, FilePosition)>, curr_token: &mut String, token_pos: &mut FilePosition| {
         tokens.push((string_to_token(&curr_token), token_pos.clone()));
         curr_token.clear();
     };
 
-    let mut add_to_token = |curr_token: &mut String, token_pos: &mut FilePosition, c: &char, pos: &FilePosition| {
+    let add_to_token = |curr_token: &mut String, token_pos: &mut FilePosition, c: &char, pos: &FilePosition| {
         if curr_token.is_empty() {
             *token_pos = pos.clone();
         } else {
@@ -119,7 +141,8 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
         curr_token.push(*c);
     };
 
-    for (c, pos) in string {
+    let mut iter = string.into_iter().peekable();
+    while let Some((c, pos)) = iter.next() {
         if in_string {
             add_to_token(&mut curr_token, &mut token_pos, c, pos);
             if *c == '"' {
@@ -132,11 +155,17 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
                 new_token(&mut tokens,&mut curr_token, &mut token_pos);
             }
             add_to_token(&mut curr_token, &mut token_pos, c, pos);
-        } else if Symbol::from_char(*c).is_some() {
+        } else if let Some(symbol) = Symbol::from_two_chars(*c, iter.peek().map(|x| x.0).unwrap_or(' ')) {
             if curr_token.len() > 0 {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
             }
-            tokens.push((Token::Symbol(Symbol::from_char(*c).unwrap()), pos.clone()));
+            tokens.push((Token::Symbol(symbol), pos.clone()));
+            iter.next();
+        } else if let Some(symbol) = Symbol::from_char(*c) {
+            if curr_token.len() > 0 {
+                new_token(&mut tokens, &mut curr_token, &mut token_pos);
+            }
+            tokens.push((Token::Symbol(symbol), pos.clone()));
         } else if *c == ' ' {
             if curr_token.len() > 0 {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);

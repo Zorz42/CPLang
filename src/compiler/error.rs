@@ -43,8 +43,8 @@ pub fn display_error(error: &CompilerError, input: &str) {
     println!("{BOLD_TEXT}{RED_TEXT}Error: {}{RESET}", error.message);
 
     if let Some(position) = &error.position {
-        let mut line_start = position.first_pos.0;
-        let mut line_end = position.last_pos.0;
+        let line_start = position.first_pos.0;
+        let line_end = position.last_pos.0;
 
         if *position == FilePosition::invalid() {
             panic!("Invalid error position");

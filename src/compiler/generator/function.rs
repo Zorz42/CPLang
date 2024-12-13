@@ -1,8 +1,9 @@
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::generator::block::generate_block;
-use crate::compiler::generator::expression::ValueType;
+use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::block::Block;
+use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::function::FunctionSignature;
 
 // it returns generated function name and its return type
@@ -53,4 +54,17 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
     context.variables = prev_variables;
 
     Ok((function_name, return_type))
+}
+
+pub fn generate_return_statement(context: &mut GlobalContext, expression: &Expression, pos: &FilePosition) -> CompilerResult<String> {
+    let (code, typ) = generate_expression(context, expression)?;
+    if context.return_type != ValueType::Void && typ != context.return_type {
+        return Err(CompilerError {
+            message: format!("Return type mismatch, expected {:?} but got {:?}", context.return_type, typ),
+            position: Some(pos.clone()),
+        });
+    }
+
+    context.return_type = typ;
+    Ok(format!("return {}", code))
 }

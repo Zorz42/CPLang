@@ -31,7 +31,7 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &To
 
     match token2 {
         Token::Symbol(symbol) => {
-            if symbol == &Symbol::Equal {
+            if symbol == &Symbol::Assign {
                 *curr_idx += 2;
             } else {
                 return Ok(None);

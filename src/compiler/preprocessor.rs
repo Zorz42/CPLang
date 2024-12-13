@@ -103,7 +103,7 @@ pub fn parse_indentation(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec
     for (indent, line) in &mut lines {
         let leading_spaces = line.iter().take_while(|c| c.0 == ' ').count();
         if leading_spaces % 4 != 0 {
-            let mut pos = FilePosition {
+            let pos = FilePosition {
                 first_pos: (line[0].1.first_pos.0, 0),
                 last_pos: (line[0].1.first_pos.0, leading_spaces),
             };

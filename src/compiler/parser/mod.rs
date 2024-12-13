@@ -3,6 +3,7 @@ use crate::compiler::parser::block::{parse_block, Block};
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::function::{parse_function_declaration, FunctionSignature};
 use crate::compiler::parser::print::PrintStatement;
+use crate::compiler::parser::statement::IfStatement;
 use crate::compiler::parser::variable::VariableDeclaration;
 use crate::compiler::tokenizer::TokenBlock;
 
@@ -11,7 +12,7 @@ pub mod block;
 pub mod expression;
 pub mod variable;
 pub mod print;
-mod return_statement;
+pub mod statement;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
@@ -20,6 +21,7 @@ pub enum Statement {
     Expression(Expression),
     Print(PrintStatement),
     Return(Expression, FilePosition),
+    IfStatement(IfStatement),
 }
 
 pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Vec<(FunctionSignature, Block)>> {
@@ -39,7 +41,7 @@ pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Vec<(FunctionS
     let mut found_main = false;
     for (signature, function_block) in function_declarations {
         //println!("Parsing {}", signature.name);
-        let parsed_block = parse_block(&functions, &function_block, &mut 0)?;
+        let parsed_block = parse_block(&functions, &function_block)?;
 
         if signature.name == "main" {
             found_main = true;

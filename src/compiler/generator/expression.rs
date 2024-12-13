@@ -22,7 +22,7 @@ impl ValueType {
             ValueType::F32 => "float".to_owned(),
             ValueType::F64 => "double".to_owned(),
             ValueType::String => "char*".to_owned(),
-            ValueType::Boolean => "bool".to_owned(),
+            ValueType::Boolean => "int".to_owned(),
             ValueType::Void => "void".to_owned(),
         }
     }
@@ -37,6 +37,7 @@ fn add_operator(context: &mut GlobalContext, val1: ValueType, val2: ValueType, r
 pub fn setup_default_operators(context: &mut GlobalContext) {
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Plus, "+");
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Mul, "*");
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::Equals, "==");
 }
 
 pub fn generate_expression(context: &mut GlobalContext, expression: &Expression) -> CompilerResult<(String, ValueType)> {

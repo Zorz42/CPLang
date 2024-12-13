@@ -6,6 +6,7 @@ use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 pub enum Operator {
     Plus,
     Mul,
+    Equals,
 }
 
 #[derive(Debug, Clone)]
@@ -74,9 +75,9 @@ fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx:
             }
         },
         _ => {
-            let pos = &block.children[*curr_idx - 1].1;
+            let pos = &block.children[*curr_idx].1;
             Err(CompilerError {
-                message: "Expected value after".to_owned(),
+                message: "Unexpected token".to_owned(),
                 position: Some(pos.clone())
             })
         },
@@ -101,6 +102,10 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
                         *curr_idx += 1;
                         ops.push(Operator::Mul);
                     },
+                    Symbol::Equals => {
+                        *curr_idx += 1;
+                        ops.push(Operator::Equals);
+                    },
                     _ => break,
                 }
                 vals.push(parse_value(functions, block, curr_idx)?);
@@ -109,7 +114,7 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
         }
     }
 
-    let operator_precedence = vec![vec![Operator::Mul], vec![Operator::Plus]];
+    let operator_precedence = vec![vec![Operator::Mul], vec![Operator::Plus], vec![Operator::Equals]];
 
     for operators in operator_precedence {
         // merge values with operators

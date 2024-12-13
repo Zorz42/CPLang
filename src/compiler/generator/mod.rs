@@ -3,6 +3,7 @@ mod block;
 mod expression;
 mod variable;
 mod print;
+mod statement;
 
 use std::collections::{HashMap, HashSet};
 use crate::compiler::error::{CompilerError, CompilerResult};

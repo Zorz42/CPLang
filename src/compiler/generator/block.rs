@@ -1,7 +1,9 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::expression::{generate_expression, ValueType};
+use crate::compiler::generator::function::generate_return_statement;
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::generator::print::generate_print_statement;
+use crate::compiler::generator::statement::generate_if_statement;
 use crate::compiler::generator::variable::generate_variable_declaration;
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::Statement;
@@ -26,16 +28,10 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> CompilerRes
                 generate_print_statement(context, expression)?
             }
             Statement::Return(expression, pos) => {
-                let (code, typ) = generate_expression(context, expression)?;
-                if context.return_type != ValueType::Void && typ != context.return_type {
-                    return Err(CompilerError {
-                        message: format!("Return type mismatch, expected {:?} but got {:?}", context.return_type, typ),
-                        position: Some(pos.clone()),
-                    });
-                }
-
-                context.return_type = typ;
-                format!("return {}", code)
+                generate_return_statement(context, expression, pos)?
+            }
+            Statement::IfStatement(statement) => {
+                generate_if_statement(context, statement)?
             }
         };
 
