@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 // this struct stores file position so the error can be displayed
 #[derive(Debug, Clone, PartialEq)]
 pub struct FilePosition {
@@ -10,16 +8,16 @@ pub struct FilePosition {
 impl FilePosition {
     pub fn invalid() -> Self {
         Self {
-            first_pos: (0, 0),
-            last_pos: (0, 0),
+            first_pos: (usize::MAX, usize::MAX),
+            last_pos: (usize::MAX, usize::MAX),
         }
     }
 }
 
 pub fn merge_file_positions(position1: &FilePosition, position2: &FilePosition) -> FilePosition {
-    //if *position1 == FilePosition::invalid() || *position2 == FilePosition::invalid() {
-    //    panic!("Invalid file position");
-    //}
+    if *position1 == FilePosition::invalid() || *position2 == FilePosition::invalid() {
+        panic!("Invalid file position");
+    }
     FilePosition {
         first_pos: position1.first_pos.min(position2.first_pos),
         last_pos: position1.last_pos.max(position2.last_pos),

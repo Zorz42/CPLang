@@ -18,9 +18,9 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let without_comments = remove_comments(input_with_positions)?;
     let lines = parse_indentation(without_comments)?;
     //println!("{:?}", lines);
-    let program_block = tokenize_blocks(lines);
+    let program_block = tokenize_blocks(lines)?;
     //println!("{:?}", program_block);
-    let functions = parse_tokens(&program_block);
+    let functions = parse_tokens(&program_block)?;
 
     let code = generate_code(functions);
     // write code to output file

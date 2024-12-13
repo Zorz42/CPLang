@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, FilePosition};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Keyword {
@@ -100,7 +100,7 @@ fn string_to_token(string: &str) -> Token {
     Token::Identifier(string.to_string())
 }
 
-pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> Vec<(Token, FilePosition)> {
+pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec<(Token, FilePosition)>> {
     let mut tokens = Vec::new();
     let mut curr_token = String::new();
 
@@ -148,14 +148,21 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> Vec<(Token, FilePo
         }
     }
 
+    if in_string {
+        return Err(CompilerError {
+            message: "Expected \" to close string".to_string(),
+            position: merge_file_positions(&token_pos, &string.last().unwrap().1),
+        });
+    }
+
     if curr_token.len() > 0 {
         tokens.push((string_to_token(&curr_token), token_pos.clone()));
     }
 
-    tokens
+    Ok(tokens)
 }
 
-fn tokenize_block(lines: &Vec<(i32, Vec<(char, FilePosition)>)>, curr_idx: &mut usize) -> TokenBlock {
+fn tokenize_block(lines: &Vec<(i32, Vec<(char, FilePosition)>)>, curr_idx: &mut usize) -> CompilerResult<TokenBlock> {
     let mut block = TokenBlock {
         children: Vec::new(),
     };
@@ -166,26 +173,26 @@ fn tokenize_block(lines: &Vec<(i32, Vec<(char, FilePosition)>)>, curr_idx: &mut 
         let ident = lines[*curr_idx].0;
 
         if ident == curr_ident {
-            let tokens = tokenize_string(&lines[*curr_idx].1);
+            let tokens = tokenize_string(&lines[*curr_idx].1)?;
             for i in tokens {
                 block.children.push(i);
             }
             *curr_idx += 1;
 
         } else if ident > curr_ident {
-            let child_block = tokenize_block(lines, curr_idx);
+            let child_block = tokenize_block(lines, curr_idx)?;
             block.children.push((Token::Block(child_block), FilePosition::invalid()));
 
         } else if ident < curr_ident {
-            return block;
+            return Ok(block);
         }
     }
 
-    block
+    Ok(block)
 }
 
 // parses indentation into blocks: a block is a list of lines with the same indentation level
 // line is (indentation, line)
-pub fn tokenize_blocks(lines: Vec<(i32, Vec<(char, FilePosition)>)>) -> TokenBlock {
+pub fn tokenize_blocks(lines: Vec<(i32, Vec<(char, FilePosition)>)>) -> CompilerResult<TokenBlock> {
     tokenize_block(&lines, &mut 0)
 }

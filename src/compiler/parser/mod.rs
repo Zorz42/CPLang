@@ -1,3 +1,4 @@
+use crate::compiler::error::CompilerResult;
 use crate::compiler::parser::block::{parse_block, Block};
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::function::{parse_function_declaration, FunctionSignature};
@@ -21,7 +22,7 @@ pub enum Statement {
     Return(Expression),
 }
 
-pub fn parse_tokens(program_block: &TokenBlock) -> Vec<(FunctionSignature, Block)> {
+pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Vec<(FunctionSignature, Block)>> {
     let mut curr_idx = 0;
     let mut function_declarations = Vec::new();
     while curr_idx < program_block.children.len() {
@@ -38,7 +39,7 @@ pub fn parse_tokens(program_block: &TokenBlock) -> Vec<(FunctionSignature, Block
     let mut found_main = false;
     for (signature, function_block) in function_declarations {
         //println!("Parsing {}", signature.name);
-        let parsed_block = parse_block(&functions, &function_block, &mut 0);
+        let parsed_block = parse_block(&functions, &function_block, &mut 0)?;
 
         if signature.name == "main" {
             found_main = true;
@@ -52,5 +53,5 @@ pub fn parse_tokens(program_block: &TokenBlock) -> Vec<(FunctionSignature, Block
         panic!("No main function found");
     }
 
-    res
+    Ok(res)
 }
