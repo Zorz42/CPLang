@@ -1,4 +1,4 @@
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{merge_file_positions, CompilerResult};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::parser::Statement;
@@ -8,7 +8,8 @@ pub fn parse_return_statement(functions: &Vec<FunctionSignature>, block: &TokenB
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::Return) {
         return Ok(None);
     }
+    let pos1 = block.children[*curr_idx].1.clone();
     *curr_idx += 1;
-    let (expression, _) = parse_expression(functions, block, curr_idx)?;
-    Ok(Some(Statement::Return(expression)))
+    let (expression, pos2) = parse_expression(functions, block, curr_idx)?;
+    Ok(Some(Statement::Return(expression, merge_file_positions(&pos1, &pos2))))
 }

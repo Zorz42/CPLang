@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerError, CompilerResult};
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::block::{parse_block, Block};
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::function::{parse_function_declaration, FunctionSignature};
@@ -19,7 +19,7 @@ pub enum Statement {
     Block(Block),
     Expression(Expression),
     Print(PrintStatement),
-    Return(Expression),
+    Return(Expression, FilePosition),
 }
 
 pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Vec<(FunctionSignature, Block)>> {
