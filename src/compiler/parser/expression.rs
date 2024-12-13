@@ -14,9 +14,9 @@ pub enum Expression {
     Float(f32),
     String(String),
     Boolean(bool),
-    Variable(String),
+    Variable(String, FilePosition),
     FunctionCall(String, Vec<Expression>),
-    BinaryOperation(Box<Expression>, Operator, Box<Expression>),
+    BinaryOperation(Box<Expression>, Operator, Box<Expression>, FilePosition),
 }
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
@@ -53,7 +53,7 @@ fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx:
                 }
                 Ok((Expression::FunctionCall(identifier.clone(), args), pos))
             } else {
-                Ok((Expression::Variable(identifier.clone()), pos))
+                Ok((Expression::Variable(identifier.clone(), pos.clone()), pos))
             }
         },
         Token::Symbol(Symbol::LeftBracket) => {
@@ -87,8 +87,8 @@ fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx:
 pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
-    let (first_val, mut pos) = parse_value(functions, block, curr_idx)?;
-    vals.push(first_val);
+    let (first_val, first_pos) = parse_value(functions, block, curr_idx)?;
+    vals.push((first_val, first_pos));
     while *curr_idx < block.children.len() {
         match &block.children[*curr_idx].0 {
             Token::Symbol(symbol) => {
@@ -103,9 +103,7 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
                     },
                     _ => break,
                 }
-                let (right, value_pos) = parse_value(functions, block, curr_idx)?;
-                vals.push(right);
-                pos = merge_file_positions(&pos, &value_pos);
+                vals.push(parse_value(functions, block, curr_idx)?);
             },
             _ => break,
         }
@@ -125,10 +123,11 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
             }
 
             if let Some(i) = idx {
-                let left = vals.remove(i);
-                let right = vals.remove(i);
+                let (left, left_pos) = vals.remove(i);
+                let (right, right_pos) = vals.remove(i);
                 let op = ops.remove(i);
-                vals.insert(i, Expression::BinaryOperation(Box::new(left), op, Box::new(right)));
+                let pos = merge_file_positions(&left_pos, &right_pos);
+                vals.insert(i, (Expression::BinaryOperation(Box::new(left), op, Box::new(right), pos.clone()), pos));
             } else {
                 break;
             }
@@ -138,5 +137,5 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
     assert_eq!(vals.len(), 1);
     assert_eq!(ops.len(), 0);
 
-    Ok((vals.pop().unwrap(), pos))
+    Ok(vals.pop().unwrap())
 }

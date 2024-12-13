@@ -1,4 +1,4 @@
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::function::generate_function;
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::expression::{Expression, Operator};
@@ -53,8 +53,15 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
         Expression::Boolean(val) => {
             Ok((val.to_string(), ValueType::Boolean))
         }
-        Expression::Variable(ident) => {
-            Ok(context.get_variable_type(ident).map_or_else(|| panic!("Variable {} not found", ident), |val| (ident.clone(), val)))
+        Expression::Variable(ident, pos) => {
+            if let Some(typ) = context.get_variable_type(ident) {
+                Ok((ident.clone(), typ))
+            } else {
+                Err(CompilerError {
+                    message: format!("Variable {} not found", ident),
+                    position: Some(pos.clone()),
+                })
+            }
         }
         Expression::FunctionCall(name, args) => {
             let (signature, block) = context.functions.iter().find(|f| f.0.name == *name).expect("Function not found").clone();
@@ -80,15 +87,18 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             code.push_str(")");
             Ok((code, return_val))
         }
-        Expression::BinaryOperation(val1, op, val2) => {
+        Expression::BinaryOperation(val1, op, val2, pos) => {
             let (val1_code, val1_type) = generate_expression(context, val1)?;
             let (val2_code, val2_type) = generate_expression(context, val2)?;
 
-            let opt = context.operators.get(&(val1_type.clone(), op.clone(), val2_type.clone()));
+            let operator = context.operators.get(&(val1_type.clone(), op.clone(), val2_type.clone()));
 
-            let (func, return_val) = match opt {
+            let (func, return_val) = match operator {
                 Some(val) => val,
-                None => panic!("Operator for {:?} {:?} {:?} not found", val1_type, op, val2_type),
+                None => return Err(CompilerError {
+                    message: format!("Operator for {:?} {:?} {:?} not found", val1_type, op, val2_type),
+                    position: Some(pos.clone()),
+                }),
             };
 
             Ok((func(val1_code, val2_code), return_val.clone()))

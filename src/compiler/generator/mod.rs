@@ -5,7 +5,7 @@ mod variable;
 mod print;
 
 use std::collections::{HashMap, HashSet};
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::expression::{setup_default_operators, ValueType};
 use crate::compiler::generator::function::generate_function;
 use crate::compiler::parser::block::Block;
@@ -42,12 +42,20 @@ pub fn generate_code(functions: Vec<(FunctionSignature, Block)>) -> CompilerResu
     // find main function
     let (main_signature, main_block) = context.functions.iter().find(|f| f.0.name == "main").expect("No main function found").clone();
     if main_signature.args.len() != 0 {
-        panic!("Main function should not have arguments");
+        return Err(CompilerError {
+            message: "Main function should not have arguments".to_string(),
+            position: None,
+        });
     }
 
     let (main_name, main_return_type) = generate_function(&mut context, &main_signature, &main_block, &vec![])?;
 
-    assert_eq!(main_return_type, ValueType::Void, "Main function should not return anything");
+    if main_return_type != ValueType::Void {
+        return Err(CompilerError {
+            message: "Main function should not return anything".to_string(),
+            position: None,
+        });
+    }
 
     context.code.push_str(&format!("int main(){{{main_name}();return 0;}}\n\n"));
 

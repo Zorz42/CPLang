@@ -17,7 +17,7 @@ pub fn generate_print_statement(context: &mut GlobalContext, expression: &PrintS
             ValueType::F64 => "lf",
             ValueType::Boolean => "d",
             ValueType::Void => return Err(CompilerError {
-                message: "Cannot print void".to_string(),
+                message: "Cannot print void type".to_string(),
                 position: Some(expression.pos.clone()),
             }),
         };
