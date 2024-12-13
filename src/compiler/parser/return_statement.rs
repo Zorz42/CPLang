@@ -9,6 +9,6 @@ pub fn parse_return_statement(functions: &Vec<FunctionSignature>, block: &TokenB
         return Ok(None);
     }
     *curr_idx += 1;
-    let expression = parse_expression(functions, block, curr_idx)?;
+    let (expression, _) = parse_expression(functions, block, curr_idx)?;
     Ok(Some(Statement::Return(expression)))
 }

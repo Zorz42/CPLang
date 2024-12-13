@@ -6,6 +6,7 @@ use crate::compiler::tokenizer::{tokenize_string, Constant, Keyword, Token, Toke
 #[derive(Debug, Clone)]
 pub struct PrintStatement {
     pub values: Vec<Expression>,
+    pub pos: FilePosition,
 }
 
 fn parse_format_string(functions: &Vec<FunctionSignature>, string: &str, pos: &FilePosition) -> CompilerResult<Vec<Expression>> {
@@ -27,7 +28,7 @@ fn parse_format_string(functions: &Vec<FunctionSignature>, string: &str, pos: &F
                 }
                 let token_block = TokenBlock { children: tokenize_string(&string)? };
                 let mut idx2 = 0;
-                let expression = parse_expression(functions, &token_block, &mut idx2)?;
+                let (expression, _) = parse_expression(functions, &token_block, &mut idx2)?;
 
                 let end_pos = FilePosition {
                     first_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 2),
@@ -90,6 +91,7 @@ pub fn parse_print_statement(functions: &Vec<FunctionSignature>, block: &TokenBl
                 *curr_idx += 1;
                 Ok(Some(PrintStatement {
                     values: parse_format_string(functions, string, pos)?,
+                    pos: merge_file_positions(&print_pos, &pos),
                 }))
             },
             _ => Err(CompilerError {

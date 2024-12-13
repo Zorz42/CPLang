@@ -5,6 +5,7 @@ mod variable;
 mod print;
 
 use std::collections::{HashMap, HashSet};
+use crate::compiler::error::CompilerResult;
 use crate::compiler::generator::expression::{setup_default_operators, ValueType};
 use crate::compiler::generator::function::generate_function;
 use crate::compiler::parser::block::Block;
@@ -26,7 +27,7 @@ impl GlobalContext {
     }
 }
 
-pub fn generate_code(functions: Vec<(FunctionSignature, Block)>) -> String {
+pub fn generate_code(functions: Vec<(FunctionSignature, Block)>) -> CompilerResult<String> {
     let mut context = GlobalContext {
         functions,
         operators: HashMap::new(),
@@ -44,11 +45,11 @@ pub fn generate_code(functions: Vec<(FunctionSignature, Block)>) -> String {
         panic!("Main function should not have arguments");
     }
 
-    let (main_name, main_return_type) = generate_function(&mut context, &main_signature, &main_block, &vec![]);
+    let (main_name, main_return_type) = generate_function(&mut context, &main_signature, &main_block, &vec![])?;
 
     assert_eq!(main_return_type, ValueType::Void, "Main function should not return anything");
 
     context.code.push_str(&format!("int main(){{{main_name}();return 0;}}\n\n"));
 
-    context.code
+    Ok(context.code)
 }

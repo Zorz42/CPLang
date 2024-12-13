@@ -1,3 +1,4 @@
+use crate::compiler::error::CompilerResult;
 use crate::compiler::generator::block::generate_block;
 use crate::compiler::generator::expression::ValueType;
 use crate::compiler::generator::GlobalContext;
@@ -5,7 +6,7 @@ use crate::compiler::parser::block::Block;
 use crate::compiler::parser::function::FunctionSignature;
 
 // it returns generated function name and its return type
-pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignature, block: &Block, arg_types: &Vec<ValueType>) -> (String, ValueType) {
+pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignature, block: &Block, arg_types: &Vec<ValueType>) -> CompilerResult<(String, ValueType)> {
     assert_eq!(arg_types.len(), signature.args.len(), "Function signature and arguments mismatch");
 
     let prev_return_type = context.return_type.clone();
@@ -32,7 +33,7 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
 
     let mut code = String::new();
 
-    let block_code = generate_block(context, block);
+    let block_code = generate_block(context, block)?;
 
     let return_type = context.return_type.clone();
     let return_type_str = return_type.to_c_type();
@@ -51,5 +52,5 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
     context.return_type = prev_return_type;
     context.variables = prev_variables;
 
-    (function_name, return_type)
+    Ok((function_name, return_type))
 }

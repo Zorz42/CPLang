@@ -1,17 +1,22 @@
+use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::expression::generate_expression;
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::variable::VariableDeclaration;
 
-pub fn generate_variable_declaration(context: &mut GlobalContext, declaration: &VariableDeclaration) -> String {
+pub fn generate_variable_declaration(context: &mut GlobalContext, declaration: &VariableDeclaration) -> CompilerResult<String> {
     let value_type2 = context.get_variable_type(&declaration.name);
-    let (value_code, value_type) = generate_expression(context, &declaration.value);
+    let (value_code, value_type) = generate_expression(context, &declaration.value)?;
     if let Some(value_type2) = value_type2 {
         if value_type != value_type2 {
-            panic!("Type mismatch");
+            let message = format!("Variable {} was declared with type {:?} but reassigned with type {:?}", declaration.name, value_type2, value_type);
+            return Err(CompilerError{
+                message,
+                position: Some(declaration.pos.clone()),
+            })
         }
-        format!("{} = {}", declaration.name, value_code)
+        Ok(format!("{} = {}", declaration.name, value_code))
     } else {
         context.variables.insert(declaration.name.clone(), value_type.clone());
-        format!("{} {} = {}", value_type.to_c_type(), declaration.name, value_code)
+        Ok(format!("{} {} = {}", value_type.to_c_type(), declaration.name, value_code))
     }
 }

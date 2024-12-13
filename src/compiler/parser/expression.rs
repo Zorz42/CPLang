@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerError, CompilerResult};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 
@@ -20,23 +20,24 @@ pub enum Expression {
 }
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
-fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Expression> {
+fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
+    let mut pos = block.children[*curr_idx].1.clone();
     match &block.children[*curr_idx].0 {
         Token::Constant(Constant::Integer(int)) => {
             *curr_idx += 1;
-            Ok(Expression::Integer(*int))
+            Ok((Expression::Integer(*int), pos))
         },
         Token::Constant(Constant::Float(float)) => {
             *curr_idx += 1;
-            Ok(Expression::Float(*float))
+            Ok((Expression::Float(*float), pos))
         },
         Token::Constant(Constant::String(string)) => {
             *curr_idx += 1;
-            Ok(Expression::String(string.clone()))
+            Ok((Expression::String(string.clone()), pos))
         },
         Token::Constant(Constant::Boolean(boolean)) => {
             *curr_idx += 1;
-            Ok(Expression::Boolean(*boolean))
+            Ok((Expression::Boolean(*boolean), pos))
         },
         Token::Identifier(identifier) => {
             *curr_idx += 1;
@@ -46,11 +47,13 @@ fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx:
                 let num_args = function.args.len();
                 let mut args = Vec::new();
                 for _ in 0..num_args {
-                    args.push(parse_expression(functions, block, curr_idx)?);
+                    let (expr, expr_pos) = parse_expression(functions, block, curr_idx)?;
+                    args.push(expr);
+                    pos = merge_file_positions(&pos, &expr_pos);
                 }
-                Ok(Expression::FunctionCall(identifier.clone(), args))
+                Ok((Expression::FunctionCall(identifier.clone(), args), pos))
             } else {
-                Ok(Expression::Variable(identifier.clone()))
+                Ok((Expression::Variable(identifier.clone()), pos))
             }
         },
         Token::Symbol(Symbol::LeftBracket) => {
@@ -81,10 +84,11 @@ fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx:
 }
 
 // looks for operators and values
-pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Expression> {
+pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
-    vals.push(parse_value(functions, block, curr_idx)?);
+    let (first_val, mut pos) = parse_value(functions, block, curr_idx)?;
+    vals.push(first_val);
     while *curr_idx < block.children.len() {
         match &block.children[*curr_idx].0 {
             Token::Symbol(symbol) => {
@@ -99,8 +103,9 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
                     },
                     _ => break,
                 }
-                let right = parse_value(functions, block, curr_idx)?;
+                let (right, value_pos) = parse_value(functions, block, curr_idx)?;
                 vals.push(right);
+                pos = merge_file_positions(&pos, &value_pos);
             },
             _ => break,
         }
@@ -133,5 +138,5 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
     assert_eq!(vals.len(), 1);
     assert_eq!(ops.len(), 0);
 
-    Ok(vals.pop().unwrap())
+    Ok((vals.pop().unwrap(), pos))
 }

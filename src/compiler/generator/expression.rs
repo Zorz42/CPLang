@@ -1,3 +1,4 @@
+use crate::compiler::error::CompilerResult;
 use crate::compiler::generator::function::generate_function;
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::expression::{Expression, Operator};
@@ -38,34 +39,34 @@ pub fn setup_default_operators(context: &mut GlobalContext) {
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Mul, "*");
 }
 
-pub fn generate_expression(context: &mut GlobalContext, expression: &Expression) -> (String, ValueType) {
+pub fn generate_expression(context: &mut GlobalContext, expression: &Expression) -> CompilerResult<(String, ValueType)> {
     match expression {
         Expression::Integer(val) => {
-            (val.to_string(), ValueType::I32)
+            Ok((val.to_string(), ValueType::I32))
         }
         Expression::Float(val) => {
-            (val.to_string(), ValueType::F32)
+            Ok((val.to_string(), ValueType::F32))
         }
         Expression::String(val) => {
-            (format!("\"{}\"", val), ValueType::String)
+            Ok((format!("\"{}\"", val), ValueType::String))
         }
         Expression::Boolean(val) => {
-            (val.to_string(), ValueType::Boolean)
+            Ok((val.to_string(), ValueType::Boolean))
         }
         Expression::Variable(ident) => {
-            context.get_variable_type(ident).map_or_else(|| panic!("Variable {} not found", ident), |val| (ident.clone(), val))
+            Ok(context.get_variable_type(ident).map_or_else(|| panic!("Variable {} not found", ident), |val| (ident.clone(), val)))
         }
         Expression::FunctionCall(name, args) => {
             let (signature, block) = context.functions.iter().find(|f| f.0.name == *name).expect("Function not found").clone();
             let mut arg_types = Vec::new();
             let mut arg_codes = Vec::new();
             for arg in args {
-                let res = generate_expression(context, arg);
+                let res = generate_expression(context, arg)?;
                 arg_types.push(res.1);
                 arg_codes.push(res.0);
             }
 
-            let (func_name, return_val) = generate_function(context, &signature, &block, &arg_types);
+            let (func_name, return_val) = generate_function(context, &signature, &block, &arg_types)?;
 
             let mut code = func_name;
             code.push_str("(");
@@ -77,11 +78,11 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
                 assert_eq!(code.pop(), Some(','));
             }
             code.push_str(")");
-            (code, return_val)
+            Ok((code, return_val))
         }
         Expression::BinaryOperation(val1, op, val2) => {
-            let (val1_code, val1_type) = generate_expression(context, val1);
-            let (val2_code, val2_type) = generate_expression(context, val2);
+            let (val1_code, val1_type) = generate_expression(context, val1)?;
+            let (val2_code, val2_type) = generate_expression(context, val2)?;
 
             let opt = context.operators.get(&(val1_type.clone(), op.clone(), val2_type.clone()));
 
@@ -90,7 +91,7 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
                 None => panic!("Operator for {:?} {:?} {:?} not found", val1_type, op, val2_type),
             };
 
-            (func(val1_code, val2_code), return_val.clone())
+            Ok((func(val1_code, val2_code), return_val.clone()))
         }
     }
 }

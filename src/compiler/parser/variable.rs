@@ -1,4 +1,4 @@
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
 use crate::compiler::parser::expression::{parse_expression, Expression};
 use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
@@ -7,6 +7,7 @@ use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
 pub struct VariableDeclaration {
     pub name: String,
     pub value: Expression,
+    pub pos: FilePosition,
 }
 
 pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<VariableDeclaration>> {
@@ -16,6 +17,7 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &To
 
     let token1 = &block.children[*curr_idx].0;
     let token2 = &block.children[*curr_idx + 1].0;
+    let begin_pos = &block.children[*curr_idx].1;
 
     let name;
 
@@ -38,10 +40,11 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &To
         _ => return Ok(None),
     }
 
-    let value = parse_expression(functions, block, curr_idx)?;
+    let (value, expr_pos) = parse_expression(functions, block, curr_idx)?;
 
     Ok(Some(VariableDeclaration{
         name,
         value,
+        pos: merge_file_positions(begin_pos, &expr_pos),
     }))
 }

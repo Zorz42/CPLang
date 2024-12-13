@@ -32,7 +32,7 @@ pub fn parse_block(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_
                 } else if let Some(statement) = parse_print_statement(functions, block, curr_idx)? {
                     res.children.push(Statement::Print(statement));
                 } else {
-                    let expression = parse_expression(functions, block, curr_idx)?;
+                    let (expression, pos) = parse_expression(functions, block, curr_idx)?;
                     res.children.push(Statement::Expression(expression));
                 }
             },
