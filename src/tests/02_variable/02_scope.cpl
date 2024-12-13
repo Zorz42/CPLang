@@ -1,6 +1,6 @@
 //OUT=20
 
-fn main
+main
     a = 10
                         a = 20
     print "{a}"

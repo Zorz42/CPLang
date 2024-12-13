@@ -1,6 +1,6 @@
 //OUT=it works!
 
-fn main
+main
     // test /* asda
 
     print"it works!"

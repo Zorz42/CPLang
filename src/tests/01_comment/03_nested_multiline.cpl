@@ -1,6 +1,6 @@
 //OUT=it works!
 
-fn main
+main
     /* /* /*
     comments can be nested
     */ with multiple levels */

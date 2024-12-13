@@ -1,3 +1,4 @@
+use crate::compiler::error::CompilerResult;
 use crate::compiler::parser::expression::{parse_expression, Expression};
 use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
@@ -8,9 +9,9 @@ pub struct VariableDeclaration {
     pub value: Expression,
 }
 
-pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> Option<VariableDeclaration> {
+pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<VariableDeclaration>> {
     if *curr_idx + 1 >= block.children.len() {
-        return None;
+        return Ok(None);
     }
 
     let token1 = &block.children[*curr_idx].0;
@@ -23,7 +24,7 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &To
         Token::Identifier(ident) => {
             name = ident.clone();
         },
-        _ => return None,
+        _ => return Ok(None),
     }
 
     match token2 {
@@ -31,16 +32,16 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &To
             if symbol == &Symbol::Equal {
                 *curr_idx += 2;
             } else {
-                return None;
+                return Ok(None);
             }
         },
-        _ => return None,
+        _ => return Ok(None),
     }
 
-    let value = parse_expression(functions, block, curr_idx);
+    let value = parse_expression(functions, block, curr_idx)?;
 
-    Some(VariableDeclaration{
+    Ok(Some(VariableDeclaration{
         name,
         value,
-    })
+    }))
 }

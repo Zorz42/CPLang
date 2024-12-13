@@ -1,6 +1,6 @@
 //OUT=230
 
-fn main
+main
     a = 10
     b = 20
     print "{a+b*11}"

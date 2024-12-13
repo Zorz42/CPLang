@@ -1,6 +1,6 @@
 //OUT=hello 12
 
-fn main
+main
     a = 10
     a = 12
     print "hello {a}"

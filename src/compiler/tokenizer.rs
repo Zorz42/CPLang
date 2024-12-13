@@ -6,7 +6,6 @@ pub enum Keyword {
     Else,
     While,
     For,
-    Fn,
     Print,
     Return,
 }
@@ -18,7 +17,6 @@ impl Keyword {
             "else" => Some(Keyword::Else),
             "while" => Some(Keyword::While),
             "for" => Some(Keyword::For),
-            "fn" => Some(Keyword::Fn),
             "print" => Some(Keyword::Print),
             "return" => Some(Keyword::Return),
             _ => None,
@@ -138,7 +136,7 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
             if curr_token.len() > 0 {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
             }
-            tokens.push((Token::Symbol(Symbol::from_char(*c).unwrap()), token_pos.clone()));
+            tokens.push((Token::Symbol(Symbol::from_char(*c).unwrap()), pos.clone()));
         } else if *c == ' ' {
             if curr_token.len() > 0 {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
@@ -151,7 +149,7 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
     if in_string {
         return Err(CompilerError {
             message: "Expected \" to close string".to_string(),
-            position: merge_file_positions(&token_pos, &string.last().unwrap().1),
+            position: Some(merge_file_positions(&token_pos, &string.last().unwrap().1)),
         });
     }
 

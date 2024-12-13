@@ -2,7 +2,7 @@
 
 // Comments can be anywhere
 
-fn /* even between tokens */ main
+main
 
     /*
     comments can be multiline

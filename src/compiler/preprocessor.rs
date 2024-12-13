@@ -78,7 +78,7 @@ pub fn remove_comments(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec<(
 
         return Err(CompilerError {
             message: "Unclosed multiline comment".to_string(),
-            position,
+            position: Some(position),
         });
     }
 
@@ -110,7 +110,7 @@ pub fn parse_indentation(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec
 
             return Err(CompilerError {
                 message: format!("Identation must have a multiple of 4 spaces, found {} spaces", leading_spaces),
-                position: pos,
+                position: Some(pos),
             })
         }
 

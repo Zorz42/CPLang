@@ -25,14 +25,14 @@ pub fn parse_block(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_
                 *curr_idx += 1;
             },
             _ => {
-                if let Some(statement) = parse_return_statement(functions, block, curr_idx) {
+                if let Some(statement) = parse_return_statement(functions, block, curr_idx)? {
                     res.children.push(statement);
-                } else if let Some(statement) = parse_variable_declaration(functions, block, curr_idx) {
+                } else if let Some(statement) = parse_variable_declaration(functions, block, curr_idx)? {
                     res.children.push(Statement::VariableDeclaration(statement));
                 } else if let Some(statement) = parse_print_statement(functions, block, curr_idx)? {
                     res.children.push(Statement::Print(statement));
                 } else {
-                    let expression = parse_expression(functions, block, curr_idx);
+                    let expression = parse_expression(functions, block, curr_idx)?;
                     res.children.push(Statement::Expression(expression));
                 }
             },

@@ -1,7 +1,7 @@
 //OUT=60
 
-fn test a b c
+test a b c
     return a + b + c
 
-fn main
+main
     print "{test 10 20 30}"

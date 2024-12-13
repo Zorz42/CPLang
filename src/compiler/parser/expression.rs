@@ -1,3 +1,4 @@
+use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 
@@ -19,23 +20,23 @@ pub enum Expression {
 }
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
-fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> Expression {
+fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Expression> {
     match &block.children[*curr_idx].0 {
         Token::Constant(Constant::Integer(int)) => {
             *curr_idx += 1;
-            Expression::Integer(*int)
+            Ok(Expression::Integer(*int))
         },
         Token::Constant(Constant::Float(float)) => {
             *curr_idx += 1;
-            Expression::Float(*float)
+            Ok(Expression::Float(*float))
         },
         Token::Constant(Constant::String(string)) => {
             *curr_idx += 1;
-            Expression::String(string.clone())
+            Ok(Expression::String(string.clone()))
         },
         Token::Constant(Constant::Boolean(boolean)) => {
             *curr_idx += 1;
-            Expression::Boolean(*boolean)
+            Ok(Expression::Boolean(*boolean))
         },
         Token::Identifier(identifier) => {
             *curr_idx += 1;
@@ -45,33 +46,45 @@ fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx:
                 let num_args = function.args.len();
                 let mut args = Vec::new();
                 for _ in 0..num_args {
-                    args.push(parse_expression(functions, block, curr_idx));
+                    args.push(parse_expression(functions, block, curr_idx)?);
                 }
-                Expression::FunctionCall(identifier.clone(), args)
+                Ok(Expression::FunctionCall(identifier.clone(), args))
             } else {
-                Expression::Variable(identifier.clone())
+                Ok(Expression::Variable(identifier.clone()))
             }
         },
         Token::Symbol(Symbol::LeftBracket) => {
             *curr_idx += 1;
-            let res = parse_expression(functions, block, curr_idx);
+            let res = parse_expression(functions, block, curr_idx)?;
             match &block.children[*curr_idx].0 {
                 Token::Symbol(Symbol::RightBracket) => {
                     *curr_idx += 1;
-                    res
+                    Ok(res)
                 },
-                _ => panic!("Expected right bracket"),
+                _ => {
+                    let pos = &block.children[*curr_idx - 1].1;
+                    Err(CompilerError {
+                        message: "Expected right bracket after".to_owned(),
+                        position: Some(pos.clone())
+                    })
+                },
             }
         },
-        _ => panic!("Expected value"),
+        _ => {
+            let pos = &block.children[*curr_idx - 1].1;
+            Err(CompilerError {
+                message: "Expected value after".to_owned(),
+                position: Some(pos.clone())
+            })
+        },
     }
 }
 
 // looks for operators and values
-pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> Expression {
+pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Expression> {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
-    vals.push(parse_value(functions, block, curr_idx));
+    vals.push(parse_value(functions, block, curr_idx)?);
     while *curr_idx < block.children.len() {
         match &block.children[*curr_idx].0 {
             Token::Symbol(symbol) => {
@@ -86,7 +99,7 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
                     },
                     _ => break,
                 }
-                let right = parse_value(functions, block, curr_idx);
+                let right = parse_value(functions, block, curr_idx)?;
                 vals.push(right);
             },
             _ => break,
@@ -120,5 +133,5 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
     assert_eq!(vals.len(), 1);
     assert_eq!(ops.len(), 0);
 
-    vals.pop().unwrap()
+    Ok(vals.pop().unwrap())
 }

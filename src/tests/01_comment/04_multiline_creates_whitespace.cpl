@@ -1,4 +1,7 @@
-//OUT=it works!
+//OUT=it works! 50
 
-fn/*b*/main
-    print/*b*/"it works!"
+fn/*a*/x/*bbb*/y
+    return x + y
+
+main
+    print/*b*/"it works! {fn 20 30}"

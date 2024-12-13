@@ -1,4 +1,4 @@
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::parser::block::{parse_block, Block};
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::function::{parse_function_declaration, FunctionSignature};
@@ -26,7 +26,7 @@ pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Vec<(FunctionS
     let mut curr_idx = 0;
     let mut function_declarations = Vec::new();
     while curr_idx < program_block.children.len() {
-        let declaration = parse_function_declaration(&program_block, &mut curr_idx);
+        let declaration = parse_function_declaration(&program_block, &mut curr_idx)?;
         function_declarations.push(declaration);
     }
 
@@ -50,7 +50,7 @@ pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Vec<(FunctionS
     }
 
     if !found_main {
-        panic!("No main function found");
+        return Err(CompilerError { message: "No main function found".to_string(), position: None });
     }
 
     Ok(res)
