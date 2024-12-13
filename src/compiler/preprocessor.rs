@@ -29,12 +29,6 @@ pub fn remove_comments(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec<(
 
     let mut chars = input.iter().peekable();
     while let Some((c, pos)) = chars.next() {
-        if *c != '\n' {
-            for i in &mut multiline_comment_positions {
-                *i = merge_file_positions(i, pos);
-            }
-        }
-
         if !in_string && !in_single_line_comment {
             if *c == '/' {
                 // check for /*
@@ -49,10 +43,7 @@ pub fn remove_comments(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec<(
             } else if *c == '*' {
                 // check for */
                 if let Some(('/', _)) = chars.peek() {
-                    let (_, pos) = chars.next().unwrap();
-                    for i in &mut multiline_comment_positions {
-                        *i = merge_file_positions(i, pos);
-                    }
+                    chars.next().unwrap();
                     in_comment_depth -= 1;
                     multiline_comment_positions.pop().unwrap();
                     continue;
@@ -83,9 +74,11 @@ pub fn remove_comments(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec<(
     }
 
     if in_comment_depth > 0 {
+        let position = merge_file_positions(&multiline_comment_positions.pop().unwrap(), &input.last().unwrap().1);
+
         return Err(CompilerError {
             message: "Unclosed multiline comment".to_string(),
-            position: multiline_comment_positions.pop().unwrap(),
+            position,
         });
     }
 

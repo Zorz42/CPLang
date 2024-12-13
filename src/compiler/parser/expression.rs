@@ -20,7 +20,7 @@ pub enum Expression {
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
 fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> Expression {
-    match &block.children[*curr_idx] {
+    match &block.children[*curr_idx].0 {
         Token::Constant(Constant::Integer(int)) => {
             *curr_idx += 1;
             Expression::Integer(*int)
@@ -55,7 +55,7 @@ fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx:
         Token::Symbol(Symbol::LeftBracket) => {
             *curr_idx += 1;
             let res = parse_expression(functions, block, curr_idx);
-            match &block.children[*curr_idx] {
+            match &block.children[*curr_idx].0 {
                 Token::Symbol(Symbol::RightBracket) => {
                     *curr_idx += 1;
                     res
@@ -73,7 +73,7 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
     let mut ops = Vec::new();
     vals.push(parse_value(functions, block, curr_idx));
     while *curr_idx < block.children.len() {
-        match &block.children[*curr_idx] {
+        match &block.children[*curr_idx].0 {
             Token::Symbol(symbol) => {
                 match symbol {
                     Symbol::Plus => {

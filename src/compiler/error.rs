@@ -1,13 +1,25 @@
 use std::collections::HashSet;
 
 // this struct stores file position so the error can be displayed
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FilePosition {
     pub first_pos: (usize, usize),
     pub last_pos: (usize, usize),
 }
 
+impl FilePosition {
+    pub fn invalid() -> Self {
+        Self {
+            first_pos: (0, 0),
+            last_pos: (0, 0),
+        }
+    }
+}
+
 pub fn merge_file_positions(position1: &FilePosition, position2: &FilePosition) -> FilePosition {
+    //if *position1 == FilePosition::invalid() || *position2 == FilePosition::invalid() {
+    //    panic!("Invalid file position");
+    //}
     FilePosition {
         first_pos: position1.first_pos.min(position2.first_pos),
         last_pos: position1.last_pos.max(position2.last_pos),
@@ -32,6 +44,10 @@ const BOLD_TEXT: &str = "\x1b[1m";
 pub fn display_error(error: &CompilerError, input: &str) {
     let mut line_start = error.position.first_pos.0;
     let mut line_end = error.position.last_pos.0;
+
+    if error.position == FilePosition::invalid() {
+        panic!("Invalid error position");
+    }
 
     let lines: Vec<&str> = input.lines().collect();
 

@@ -17,7 +17,7 @@ pub fn parse_block(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_
     };
 
     while *curr_idx < block.children.len() {
-        match &block.children[*curr_idx] {
+        match &block.children[*curr_idx].0 {
             Token::Block(sub_block) => {
                 let mut idx = 0;
                 res.children.push(Statement::Block(parse_block(functions, sub_block, &mut idx)));

@@ -1,4 +1,4 @@
-use crate::compiler::error::FilePosition;
+use crate::compiler::error::{merge_file_positions, FilePosition};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Keyword {
@@ -61,7 +61,7 @@ pub enum Constant {
 // blocks are formed by indentation levels
 #[derive(Debug, PartialEq, Clone)]
 pub struct TokenBlock {
-    pub(crate) children: Vec<Token>,
+    pub(crate) children: Vec<(Token, FilePosition)>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -100,45 +100,56 @@ fn string_to_token(string: &str) -> Token {
     Token::Identifier(string.to_string())
 }
 
-pub fn tokenize_string(string: &str) -> Vec<Token> {
+pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> Vec<(Token, FilePosition)> {
     let mut tokens = Vec::new();
     let mut curr_token = String::new();
 
     let mut in_string = false;
+    let mut token_pos = FilePosition::invalid();
 
-    for c in string.chars() {
+    let mut new_token = |tokens: &mut Vec<(Token, FilePosition)>, curr_token: &mut String, token_pos: &mut FilePosition| {
+        tokens.push((string_to_token(&curr_token), token_pos.clone()));
+        curr_token.clear();
+    };
+
+    let mut add_to_token = |curr_token: &mut String, token_pos: &mut FilePosition, c: &char, pos: &FilePosition| {
+        if curr_token.is_empty() {
+            *token_pos = pos.clone();
+        } else {
+            *token_pos = merge_file_positions(&token_pos, pos);
+        }
+        curr_token.push(*c);
+    };
+
+    for (c, pos) in string {
         if in_string {
-            curr_token.push(c);
-            if c == '"' {
-                tokens.push(string_to_token(&curr_token));
-                curr_token.clear();
+            add_to_token(&mut curr_token, &mut token_pos, c, pos);
+            if *c == '"' {
+                new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 in_string = false;
             }
-        } else if c == '"' {
+        } else if *c == '"' {
             in_string = true;
             if curr_token.len() > 0 {
-                tokens.push(string_to_token(&curr_token));
-                curr_token.clear();
+                new_token(&mut tokens,&mut curr_token, &mut token_pos);
             }
-            curr_token.push(c);
-        } else if Symbol::from_char(c).is_some() {
+            add_to_token(&mut curr_token, &mut token_pos, c, pos);
+        } else if Symbol::from_char(*c).is_some() {
             if curr_token.len() > 0 {
-                tokens.push(string_to_token(&curr_token));
-                curr_token.clear();
+                new_token(&mut tokens, &mut curr_token, &mut token_pos);
             }
-            tokens.push(Token::Symbol(Symbol::from_char(c).unwrap()));
-        } else if c == ' ' {
+            tokens.push((Token::Symbol(Symbol::from_char(*c).unwrap()), token_pos.clone()));
+        } else if *c == ' ' {
             if curr_token.len() > 0 {
-                tokens.push(string_to_token(&curr_token));
-                curr_token.clear();
+                new_token(&mut tokens, &mut curr_token, &mut token_pos);
             }
         } else {
-            curr_token.push(c);
+            add_to_token(&mut curr_token, &mut token_pos, c, pos);
         }
     }
 
     if curr_token.len() > 0 {
-        tokens.push(string_to_token(&curr_token));
+        tokens.push((string_to_token(&curr_token), token_pos.clone()));
     }
 
     tokens
@@ -155,9 +166,7 @@ fn tokenize_block(lines: &Vec<(i32, Vec<(char, FilePosition)>)>, curr_idx: &mut 
         let ident = lines[*curr_idx].0;
 
         if ident == curr_ident {
-            let string = lines[*curr_idx].1.iter().map(|x| x.0).collect::<String>();
-
-            let tokens = tokenize_string(&string);
+            let tokens = tokenize_string(&lines[*curr_idx].1);
             for i in tokens {
                 block.children.push(i);
             }
@@ -165,7 +174,7 @@ fn tokenize_block(lines: &Vec<(i32, Vec<(char, FilePosition)>)>, curr_idx: &mut 
 
         } else if ident > curr_ident {
             let child_block = tokenize_block(lines, curr_idx);
-            block.children.push(Token::Block(child_block));
+            block.children.push((Token::Block(child_block), FilePosition::invalid()));
 
         } else if ident < curr_ident {
             return block;

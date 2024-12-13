@@ -1,3 +1,4 @@
+use crate::compiler::error::FilePosition;
 use crate::compiler::parser::expression::{parse_expression, Expression};
 use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::tokenizer::{tokenize_string, Constant, Keyword, Token, TokenBlock};
@@ -15,7 +16,12 @@ fn parse_format_string(functions: &Vec<FunctionSignature>, string: &str) -> Vec<
         if in_format {
             if c == '}' {
                 in_format = false;
-                let token_block = TokenBlock { children: tokenize_string(&curr) };
+
+                let mut string = Vec::new();
+                for c in curr.chars() {
+                    string.push((c, FilePosition::invalid()));
+                }
+                let token_block = TokenBlock { children: tokenize_string(&string) };
                 let mut idx = 0;
                 let expression = parse_expression(functions, &token_block, &mut idx);
                 assert_eq!(idx, token_block.children.len(), "Did not parse entire format string");
@@ -49,9 +55,9 @@ fn parse_format_string(functions: &Vec<FunctionSignature>, string: &str) -> Vec<
 }
 
 pub fn parse_print_statement(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> Option<PrintStatement> {
-    if block.children[*curr_idx] == Token::Keyword(Keyword::Print) {
+    if block.children[*curr_idx].0 == Token::Keyword(Keyword::Print) {
         *curr_idx += 1;
-        match &block.children[*curr_idx] {
+        match &block.children[*curr_idx].0 {
             Token::Constant(Constant::String(string)) => {
                 *curr_idx += 1;
                 Some(PrintStatement {

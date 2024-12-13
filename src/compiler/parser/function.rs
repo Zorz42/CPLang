@@ -13,10 +13,10 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> (
     };
     let res_block;
 
-    assert_eq!(block.children[*curr_idx], Token::Keyword(Keyword::Fn));
+    assert_eq!(block.children[*curr_idx].0, Token::Keyword(Keyword::Fn));
     *curr_idx += 1;
 
-    match &block.children[*curr_idx] {
+    match &block.children[*curr_idx].0 {
         Token::Identifier(name) => {
             res_signature.name = name.clone();
         },
@@ -25,7 +25,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> (
     *curr_idx += 1;
 
     loop {
-        match &block.children[*curr_idx] {
+        match &block.children[*curr_idx].0 {
             Token::Block(block) => {
                 res_block = block.clone();
                 *curr_idx += 1;

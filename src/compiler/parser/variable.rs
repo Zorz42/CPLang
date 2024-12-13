@@ -13,8 +13,8 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, block: &To
         return None;
     }
 
-    let token1 = &block.children[*curr_idx];
-    let token2 = &block.children[*curr_idx + 1];
+    let token1 = &block.children[*curr_idx].0;
+    let token2 = &block.children[*curr_idx + 1].0;
 
     let name;
 
