@@ -1,0 +1,9 @@
+//OUT=it works!
+
+// Comments can be anywhere
+
+fn main
+    // or in functions
+
+    print "it works!" // or after statements
+// or in the end of the file

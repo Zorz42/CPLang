@@ -1,0 +1,7 @@
+//OUT=hello 12
+
+fn main
+    a = 10
+    a = 12
+    print "hello {a}"
+

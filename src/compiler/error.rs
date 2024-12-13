@@ -3,15 +3,18 @@ use std::collections::HashSet;
 // this struct stores file position so the error can be displayed
 #[derive(Debug, Clone)]
 pub struct FilePosition {
-    pub positions: Vec<(usize, usize)>,
+    pub first_pos: (usize, usize),
+    pub last_pos: (usize, usize),
 }
 
 pub fn merge_file_positions(position1: &FilePosition, position2: &FilePosition) -> FilePosition {
-    let mut merged = position1.clone();
-    merged.positions.extend(position2.clone().positions);
-    merged
+    FilePosition {
+        first_pos: position1.first_pos.min(position2.first_pos),
+        last_pos: position1.last_pos.max(position2.last_pos),
+    }
 }
 
+#[derive(Debug)]
 pub struct CompilerError {
     pub message: String,
     pub position: FilePosition,
@@ -27,16 +30,8 @@ const RED_TEXT: &str = "\x1b[31m";
 const BOLD_TEXT: &str = "\x1b[1m";
 
 pub fn display_error(error: &CompilerError, input: &str) {
-    let mut positions = HashSet::new();
-
-    let mut line_start = usize::MAX;
-    let mut line_end = 0;
-
-    for (line, column) in &error.position.positions {
-        positions.insert((*line, *column));
-        line_start = line_start.min(*line);
-        line_end = line_end.max(*line);
-    }
+    let mut line_start = error.position.first_pos.0;
+    let mut line_end = error.position.last_pos.0;
 
     let lines: Vec<&str> = input.lines().collect();
 
@@ -48,7 +43,7 @@ pub fn display_error(error: &CompilerError, input: &str) {
         print!("{GREY_TEXT}{}{spacing}|{RESET}", line + 1);
 
         for (idx, ch) in lines[line].chars().enumerate() {
-            if positions.contains(&(line, idx)) {
+            if error.position.first_pos <= (line, idx) && (line, idx) < error.position.last_pos {
                 print!("{RED_BG}{}{RESET}", ch);
             } else {
                 print!("{}", ch);

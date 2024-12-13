@@ -1,3 +1,5 @@
+//OUT=60
+
 fn test a b c
     return a + b + c
 

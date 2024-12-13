@@ -6,7 +6,8 @@ pub fn add_file_positions(test: &str) -> Vec<(char, FilePosition)> {
     let mut column = 0;
     for c in test.chars() {
         res.push((c, FilePosition {
-            positions: vec![(line, column)],
+            first_pos: (line, column),
+            last_pos: (line, column + 1),
         }));
         if c == '\n' {
             line += 1;
@@ -40,6 +41,9 @@ pub fn remove_comments(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec<(
                 if let Some(('*', _)) = chars.peek() {
                     in_comment_depth += 1;
                     multiline_comment_positions.push(pos.clone());
+                    if in_comment_depth == 1 {
+                        res.push((' ', pos.clone()));
+                    }
                     continue;
                 }
             } else if *c == '*' {
@@ -101,15 +105,15 @@ pub fn parse_indentation(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec
         }
     }
 
-    for (_, (indent, line)) in lines.iter_mut().enumerate() {
+    lines.retain(|(_, line)| !line.iter().all(|(c, _)| *c == ' '));
+
+    for (indent, line) in &mut lines {
         let leading_spaces = line.iter().take_while(|c| c.0 == ' ').count();
         if leading_spaces % 4 != 0 {
             let mut pos = FilePosition {
-                positions: Vec::new(),
+                first_pos: (line[0].1.first_pos.0, 0),
+                last_pos: (line[0].1.first_pos.0, leading_spaces),
             };
-            for i in 0..leading_spaces {
-                pos = merge_file_positions(&pos, &line[i].1);
-            }
 
             return Err(CompilerError {
                 message: format!("Identation must have a multiple of 4 spaces, found {} spaces", leading_spaces),
@@ -119,8 +123,6 @@ pub fn parse_indentation(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec
 
         *indent = (leading_spaces / 4) as i32;
     }
-
-    lines.retain(|(_, line)| !line.iter().all(|(c, _)| *c == ' '));
 
     Ok(lines)
 }

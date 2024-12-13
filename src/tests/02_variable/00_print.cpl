@@ -1,3 +1,6 @@
+//OUT=hello 10
+
 fn main
     a = 10
     print "hello {a}"
+

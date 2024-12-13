@@ -1,7 +1,9 @@
 [package]
-name = "cplang"
+name = "test_derive"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+proc-macro = true
+
 [dependencies]
-test_derive = { path = "src/test_derive" }

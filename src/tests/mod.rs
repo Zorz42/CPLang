@@ -1,11 +1,21 @@
 #[cfg(test)]
 mod tests {
+    use test_derive::generate_tests;
     use crate::compiler::compile;
 
-    fn run_test(test_file: &str, expected_output: &str) {
+    fn run_test(test_file: &str) {
         let c_file = test_file.replace(".cpl", ".c");
         let exec_file = test_file.replace(".cpl", "");
-        compile(&format!("src/tests/{test_file}"), &c_file);
+
+        let binding = std::fs::read_to_string(&test_file).unwrap();
+        let first_line = binding.lines().next().unwrap();
+        if !first_line.starts_with("//OUT=") {
+            panic!("Invalid test file: first line must start with //OUT=");
+        }
+        let mut expected_output = first_line[6..].to_string();
+        expected_output.push('\n');
+
+        compile(&test_file, &c_file).unwrap();
         let output = std::process::Command::new("gcc")
             .arg(&c_file)
             .arg("-o")
@@ -27,48 +37,5 @@ mod tests {
         std::fs::remove_file(&exec_file).unwrap();
     }
 
-    #[test]
-    fn hello_world() {
-        run_test("00_hello_world.cpl", "Hello, World!\n");
-    }
-
-    #[test]
-    fn print_variable() {
-        run_test("01_print_variable.cpl", "hello 10\n");
-    }
-
-    #[test]
-    fn expression() {
-        run_test("02_expression.cpl", "210\n");
-    }
-
-    #[test]
-    fn print_expression() {
-        run_test("03_print_expression.cpl", "230\n");
-    }
-
-    #[test]
-    fn parentheses() {
-        run_test("04_parentheses.cpl", "450\n");
-    }
-
-    #[test]
-    fn function_call() {
-        run_test("05_function_call.cpl", "60\n");
-    }
-
-    #[test]
-    fn function_overloading() {
-        run_test("06_function_overloading.cpl", "Hello, 10\nHello, World!\n");
-    }
-
-    #[test]
-    fn scopes() {
-        run_test("07_scopes.cpl", "20\n");
-    }
-
-    #[test]
-    fn comments() {
-        run_test("08_comments.cpl", "it works!\n/* not here */\n// also not here\n");
-    }
+    generate_tests!();
 }

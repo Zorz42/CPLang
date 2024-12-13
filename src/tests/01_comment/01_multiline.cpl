@@ -1,0 +1,14 @@
+//OUT=it works!
+
+// Comments can be anywhere
+
+fn /* even between tokens */ main
+
+    /*
+    comments can be multiline
+    */
+    print /* or between statements */ "it works!"
+
+    /* the end
+
+    */

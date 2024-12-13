@@ -1,3 +1,5 @@
+//OUT=Hello, 10
+
 fn id x
     return x
 
@@ -5,5 +7,5 @@ fn print_with_hello x
     print "Hello, {id x}"
 
 fn main
+    val = id "test"
     print_with_hello 10
-    print_with_hello "World!"

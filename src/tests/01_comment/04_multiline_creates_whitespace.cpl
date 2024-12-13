@@ -1,0 +1,4 @@
+//OUT=it works!
+
+fn/*b*/main
+    print/*b*/"it works!"

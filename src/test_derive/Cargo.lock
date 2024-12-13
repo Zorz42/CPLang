@@ -3,12 +3,5 @@
 version = 4
 
 [[package]]
-name = "cplang"
-version = "0.1.0"
-dependencies = [
- "test_derive",
-]
-
-[[package]]
 name = "test_derive"
 version = "0.1.0"

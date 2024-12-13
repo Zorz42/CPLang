@@ -1,0 +1,14 @@
+//OUT=it works!
+
+fn main
+    /* /* /*
+    comments can be nested
+    */ with multiple levels */
+    print "it doesn't work!"
+
+     /* */
+     */
+
+    print"it works!"
+
+    /* /* /* /* */ */ */ print "ERROR" */
