@@ -38,6 +38,10 @@ pub fn setup_default_operators(context: &mut GlobalContext) {
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Plus, "+");
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Mul, "*");
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::Equals, "==");
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::Less, "<");
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::Greater, ">");
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::LessEquals, "<=");
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::GreaterEquals, ">=");
 }
 
 pub fn generate_expression(context: &mut GlobalContext, expression: &Expression) -> CompilerResult<(String, ValueType)> {

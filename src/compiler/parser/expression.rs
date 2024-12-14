@@ -7,6 +7,10 @@ pub enum Operator {
     Plus,
     Mul,
     Equals,
+    Greater,
+    Less,
+    GreaterEquals,
+    LessEquals,
 }
 
 #[derive(Debug, Clone)]
@@ -84,6 +88,19 @@ fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx:
     }
 }
 
+fn symbol_to_operator(symbol: &Symbol) -> Option<Operator> {
+    match symbol {
+        Symbol::Plus => Some(Operator::Plus),
+        Symbol::Star => Some(Operator::Mul),
+        Symbol::Equals => Some(Operator::Equals),
+        Symbol::GreaterThan => Some(Operator::Greater),
+        Symbol::LessThan => Some(Operator::Less),
+        Symbol::GreaterThanOrEqual => Some(Operator::GreaterEquals),
+        Symbol::LessThanOrEqual => Some(Operator::LessEquals),
+        _ => None,
+    }
+}
+
 // looks for operators and values
 pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
     let mut vals = Vec::new();
@@ -93,28 +110,24 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
     while *curr_idx < block.children.len() {
         match &block.children[*curr_idx].0 {
             Token::Symbol(symbol) => {
-                match symbol {
-                    Symbol::Plus => {
-                        *curr_idx += 1;
-                        ops.push(Operator::Plus);
-                    },
-                    Symbol::Star => {
-                        *curr_idx += 1;
-                        ops.push(Operator::Mul);
-                    },
-                    Symbol::Equals => {
-                        *curr_idx += 1;
-                        ops.push(Operator::Equals);
-                    },
-                    _ => break,
+                if let Some(op) = symbol_to_operator(symbol) {
+                    *curr_idx += 1;
+                    ops.push(op);
+                } else {
+                    break;
                 }
+
                 vals.push(parse_value(functions, block, curr_idx)?);
             },
             _ => break,
         }
     }
 
-    let operator_precedence = vec![vec![Operator::Mul], vec![Operator::Plus], vec![Operator::Equals]];
+    let operator_precedence = vec![
+        vec![Operator::Mul],
+        vec![Operator::Plus],
+        vec![Operator::Equals, Operator::Greater, Operator::Less, Operator::GreaterEquals, Operator::LessEquals]
+    ];
 
     for operators in operator_precedence {
         // merge values with operators

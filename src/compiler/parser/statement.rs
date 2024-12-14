@@ -52,3 +52,36 @@ pub fn parse_if_statement(functions: &Vec<FunctionSignature>, block: &TokenBlock
         else_block,
     }))
 }
+
+#[derive(Clone, Debug)]
+pub struct WhileStatement {
+    pub condition: Expression,
+    pub block: Block,
+    pub pos: FilePosition,
+}
+
+pub fn parse_while_statement(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<WhileStatement>> {
+    if block.children[*curr_idx].0 != Token::Keyword(Keyword::While) {
+        return Ok(None);
+    }
+    let pos1 = block.children[*curr_idx].1.clone();
+    *curr_idx += 1;
+    let (condition, pos2) = parse_expression(functions, block, curr_idx)?;
+
+    let res_block;
+    if let Token::Block(token_block) = &block.children[*curr_idx].0 {
+        *curr_idx += 1;
+        res_block = parse_block(functions, token_block)?;
+    } else {
+        return Err(CompilerError {
+            message: "Expected block after while condition".to_string(),
+            position: Some(block.children[*curr_idx].1.clone()),
+        });
+    }
+
+    Ok(Some(WhileStatement {
+        condition,
+        block: res_block,
+        pos: merge_file_positions(&pos1, &pos2),
+    }))
+}

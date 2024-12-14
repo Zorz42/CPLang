@@ -1,0 +1,12 @@
+//OUT=6765
+
+main
+    a = 0
+    b = 1
+    cnt = 0
+    while cnt < 20
+        c = a
+        a = b
+        b = c + b
+        cnt = cnt + 1
+    print "{a}"

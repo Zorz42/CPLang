@@ -3,7 +3,7 @@ use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::function::generate_return_statement;
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::generator::print::generate_print_statement;
-use crate::compiler::generator::statement::generate_if_statement;
+use crate::compiler::generator::statement::{generate_if_statement, generate_while_statement};
 use crate::compiler::generator::variable::generate_variable_declaration;
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::Statement;
@@ -32,6 +32,9 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> CompilerRes
             }
             Statement::IfStatement(statement) => {
                 generate_if_statement(context, statement)?
+            }
+            Statement::WhileStatement(statement) => {
+                generate_while_statement(context, statement)?
             }
         };
 

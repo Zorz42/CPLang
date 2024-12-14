@@ -3,7 +3,7 @@ use crate::compiler::parser::block::{parse_block, Block};
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::function::{parse_function_declaration, FunctionSignature};
 use crate::compiler::parser::print::PrintStatement;
-use crate::compiler::parser::statement::IfStatement;
+use crate::compiler::parser::statement::{IfStatement, WhileStatement};
 use crate::compiler::parser::variable::VariableDeclaration;
 use crate::compiler::tokenizer::TokenBlock;
 
@@ -22,6 +22,7 @@ pub enum Statement {
     Print(PrintStatement),
     Return(Expression, FilePosition),
     IfStatement(IfStatement),
+    WhileStatement(WhileStatement),
 }
 
 pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Vec<(FunctionSignature, Block)>> {
