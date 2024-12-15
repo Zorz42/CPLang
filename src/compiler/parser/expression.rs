@@ -21,6 +21,7 @@ pub enum Expression {
     String(String),
     Boolean(bool),
     Variable(String, FilePosition),
+    Reference(String, FilePosition),
     FunctionCall(String, Vec<Expression>),
     BinaryOperation(Box<Expression>, Operator, Box<Expression>, FilePosition),
 }
@@ -62,6 +63,22 @@ fn parse_value(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx:
                 Ok((Expression::Variable(identifier.clone(), pos.clone()), pos))
             }
         },
+        Token::Symbol(Symbol::Reference) => {
+            *curr_idx += 1;
+            match &block.children[*curr_idx].0 {
+                Token::Identifier(identifier) => {
+                    *curr_idx += 1;
+                    Ok((Expression::Reference(identifier.clone(), pos.clone()), pos))
+                },
+                _ => {
+                    let pos = &block.children[*curr_idx].1;
+                    Err(CompilerError {
+                        message: "Expected identifier after reference symbol".to_owned(),
+                        position: Some(pos.clone())
+                    })
+                },
+            }
+        }
         Token::Symbol(Symbol::LeftBracket) => {
             *curr_idx += 1;
             let res = parse_expression(functions, block, curr_idx)?;

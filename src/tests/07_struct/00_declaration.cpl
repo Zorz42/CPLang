@@ -1,0 +1,7 @@
+//OUT=compile
+
+struct TestStruct
+    x
+
+main
+    out "compile"

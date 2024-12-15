@@ -3,24 +3,31 @@ use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::out::PrintStatement;
 
+fn type_to_printf_format(typ: &ValueType) -> &'static str {
+    match typ {
+        ValueType::I32 => "d",
+        ValueType::F32 => "f",
+        ValueType::String => "s",
+        ValueType::I64 => "ld",
+        ValueType::F64 => "lf",
+        ValueType::Boolean => "d",
+        ValueType::Reference(typ) => type_to_printf_format(typ),
+        ValueType::Void => panic!("Cannot print void type"),
+    }
+}
+
 pub fn generate_out_statement(context: &mut GlobalContext, expression: &PrintStatement) -> CompilerResult<String> {
     let mut parts = Vec::new();
 
     for val in &expression.values {
-        let (code, typ) = generate_expression(context, val)?;
+        let (mut code, typ) = generate_expression(context, val)?;
 
-        let printf_format = match typ {
-            ValueType::I32 => "d",
-            ValueType::F32 => "f",
-            ValueType::String => "s",
-            ValueType::I64 => "ld",
-            ValueType::F64 => "lf",
-            ValueType::Boolean => "d",
-            ValueType::Void => return Err(CompilerError {
-                message: "Cannot print void type".to_string(),
-                position: Some(expression.pos.clone()),
-            }),
-        };
+        let printf_format = type_to_printf_format(&typ);
+        let mut curr_typ = typ;
+        while let ValueType::Reference(inner) = curr_typ {
+            curr_typ = *inner;
+            code.insert(0, '*');
+        }
 
         parts.push((code, printf_format));
     }

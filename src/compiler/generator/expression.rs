@@ -11,6 +11,7 @@ pub enum ValueType {
     F64,
     String,
     Boolean,
+    Reference(Box<ValueType>),
     Void,
 }
 
@@ -23,6 +24,7 @@ impl ValueType {
             ValueType::F64 => "double".to_owned(),
             ValueType::String => "char*".to_owned(),
             ValueType::Boolean => "int".to_owned(),
+            ValueType::Reference(inner) => format!("{}*", inner.to_c_type()),
             ValueType::Void => "void".to_owned(),
         }
     }
@@ -62,6 +64,16 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
         Expression::Variable(ident, pos) => {
             if let Some(typ) = context.get_variable_type(ident) {
                 Ok((ident.clone(), typ))
+            } else {
+                Err(CompilerError {
+                    message: format!("Variable {} not found", ident),
+                    position: Some(pos.clone()),
+                })
+            }
+        }
+        Expression::Reference(ident, pos) => {
+            if let Some(typ) = context.get_variable_type(ident) {
+                Ok((format!("&{}", ident), ValueType::Reference(Box::new(typ.clone()))))
             } else {
                 Err(CompilerError {
                     message: format!("Variable {} not found", ident),
