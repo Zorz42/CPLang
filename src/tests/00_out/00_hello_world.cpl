@@ -1,4 +1,4 @@
 //OUT=Hello, World!
 
 main
-    print "Hello, World!"
+    out "Hello, World!"

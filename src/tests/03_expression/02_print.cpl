@@ -3,4 +3,4 @@
 main
     a = 10
     b = 20
-    print "{a+b*11}"
+    out "{a+b*11}"

@@ -2,9 +2,9 @@
 
 fib n
     if n <= 2
-        return 1
+        ret 1
     else
-        return (fib n - 1) + (fib n - 2)
+        ret (fib n - 1) + (fib n - 2)
 
 main
-    print "{fib 20}"
+    out "{fib 20}"

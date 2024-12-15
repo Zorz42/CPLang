@@ -8,4 +8,4 @@ main
     if 20 == 10
         a = 30
 
-    print "{a}"
+    out "{a}"

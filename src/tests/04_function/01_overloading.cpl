@@ -1,10 +1,10 @@
 //OUT=Hello, 10
 
 id x
-    return x
+    ret x
 
 print_with_hello x
-    print "Hello, {id x}"
+    out "Hello, {id x}"
 
 main
     val = id "test"

@@ -3,4 +3,4 @@
 main
     a = 10
                         a = 20
-    print "{a}"
+    out "{a}"

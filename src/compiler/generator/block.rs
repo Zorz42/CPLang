@@ -2,7 +2,7 @@ use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::function::generate_return_statement;
 use crate::compiler::generator::GlobalContext;
-use crate::compiler::generator::print::generate_print_statement;
+use crate::compiler::generator::out::generate_out_statement;
 use crate::compiler::generator::statement::{generate_if_statement, generate_while_statement};
 use crate::compiler::generator::variable::generate_variable_declaration;
 use crate::compiler::parser::block::Block;
@@ -25,7 +25,7 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> CompilerRes
                 generate_expression(context, expression)?.0
             }
             Statement::Print(expression) => {
-                generate_print_statement(context, expression)?
+                generate_out_statement(context, expression)?
             }
             Statement::Return(expression, pos) => {
                 generate_return_statement(context, expression, pos)?

@@ -4,4 +4,4 @@ main
     a = 10
     b = 20
     res = ((((((a+b))))))*10 + 5 * (10 + 20)
-    print "{res}"
+    out "{res}"

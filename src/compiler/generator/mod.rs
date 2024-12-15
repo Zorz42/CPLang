@@ -2,7 +2,7 @@ mod function;
 mod block;
 mod expression;
 mod variable;
-mod print;
+mod out;
 mod statement;
 
 use std::collections::{HashMap, HashSet};
@@ -49,7 +49,7 @@ pub fn generate_code(functions: Vec<(FunctionSignature, Block)>) -> CompilerResu
 
     // find main function
     let (main_signature, main_block) = context.functions.iter().find(|f| f.0.name == "main").expect("No main function found").clone();
-    if main_signature.args.len() != 0 {
+    if !main_signature.args.is_empty() {
         return Err(CompilerError {
             message: "Main function should not have arguments".to_string(),
             position: None,

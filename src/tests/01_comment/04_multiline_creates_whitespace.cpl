@@ -1,7 +1,7 @@
 //OUT=it works! 50
 
 fn/*a*/x/*bbb*/y
-    return x + y
+    ret x + y
 
 main
-    print/*b*/"it works! {fn 20 30}"
+    out/*b*/"it works! {fn 20 30}"

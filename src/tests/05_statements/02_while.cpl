@@ -9,4 +9,4 @@ main
         a = b
         b = c + b
         cnt = cnt + 1
-    print "{a}"
+    out "{a}"

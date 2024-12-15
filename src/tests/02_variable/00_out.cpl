@@ -2,5 +2,5 @@
 
 main
     a = 10
-    print "hello {a}"
+    out "hello {a}"
 

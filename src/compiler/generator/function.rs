@@ -72,7 +72,7 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
     context.curr_function_signature = prev_function_signature;
     context.curr_function_args = prev_function_args;
 
-    context.generated_functions.insert((signature.clone(), arg_types.clone()), ((function_name.clone(), Some(return_type.clone()))));
+    context.generated_functions.insert((signature.clone(), arg_types.clone()), (function_name.clone(), Some(return_type.clone())));
     Ok((function_name, return_type))
 }
 

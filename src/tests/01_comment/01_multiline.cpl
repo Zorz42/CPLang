@@ -7,7 +7,7 @@ main
     /*
     comments can be multiline
     */
-    print /* or between statements */ "it works!"
+    out /* or between statements */ "it works!"
 
     /* the end
 

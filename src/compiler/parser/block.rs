@@ -1,7 +1,7 @@
 use crate::compiler::error::CompilerResult;
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::function::{parse_return_statement, FunctionSignature};
-use crate::compiler::parser::print::parse_print_statement;
+use crate::compiler::parser::out::parse_out_statement;
 use crate::compiler::parser::Statement;
 use crate::compiler::parser::statement::{parse_if_statement, parse_while_statement};
 use crate::compiler::parser::variable::parse_variable_declaration;
@@ -30,7 +30,7 @@ pub fn parse_block(functions: &Vec<FunctionSignature>, block: &TokenBlock) -> Co
                     res.children.push(statement);
                 } else if let Some(statement) = parse_variable_declaration(functions, block, &mut curr_idx)? {
                     res.children.push(Statement::VariableDeclaration(statement));
-                } else if let Some(statement) = parse_print_statement(functions, block, &mut curr_idx)? {
+                } else if let Some(statement) = parse_out_statement(functions, block, &mut curr_idx)? {
                     res.children.push(Statement::Print(statement));
                 } else if let Some(statement) = parse_if_statement(functions, block, &mut curr_idx)? {
                     res.children.push(Statement::IfStatement(statement));

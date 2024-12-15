@@ -13,4 +13,4 @@ main
     else
         b = 42
 
-    print "{a} {b}"
+    out "{a} {b}"

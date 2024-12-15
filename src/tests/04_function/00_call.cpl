@@ -1,7 +1,7 @@
 //OUT=60
 
 test a b c
-    return a + b + c
+    ret a + b + c
 
 main
-    print "{test 10 20 30}"
+    out "{test 10 20 30}"

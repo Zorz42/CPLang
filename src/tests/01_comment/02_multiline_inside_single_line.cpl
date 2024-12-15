@@ -3,4 +3,4 @@
 main
     // test /* asda
 
-    print"it works!"
+    out"it works!"

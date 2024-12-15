@@ -69,7 +69,7 @@ pub fn remove_comments(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec<(
         }
 
         if in_comment_depth == 0 && !in_single_line_comment {
-            res.push((c.clone(), pos.clone()));
+            res.push((*c, pos.clone()));
         }
     }
 

@@ -1,9 +1,9 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
-use crate::compiler::parser::print::PrintStatement;
+use crate::compiler::parser::out::PrintStatement;
 
-pub fn generate_print_statement(context: &mut GlobalContext, expression: &PrintStatement) -> CompilerResult<String> {
+pub fn generate_out_statement(context: &mut GlobalContext, expression: &PrintStatement) -> CompilerResult<String> {
     let mut parts = Vec::new();
 
     for val in &expression.values {

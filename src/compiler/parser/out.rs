@@ -81,9 +81,9 @@ fn parse_format_string(functions: &Vec<FunctionSignature>, string: &str, pos: &F
     Ok(res)
 }
 
-pub fn parse_print_statement(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<PrintStatement>> {
+pub fn parse_out_statement(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<PrintStatement>> {
     let print_pos = &block.children[*curr_idx].1;
-    if block.children[*curr_idx].0 == Token::Keyword(Keyword::Print) {
+    if block.children[*curr_idx].0 == Token::Keyword(Keyword::Out) {
         *curr_idx += 1;
         let pos = &block.children[*curr_idx].1;
         match &block.children[*curr_idx].0 {

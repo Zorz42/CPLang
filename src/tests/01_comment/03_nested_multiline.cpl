@@ -4,11 +4,11 @@ main
     /* /* /*
     comments can be nested
     */ with multiple levels */
-    print "it doesn't work!"
+    out "it doesn't work!"
 
      /* */
      */
 
-    print"it works!"
+    out"it works!"
 
-    /* /* /* /* */ */ */ print "ERROR" */
+    /* /* /* /* */ */ */ out "ERROR" */
