@@ -3,7 +3,7 @@ use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::Statement;
 use crate::compiler::tokenizer::{TokenBlock, Token, Keyword};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub struct FunctionSignature {
     pub name: String,
     pub args: Vec<String>,

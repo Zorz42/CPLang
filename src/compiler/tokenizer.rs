@@ -41,6 +41,7 @@ pub enum Symbol {
     LessThanOrEqual,
     GreaterThan,
     GreaterThanOrEqual,
+    Minus,
 }
 
 impl Symbol {
@@ -53,6 +54,7 @@ impl Symbol {
             '=' => Some(Symbol::Assign),
             '<' => Some(Symbol::LessThan),
             '>' => Some(Symbol::GreaterThan),
+            '-' => Some(Symbol::Minus),
             _ => None,
         }
     }

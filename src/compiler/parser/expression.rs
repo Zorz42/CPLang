@@ -11,6 +11,7 @@ pub enum Operator {
     Less,
     GreaterEquals,
     LessEquals,
+    Minus,
 }
 
 #[derive(Debug, Clone)]
@@ -97,6 +98,7 @@ fn symbol_to_operator(symbol: &Symbol) -> Option<Operator> {
         Symbol::LessThan => Some(Operator::Less),
         Symbol::GreaterThanOrEqual => Some(Operator::GreaterEquals),
         Symbol::LessThanOrEqual => Some(Operator::LessEquals),
+        Symbol::Minus => Some(Operator::Minus),
         _ => None,
     }
 }
@@ -125,7 +127,7 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, block: &TokenBlock, 
 
     let operator_precedence = vec![
         vec![Operator::Mul],
-        vec![Operator::Plus],
+        vec![Operator::Plus, Operator::Minus],
         vec![Operator::Equals, Operator::Greater, Operator::Less, Operator::GreaterEquals, Operator::LessEquals]
     ];
 
