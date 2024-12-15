@@ -21,9 +21,9 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
             res_signature.name = name.clone();
         },
         _ => return Err(CompilerError {
-            message: "Expected function name after".to_string(),
+            message: "Unexpected token".to_string(),
             position: Some(
-                block.children[*curr_idx - 1].1.clone()
+                block.children[*curr_idx].1.clone()
             ),
         }),
     }

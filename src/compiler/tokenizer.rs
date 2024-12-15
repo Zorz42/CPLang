@@ -8,8 +8,7 @@ pub enum Keyword {
     For,
     Out,
     Return,
-    And,
-    Or,
+    Struct,
 }
 
 impl Keyword {
@@ -21,8 +20,7 @@ impl Keyword {
             "for" => Some(Keyword::For),
             "out" => Some(Keyword::Out),
             "ret" => Some(Keyword::Return),
-            "and" => Some(Keyword::And),
-            "or" => Some(Keyword::Or),
+            "struct" => Some(Keyword::Struct),
             _ => None,
         }
     }
@@ -43,6 +41,7 @@ pub enum Symbol {
     GreaterThanOrEqual,
     Minus,
     Reference,
+    Dot,
 }
 
 impl Symbol {
@@ -57,6 +56,7 @@ impl Symbol {
             '>' => Some(Symbol::GreaterThan),
             '-' => Some(Symbol::Minus),
             '&' => Some(Symbol::Reference),
+            '.' => Some(Symbol::Dot),
             _ => None,
         }
     }
