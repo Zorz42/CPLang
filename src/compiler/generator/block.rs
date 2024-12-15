@@ -1,5 +1,5 @@
-use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::generator::expression::{generate_expression, ValueType};
+use crate::compiler::error::{CompilerResult};
+use crate::compiler::generator::expression::{generate_expression};
 use crate::compiler::generator::function::generate_return_statement;
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::generator::out::generate_out_statement;
