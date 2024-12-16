@@ -1,6 +1,7 @@
-use crate::compiler::error::CompilerResult;
-use crate::compiler::generator::expression::ValueType;
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
+use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
+use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::structure::StructDeclaration;
 
 pub fn generate_struct(context: &mut GlobalContext, declaration: &StructDeclaration, field_types: &Vec<ValueType>) -> CompilerResult<String> {
@@ -26,4 +27,33 @@ pub fn generate_struct(context: &mut GlobalContext, declaration: &StructDeclarat
     context.code.push_str(&code);
 
     Ok(c_name)
+}
+
+pub fn generate_field_access(context: &mut GlobalContext, mut expr_code: String, mut expr_type: ValueType, field: &str, pos: &FilePosition) -> CompilerResult<(String, ValueType)> {
+    // deref while you can
+    while let ValueType::Reference(inner) = expr_type {
+        expr_type = *inner;
+        expr_code = format!("*({})", expr_code);
+    }
+
+    match expr_type {
+        ValueType::Struct(name, fields) => {
+            let declaration = context.structs.iter().find(|s| s.name == name).expect("Struct not found").clone();
+            let field_index = declaration.fields.iter().position(|f| f == field);
+            let field_index = match field_index {
+                Some(val) => val,
+                None => return Err(CompilerError {
+                    message: format!("Field {} not found in struct {}", field, name),
+                    position: Some(pos.clone()),
+                }),
+            };
+            let field_type = fields[field_index].clone();
+
+            Ok((format!("({}).{}", expr_code, field), field_type))
+        }
+        _ => Err(CompilerError {
+            message: format!("Field access on non-struct type {:?}", expr_type),
+            position: Some(pos.clone()),
+        })
+    }
 }

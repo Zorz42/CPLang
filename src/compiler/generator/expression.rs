@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::function::generate_function;
 use crate::compiler::generator::GlobalContext;
-use crate::compiler::generator::structure::generate_struct;
+use crate::compiler::generator::structure::{generate_field_access, generate_struct};
 use crate::compiler::parser::expression::{Expression, Operator};
 
 #[derive(Clone, Eq, Hash, PartialEq, Debug)]
@@ -97,20 +97,26 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
                 code.push_str(",");
             }
             if !arg_codes.is_empty() {
-            code.pop();
-                }
+                code.pop();
+            }
             code.push_str("}");
             Ok((code, typ))
         }
         Expression::Reference(ident, pos) => {
-            if let Some(typ) = context.get_variable_type(ident) {
-                Ok((format!("&{}", ident), ValueType::Reference(Box::new(typ.clone()))))
+            let (mut code, mut typ) = if let Some(typ) = context.get_variable_type(&ident[0]) {
+                (format!("{}", ident[0]), typ.clone())
             } else {
-                Err(CompilerError {
-                    message: format!("Variable {} not found", ident),
+                return Err(CompilerError {
+                    message: format!("Variable {} not found", ident[0]),
                     position: Some(pos.clone()),
                 })
+            };
+
+            for field in ident.iter().skip(1) {
+                (code, typ) = generate_field_access(context, code, typ, field, pos)?;
             }
+
+            Ok((format!("&{}", code), ValueType::Reference(Box::new(typ.clone()))))
         }
         Expression::FunctionCall(name, args) => {
             let (signature, block) = context.functions.iter().find(|f| f.0.name == *name).expect("Function not found").clone();
@@ -153,33 +159,8 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             Ok((func(val1_code, val2_code), return_val.clone()))
         }
         Expression::FieldAccess(expr, field, pos) => {
-            let (mut expr_code, mut expr_type) = generate_expression(context, expr)?;
-            // deref while you can
-            while let ValueType::Reference(inner) = expr_type {
-                expr_type = *inner;
-                expr_code = format!("*({})", expr_code);
-            }
-
-            match expr_type {
-                ValueType::Struct(name, fields) => {
-                    let declaration = context.structs.iter().find(|s| s.name == name).expect("Struct not found").clone();
-                    let field_index = declaration.fields.iter().position(|f| f == field);
-                    let field_index = match field_index {
-                        Some(val) => val,
-                        None => return Err(CompilerError {
-                            message: format!("Field {} not found in struct {}", field, name),
-                            position: Some(pos.clone()),
-                        }),
-                    };
-                    let field_type = fields[field_index].clone();
-
-                    Ok((format!("({}).{}", expr_code, field), field_type))
-                }
-                _ => Err(CompilerError {
-                    message: format!("Field access on non-struct type {:?}", expr_type),
-                    position: Some(pos.clone()),
-                })
-            }
+            let (expr_code, expr_type) = generate_expression(context, expr)?;
+            generate_field_access(context, expr_code, expr_type, field, pos)
         }
     }
 }
