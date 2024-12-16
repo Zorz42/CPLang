@@ -1,0 +1,11 @@
+//OUT=ok
+
+struct A
+    x y z
+
+struct B
+    a b c
+
+main
+    a = A x 10 y B a 10 b "cool" c "ok" z 30
+    out "{a.y.c}"

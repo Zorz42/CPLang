@@ -1,0 +1,12 @@
+//OUT=20
+
+struct T
+    x
+
+print x
+    out "{x.x}"
+
+main
+    a = T x 20
+    b = a
+    print b

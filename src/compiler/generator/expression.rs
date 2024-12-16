@@ -152,7 +152,7 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
 
             Ok((func(val1_code, val2_code), return_val.clone()))
         }
-        Expression::FieldAccess(expr, field) => {
+        Expression::FieldAccess(expr, field, pos) => {
             let (expr_code, expr_type) = generate_expression(context, expr)?;
             match expr_type {
                 ValueType::Struct(name, fields) => {
@@ -162,7 +162,7 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
                         Some(val) => val,
                         None => return Err(CompilerError {
                             message: format!("Field {} not found in struct {}", field, name),
-                            position: todo!(),
+                            position: Some(pos.clone()),
                         }),
                     };
                     let field_type = fields[field_index].clone();
@@ -171,7 +171,7 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
                 }
                 _ => Err(CompilerError {
                     message: format!("Field access on non-struct type {:?}", expr_type),
-                    position: todo!(),
+                    position: Some(pos.clone()),
                 })
             }
         }
