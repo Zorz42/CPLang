@@ -1,8 +1,8 @@
-//OUT=ok
+//OUT=compile
 
 struct TestStruct
     x
 
 main
     a = TestStruct x "compile"
-    out "ok"
+    out "{a.x}"

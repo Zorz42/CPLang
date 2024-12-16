@@ -26,28 +26,29 @@ pub enum Expression {
     Reference(String, FilePosition),
     FunctionCall(String, Vec<Expression>),
     StructInitialization(String, Vec<Expression>),
+    FieldAccess(Box<Expression>, String),
     BinaryOperation(Box<Expression>, Operator, Box<Expression>, FilePosition),
 }
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
 fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
     let mut pos = block.children[*curr_idx].1.clone();
-    match &block.children[*curr_idx].0 {
+    let mut res = match &block.children[*curr_idx].0 {
         Token::Constant(Constant::Integer(int)) => {
             *curr_idx += 1;
-            Ok((Expression::Integer(*int), pos))
+            (Expression::Integer(*int), pos)
         },
         Token::Constant(Constant::Float(float)) => {
             *curr_idx += 1;
-            Ok((Expression::Float(*float), pos))
+            (Expression::Float(*float), pos)
         },
         Token::Constant(Constant::String(string)) => {
             *curr_idx += 1;
-            Ok((Expression::String(string.clone()), pos))
+            (Expression::String(string.clone()), pos)
         },
         Token::Constant(Constant::Boolean(boolean)) => {
             *curr_idx += 1;
-            Ok((Expression::Boolean(*boolean), pos))
+            (Expression::Boolean(*boolean), pos)
         },
         Token::Identifier(identifier) => {
             *curr_idx += 1;
@@ -61,7 +62,7 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
                     args.push(expr);
                     pos = merge_file_positions(&pos, &expr_pos);
                 }
-                Ok((Expression::FunctionCall(identifier.clone(), args), pos))
+                (Expression::FunctionCall(identifier.clone(), args), pos)
             } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 let mut fields = HashMap::new();
                 let mut fields_left = struct_declaration.fields.len();
@@ -105,9 +106,9 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
                     }
                 }
 
-                Ok((Expression::StructInitialization(identifier.clone(), fields_res), pos))
+                (Expression::StructInitialization(identifier.clone(), fields_res), pos)
             } else {
-                Ok((Expression::Variable(identifier.clone(), pos.clone()), pos))
+                (Expression::Variable(identifier.clone(), pos.clone()), pos)
             }
         },
         Token::Symbol(Symbol::Reference) => {
@@ -115,14 +116,14 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
             match &block.children[*curr_idx].0 {
                 Token::Identifier(identifier) => {
                     *curr_idx += 1;
-                    Ok((Expression::Reference(identifier.clone(), pos.clone()), pos))
+                    (Expression::Reference(identifier.clone(), pos.clone()), pos)
                 },
                 _ => {
                     let pos = &block.children[*curr_idx].1;
-                    Err(CompilerError {
+                    return Err(CompilerError {
                         message: "Expected identifier after reference symbol".to_owned(),
                         position: Some(pos.clone())
-                    })
+                    });
                 },
             }
         }
@@ -132,25 +133,43 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
             match &block.children[*curr_idx].0 {
                 Token::Symbol(Symbol::RightBracket) => {
                     *curr_idx += 1;
-                    Ok(res)
+                    res
                 },
                 _ => {
                     let pos = &block.children[*curr_idx - 1].1;
-                    Err(CompilerError {
+                    return Err(CompilerError {
                         message: "Expected right bracket after".to_owned(),
                         position: Some(pos.clone())
-                    })
+                    });
                 },
             }
         },
         _ => {
             let pos = &block.children[*curr_idx].1;
-            Err(CompilerError {
+            return Err(CompilerError {
                 message: "Unexpected token".to_owned(),
                 position: Some(pos.clone())
-            })
+            });
         },
+    };
+
+    while let Some((Token::Symbol(Symbol::Dot), _)) = block.children.get(*curr_idx) {
+        *curr_idx += 1;
+        match block.children.get(*curr_idx) {
+            Some((Token::Identifier(s), _)) => {
+                res.0 = Expression::FieldAccess(Box::new(res.0), s.clone());
+                *curr_idx += 1;
+            }
+            _ => {
+                return Err(CompilerError {
+                    message: "Expected identifier after dot".to_owned(),
+                    position: Some(block.children[*curr_idx - 1].1.clone())
+                });
+            }
+        }
     }
+
+    Ok(res)
 }
 
 fn symbol_to_operator(symbol: &Symbol) -> Option<Operator> {

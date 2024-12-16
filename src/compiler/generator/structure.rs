@@ -15,6 +15,7 @@ pub fn generate_struct(context: &mut GlobalContext, declaration: &StructDeclarat
 
     let c_name = format!("cplang_{}{}", declaration.name, idx);
     context.taken_symbol_names.insert(c_name.clone());
+    context.generated_structs.insert((declaration.name.clone(), field_types.clone()), c_name.clone());
 
     let mut code = String::new();
     code.push_str(&format!("typedef struct {} {{\n", c_name));
