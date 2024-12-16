@@ -20,9 +20,9 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     //println!("{:?}", lines);
     let program_block = tokenize_blocks(lines)?;
     //println!("{:?}", program_block);
-    let functions = parse_tokens(&program_block)?;
+    let (functions, structs) = parse_tokens(&program_block)?;
 
-    let code = generate_code(functions)?;
+    let code = generate_code(functions, structs)?;
     // write code to output file
     std::fs::write(output_file, code).unwrap();
 

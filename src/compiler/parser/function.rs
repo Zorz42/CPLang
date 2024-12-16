@@ -1,6 +1,7 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::Statement;
+use crate::compiler::parser::structure::StructDeclaration;
 use crate::compiler::tokenizer::{TokenBlock, Token, Keyword};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
@@ -52,12 +53,12 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
     Ok((res_signature, res_block))
 }
 
-pub fn parse_return_statement(functions: &Vec<FunctionSignature>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<Statement>> {
+pub fn parse_return_statement(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<Statement>> {
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::Return) {
         return Ok(None);
     }
     let pos1 = block.children[*curr_idx].1.clone();
     *curr_idx += 1;
-    let (expression, pos2) = parse_expression(functions, block, curr_idx)?;
+    let (expression, pos2) = parse_expression(functions, structs, block, curr_idx)?;
     Ok(Some(Statement::Return(expression, merge_file_positions(&pos1, &pos2))))
 }

@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerError, CompilerResult};
+use crate::compiler::error::{CompilerResult};
 use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::out::PrintStatement;

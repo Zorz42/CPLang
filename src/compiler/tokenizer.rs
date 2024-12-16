@@ -193,6 +193,16 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
     Ok(tokens)
 }
 
+fn get_block_position(block: &TokenBlock) -> FilePosition {
+    let mut result = block.children[0].1.clone();
+
+    for (_, pos) in &block.children {
+        result = merge_file_positions(&result, pos);
+    }
+
+    result
+}
+
 fn tokenize_block(lines: &Vec<(i32, Vec<(char, FilePosition)>)>, curr_idx: &mut usize) -> CompilerResult<TokenBlock> {
     let mut block = TokenBlock {
         children: Vec::new(),
@@ -212,7 +222,8 @@ fn tokenize_block(lines: &Vec<(i32, Vec<(char, FilePosition)>)>, curr_idx: &mut 
 
         } else if ident > curr_ident {
             let child_block = tokenize_block(lines, curr_idx)?;
-            block.children.push((Token::Block(child_block), FilePosition::invalid()));
+            let pos = get_block_position(&child_block);
+            block.children.push((Token::Block(child_block), pos));
 
         } else if ident < curr_ident {
             return Ok(block);

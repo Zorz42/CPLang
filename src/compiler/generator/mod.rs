@@ -12,6 +12,7 @@ use crate::compiler::generator::function::generate_function;
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::Operator;
 use crate::compiler::parser::function::FunctionSignature;
+use crate::compiler::parser::structure::StructDeclaration;
 
 pub struct GlobalContext {
     pub functions: Vec<(FunctionSignature, Block)>,
@@ -24,6 +25,7 @@ pub struct GlobalContext {
     // none means that function is being generated and the return type is not known yet
     pub curr_function_signature: Option<FunctionSignature>,
     pub curr_function_args: Vec<ValueType>,
+    pub structs: Vec<StructDeclaration>,
 }
 
 impl GlobalContext {
@@ -32,7 +34,7 @@ impl GlobalContext {
     }
 }
 
-pub fn generate_code(functions: Vec<(FunctionSignature, Block)>) -> CompilerResult<String> {
+pub fn generate_code(functions: Vec<(FunctionSignature, Block)>, structs: Vec<StructDeclaration>) -> CompilerResult<String> {
     let mut context = GlobalContext {
         functions,
         operators: HashMap::new(),
@@ -43,6 +45,7 @@ pub fn generate_code(functions: Vec<(FunctionSignature, Block)>) -> CompilerResu
         generated_functions: HashMap::new(),
         curr_function_signature: None,
         curr_function_args: Vec::new(),
+        structs,
     };
 
     setup_default_operators(&mut context);

@@ -4,6 +4,6 @@ struct TestStruct
     x
 
 main
-    a = TestStruct
+    a = TestStruct x "no good"
     a.x = "compile"
     out "{a.x}"
