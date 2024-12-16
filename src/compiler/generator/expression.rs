@@ -153,7 +153,13 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             Ok((func(val1_code, val2_code), return_val.clone()))
         }
         Expression::FieldAccess(expr, field, pos) => {
-            let (expr_code, expr_type) = generate_expression(context, expr)?;
+            let (mut expr_code, mut expr_type) = generate_expression(context, expr)?;
+            // deref while you can
+            while let ValueType::Reference(inner) = expr_type {
+                expr_type = *inner;
+                expr_code = format!("*({})", expr_code);
+            }
+
             match expr_type {
                 ValueType::Struct(name, fields) => {
                     let declaration = context.structs.iter().find(|s| s.name == name).expect("Struct not found").clone();

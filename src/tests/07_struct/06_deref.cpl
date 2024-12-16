@@ -3,7 +3,11 @@
 struct T
     x
 
+struct T2
+    y
+
 main
     a = T x 20
-    b = &a
-    out "{b.x}"
+    b = T2 y &a
+    c = &b
+    out "{c.y.x}"
