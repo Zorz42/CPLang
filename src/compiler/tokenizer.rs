@@ -9,6 +9,7 @@ pub enum Keyword {
     Out,
     Return,
     Struct,
+    InlineC,
 }
 
 impl Keyword {
@@ -21,6 +22,7 @@ impl Keyword {
             "out" => Some(Keyword::Out),
             "ret" => Some(Keyword::Return),
             "struct" => Some(Keyword::Struct),
+            "inline_c" => Some(Keyword::InlineC),
             _ => None,
         }
     }
@@ -148,10 +150,15 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
     let mut iter = string.into_iter().peekable();
     while let Some((c, pos)) = iter.next() {
         if in_string {
-            add_to_token(&mut curr_token, &mut token_pos, c, pos);
-            if *c == '"' {
-                new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                in_string = false;
+            if *c == '\\' && iter.peek().map(|x| x.0) == Some('"') {
+                iter.next();
+                add_to_token(&mut curr_token, &mut token_pos, &'"', pos);
+            } else {
+                add_to_token(&mut curr_token, &mut token_pos, c, pos);
+                if *c == '"' {
+                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
+                    in_string = false;
+                }
             }
         } else if *c == '"' {
             in_string = true;

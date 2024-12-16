@@ -1,0 +1,4 @@
+//OUT=Hello
+
+main
+    inline_c "printf(\"Hello\n\");"

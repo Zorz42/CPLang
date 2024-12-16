@@ -2,6 +2,7 @@ use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::block::{parse_block, Block};
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::function::{parse_function_declaration, FunctionSignature};
+use crate::compiler::parser::inline_c::InlineCStatement;
 use crate::compiler::parser::out::PrintStatement;
 use crate::compiler::parser::statement::{IfStatement, WhileStatement};
 use crate::compiler::parser::structure::{parse_struct_declaration, StructDeclaration};
@@ -15,6 +16,7 @@ pub mod variable;
 pub mod out;
 pub mod statement;
 pub mod structure;
+mod inline_c;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
@@ -25,6 +27,7 @@ pub enum Statement {
     Return(Expression, FilePosition),
     IfStatement(IfStatement),
     WhileStatement(WhileStatement),
+    InlineCStatement(InlineCStatement),
 }
 
 pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<(Vec<(FunctionSignature, Block)>, Vec<StructDeclaration>)> {

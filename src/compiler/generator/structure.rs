@@ -1,7 +1,6 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::generator::expression::{generate_expression, ValueType};
+use crate::compiler::generator::expression::{ValueType};
 use crate::compiler::generator::GlobalContext;
-use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::structure::StructDeclaration;
 
 pub fn generate_struct(context: &mut GlobalContext, declaration: &StructDeclaration, field_types: &Vec<ValueType>) -> CompilerResult<String> {

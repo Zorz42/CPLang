@@ -1,6 +1,7 @@
 use crate::compiler::error::CompilerResult;
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::function::{parse_return_statement, FunctionSignature};
+use crate::compiler::parser::inline_c::parse_inline_c;
 use crate::compiler::parser::out::parse_out_statement;
 use crate::compiler::parser::Statement;
 use crate::compiler::parser::statement::{parse_if_statement, parse_while_statement};
@@ -37,6 +38,8 @@ pub fn parse_block(functions: &Vec<FunctionSignature>, structs: &Vec<StructDecla
                     res.children.push(Statement::IfStatement(statement));
                 } else if let Some(statement) = parse_while_statement(functions, structs, block, &mut curr_idx)? {
                     res.children.push(Statement::WhileStatement(statement));
+                } else if let Some(statement) = parse_inline_c(block, &mut curr_idx)? {
+                    res.children.push(Statement::InlineCStatement(statement));
                 } else {
                     let (expression, _) = parse_expression(functions, structs, block, &mut curr_idx)?;
                     res.children.push(Statement::Expression(expression));
