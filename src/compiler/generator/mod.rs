@@ -41,7 +41,7 @@ pub fn generate_code(functions: Vec<(FunctionSignature, Block)>, structs: Vec<St
         functions,
         operators: HashMap::new(),
         variables: HashMap::new(),
-        code: "#include<stdio.h>\n\n".to_owned(),
+        code: "#include<stdio.h>\n#include<stdlib.h>\n\n".to_owned(),
         taken_symbol_names: HashSet::new(),
         return_type: ValueType::Void,
         generated_functions: HashMap::new(),

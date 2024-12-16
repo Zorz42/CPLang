@@ -1,0 +1,20 @@
+//OUT=10
+
+create_vec size
+    dummy = 0
+    ptr = &dummy
+    inline_c "ptr = malloc(size * 4)"
+    ret ptr
+
+get_vec vec idx
+    res = 0
+    inline_c "res = vec[idx]"
+    ret res
+
+set_vec vec idx val
+    inline_c "vec[idx] = val"
+
+main
+    vec = create_vec 10
+    set_vec vec 0 10
+    out "{get_vec vec 0}"
