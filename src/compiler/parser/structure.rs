@@ -1,6 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::tokenizer::{Keyword, Token, TokenBlock};
 
+#[derive(Debug, Clone)]
 pub struct StructDeclaration {
     pub name: String,
     pub fields: Vec<String>,

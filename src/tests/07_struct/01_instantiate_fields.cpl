@@ -1,0 +1,8 @@
+//OUT=compile
+
+struct TestStruct
+    x
+
+main
+    a = TestStruct x "compile"
+    out "{a.x}"

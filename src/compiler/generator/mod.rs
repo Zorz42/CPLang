@@ -4,6 +4,7 @@ mod expression;
 mod variable;
 mod out;
 mod statement;
+mod structure;
 
 use std::collections::{HashMap, HashSet};
 use crate::compiler::error::{CompilerError, CompilerResult};
@@ -19,13 +20,14 @@ pub struct GlobalContext {
     pub operators: HashMap<(ValueType, Operator, ValueType), (Box<dyn Fn(String, String) -> String>, ValueType)>,
     pub variables: HashMap<String, ValueType>,
     pub code: String, // the code generated so far
-    pub taken_function_names: HashSet<String>,
+    pub taken_symbol_names: HashSet<String>,
     pub return_type: ValueType,
     pub generated_functions: HashMap<(FunctionSignature, Vec<ValueType>), (String, Option<ValueType>)>,
     // none means that function is being generated and the return type is not known yet
     pub curr_function_signature: Option<FunctionSignature>,
     pub curr_function_args: Vec<ValueType>,
     pub structs: Vec<StructDeclaration>,
+    pub generated_structs: HashMap<(String, Vec<ValueType>), String>,
 }
 
 impl GlobalContext {
@@ -40,12 +42,13 @@ pub fn generate_code(functions: Vec<(FunctionSignature, Block)>, structs: Vec<St
         operators: HashMap::new(),
         variables: HashMap::new(),
         code: "#include<stdio.h>\n\n".to_owned(),
-        taken_function_names: HashSet::new(),
+        taken_symbol_names: HashSet::new(),
         return_type: ValueType::Void,
         generated_functions: HashMap::new(),
         curr_function_signature: None,
         curr_function_args: Vec::new(),
         structs,
+        generated_structs: HashMap::new(),
     };
 
     setup_default_operators(&mut context);

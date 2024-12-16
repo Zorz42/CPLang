@@ -40,12 +40,12 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
     let mut function_name;
     loop {
         function_name = format!("{}{}", function_prefix, counter);
-        if !context.taken_function_names.contains(&function_name) {
+        if !context.taken_symbol_names.contains(&function_name) {
             break;
         }
         counter += 1;
     }
-    context.taken_function_names.insert(function_name.clone());
+    context.taken_symbol_names.insert(function_name.clone());
 
     context.generated_functions.insert((signature.clone(), arg_types.clone()), (function_name.clone(), None));
 
@@ -54,10 +54,10 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
     let block_code = generate_block(context, block)?;
 
     let return_type = context.return_type.clone();
-    let return_type_str = return_type.to_c_type();
+    let return_type_str = return_type.to_c_type(context)?;
     let mut args_str = String::new();
     for (typ, name) in arg_types.iter().zip(signature.args.iter()) {
-        args_str.push_str(&format!("{} {},", typ.to_c_type(), name));
+        args_str.push_str(&format!("{} {},", typ.to_c_type(context)?, name));
     }
     if !args_str.is_empty() {
         assert_eq!(args_str.pop(), Some(','));

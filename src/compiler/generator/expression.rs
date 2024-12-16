@@ -1,6 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::function::generate_function;
 use crate::compiler::generator::GlobalContext;
+use crate::compiler::generator::structure::generate_struct;
 use crate::compiler::parser::expression::{Expression, Operator};
 
 #[derive(Clone, Eq, Hash, PartialEq, Debug)]
@@ -12,21 +13,26 @@ pub enum ValueType {
     String,
     Boolean,
     Reference(Box<ValueType>),
+    Struct(String, Vec<ValueType>),
     Void,
 }
 
 impl ValueType {
-    pub fn to_c_type(&self) -> String {
-        match self {
+    pub fn to_c_type(&self, context: &mut GlobalContext) -> CompilerResult<String> {
+        Ok(match self {
             ValueType::I32 => "int".to_owned(),
             ValueType::I64 => "long".to_owned(),
             ValueType::F32 => "float".to_owned(),
             ValueType::F64 => "double".to_owned(),
             ValueType::String => "char*".to_owned(),
             ValueType::Boolean => "int".to_owned(),
-            ValueType::Reference(inner) => format!("{}*", inner.to_c_type()),
+            ValueType::Reference(inner) => format!("{}*", inner.to_c_type(context)?),
+            ValueType::Struct(name, fields) => {
+                let decl = context.structs.iter().find(|s| s.name == *name).expect("Struct not found").clone();
+                generate_struct(context, &decl, fields)?
+            }
             ValueType::Void => "void".to_owned(),
-        }
+        })
     }
 }
 
@@ -70,6 +76,31 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
                     position: Some(pos.clone()),
                 })
             }
+        }
+        Expression::StructInitialization(name, args) => {
+            let declaration = context.structs.iter().find(|s| s.name == *name).expect("Struct not found").clone();
+            let mut arg_types = Vec::new();
+            let mut arg_codes = Vec::new();
+            for arg in args {
+                let res = generate_expression(context, arg)?;
+                arg_types.push(res.1);
+                arg_codes.push(res.0);
+            }
+
+            let c_name = generate_struct(context, &declaration, &arg_types)?;
+            let typ = ValueType::Struct(name.clone(), arg_types);
+
+            let mut code = String::new();
+            code.push_str(&format!("({c_name}){{"));
+            for arg in &arg_codes {
+                code.push_str(arg);
+                code.push_str(",");
+            }
+            if !arg_codes.is_empty() {
+            code.pop();
+                }
+            code.push_str("}");
+            Ok((code, typ))
         }
         Expression::Reference(ident, pos) => {
             if let Some(typ) = context.get_variable_type(ident) {

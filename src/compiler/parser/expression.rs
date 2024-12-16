@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::parser::structure::StructDeclaration;
@@ -24,6 +25,7 @@ pub enum Expression {
     Variable(String, FilePosition),
     Reference(String, FilePosition),
     FunctionCall(String, Vec<Expression>),
+    StructInitialization(String, Vec<Expression>),
     BinaryOperation(Box<Expression>, Operator, Box<Expression>, FilePosition),
 }
 
@@ -60,6 +62,50 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
                     pos = merge_file_positions(&pos, &expr_pos);
                 }
                 Ok((Expression::FunctionCall(identifier.clone(), args), pos))
+            } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
+                let mut fields = HashMap::new();
+                let mut fields_left = struct_declaration.fields.len();
+
+                while fields_left > 0 {
+                    let (field_name, field_pos) = match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
+                        Some(Token::Identifier(ident)) => (ident.clone(), block.children[*curr_idx].1.clone()),
+                        _ => {
+                            return Err(CompilerError {
+                                message: "Expected struct field identifier after this token".to_owned(),
+                                position: Some(block.children[*curr_idx - 1].1.clone())
+                            });
+                        },
+                    };
+
+                    *curr_idx += 1;
+
+                    let (expr, expr_pos) = parse_expression(functions, structs, block, curr_idx)?;
+
+                    if fields.contains_key(&field_name) {
+                        return Err(CompilerError{
+                            message: format!("Field {} assigned twice.", field_name),
+                            position: Some(field_pos),
+                        })
+                    }
+
+                    fields.insert(field_name, expr);
+                    pos = merge_file_positions(&pos, &expr_pos);
+                    fields_left -= 1;
+                }
+
+                let mut fields_res = Vec::new();
+                for field in struct_declaration.fields.iter() {
+                    if let Some(expr) = fields.get(field) {
+                        fields_res.push(expr.clone());
+                    } else {
+                        return Err(CompilerError{
+                            message: format!("Field {} not assigned.", field),
+                            position: Some(pos),
+                        })
+                    }
+                }
+
+                Ok((Expression::StructInitialization(identifier.clone(), fields_res), pos))
             } else {
                 Ok((Expression::Variable(identifier.clone(), pos.clone()), pos))
             }

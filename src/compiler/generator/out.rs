@@ -12,6 +12,7 @@ fn type_to_printf_format(typ: &ValueType) -> &'static str {
         ValueType::F64 => "lf",
         ValueType::Boolean => "d",
         ValueType::Reference(typ) => type_to_printf_format(typ),
+        ValueType::Struct(_, _) => panic!("Cannot print struct type"),
         ValueType::Void => panic!("Cannot print void type"),
     }
 }

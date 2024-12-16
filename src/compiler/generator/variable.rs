@@ -23,6 +23,6 @@ pub fn generate_variable_declaration(context: &mut GlobalContext, declaration: &
         Ok(format!("{} = {}", declaration.name, value_code))
     } else {
         context.variables.insert(declaration.name.clone(), value_type.clone());
-        Ok(format!("{} {} = {}", value_type.to_c_type(), declaration.name, value_code))
+        Ok(format!("{} {} = {}", value_type.to_c_type(context)?, declaration.name, value_code))
     }
 }
