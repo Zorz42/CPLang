@@ -82,8 +82,8 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             let res = generate_struct_instantiation(context, name.clone(), args)?;
             Ok((res.0, res.1, false))
         }
-        Expression::Reference(ident, pos) => {
-            let (code, typ, is_phys) = generate_expression(context, ident)?;
+        Expression::Reference(expr, pos) => {
+            let (code, typ, is_phys) = generate_expression(context, expr)?;
             if !is_phys {
                 return Err(CompilerError {
                     message: "Cannot take reference of non-physical value".to_string(),
@@ -92,6 +92,17 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             }
 
             Ok((format!("&{}", code), ValueType::Reference(Box::new(typ.clone())), false))
+        }
+        Expression::Dereference(expr, pos) => {
+            let (code, typ, _) = generate_expression(context, expr)?;
+            if let ValueType::Reference(typ) = typ {
+                Ok((format!("*{}", code), *typ, true))
+            } else {
+                Err(CompilerError {
+                    message: "Cannot dereference a non-reference type".to_string(),
+                    position: Some(pos.clone()),
+                })
+            }
         }
         Expression::FunctionCall(name, args) => {
             let res = generate_function_call(context, name, args)?;

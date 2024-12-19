@@ -27,6 +27,7 @@ pub enum Expression {
     FunctionCall(String, Vec<Expression>),
     StructInitialization(String, Vec<Expression>),
     FieldAccess(Box<Expression>, String, FilePosition),
+    Dereference(Box<Expression>, FilePosition),
     BinaryOperation(Box<Expression>, Operator, Box<Expression>, FilePosition),
 }
 
@@ -112,6 +113,12 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
 
             (Expression::Reference(Box::new(res), pos.clone()), pos)
         }
+        Token::Symbol(Symbol::Star) => {
+            *curr_idx += 1;
+            let (res, pos) = parse_value(functions, structs, block, curr_idx)?;
+
+            (Expression::Dereference(Box::new(res), pos.clone()), pos)
+        }
         Token::Symbol(Symbol::LeftBracket) => {
             *curr_idx += 1;
             let res = parse_expression(functions, structs, block, curr_idx)?;
@@ -123,7 +130,7 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
                 _ => {
                     let pos = &block.children[*curr_idx - 1].1;
                     return Err(CompilerError {
-                        message: "Expected right bracket after".to_owned(),
+                        message: "Expected right bracket".to_owned(),
                         position: Some(pos.clone())
                     });
                 },

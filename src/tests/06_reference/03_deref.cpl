@@ -1,0 +1,8 @@
+//OUT=20 20 40
+
+main
+    a = 10
+    ref_a = &a
+    ref_a = 20
+    b = 20 + *ref_a
+    out "{a} {ref_a} {b}"
