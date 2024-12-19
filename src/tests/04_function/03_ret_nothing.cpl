@@ -1,0 +1,10 @@
+//OUT=compile
+
+func
+    if 10 == 10
+        ret
+
+    ret
+
+main
+    out "compile"

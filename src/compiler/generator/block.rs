@@ -28,7 +28,7 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> CompilerRes
                 generate_out_statement(context, expression)?
             }
             Statement::Return(expression, pos) => {
-                generate_return_statement(context, expression, pos)?
+                generate_return_statement(context, expression.as_ref(), pos)?
             }
             Statement::IfStatement(statement) => {
                 generate_if_statement(context, statement)?

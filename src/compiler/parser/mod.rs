@@ -24,7 +24,7 @@ pub enum Statement {
     Block(Block),
     Expression(Expression),
     Print(PrintStatement),
-    Return(Expression, FilePosition),
+    Return(Option<Expression>, FilePosition),
     IfStatement(IfStatement),
     WhileStatement(WhileStatement),
     InlineCStatement(InlineCStatement),

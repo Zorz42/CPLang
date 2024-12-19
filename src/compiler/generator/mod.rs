@@ -21,7 +21,7 @@ pub struct GlobalContext {
     pub variables: HashMap<String, ValueType>,
     pub code: String, // the code generated so far
     pub taken_symbol_names: HashSet<String>,
-    pub return_type: ValueType,
+    pub return_type: Option<ValueType>,
     pub generated_functions: HashMap<(FunctionSignature, Vec<ValueType>), (String, Option<ValueType>)>,
     // none means that function is being generated and the return type is not known yet
     pub curr_function_signature: Option<FunctionSignature>,
@@ -43,7 +43,7 @@ pub fn generate_code(functions: Vec<(FunctionSignature, Block)>, structs: Vec<St
         variables: HashMap::new(),
         code: "#include<stdio.h>\n#include<stdlib.h>\n\n".to_owned(),
         taken_symbol_names: HashSet::new(),
-        return_type: ValueType::Void,
+        return_type: None,
         generated_functions: HashMap::new(),
         curr_function_signature: None,
         curr_function_args: Vec::new(),

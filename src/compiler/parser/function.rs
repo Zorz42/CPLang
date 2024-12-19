@@ -59,6 +59,10 @@ pub fn parse_return_statement(functions: &Vec<FunctionSignature>, structs: &Vec<
     }
     let pos1 = block.children[*curr_idx].1.clone();
     *curr_idx += 1;
+    if block.children.len() == *curr_idx {
+        return Ok(Some(Statement::Return(None, pos1)))
+    }
+
     let (expression, pos2) = parse_expression(functions, structs, block, curr_idx)?;
-    Ok(Some(Statement::Return(expression, merge_file_positions(&pos1, &pos2))))
+    Ok(Some(Statement::Return(Some(expression), merge_file_positions(&pos1, &pos2))))
 }
