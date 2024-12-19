@@ -77,7 +77,7 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
 }
 
 pub fn generate_return_statement(context: &mut GlobalContext, expression: &Expression, pos: &FilePosition) -> CompilerResult<String> {
-    let (code, typ) = generate_expression(context, expression)?;
+    let (code, typ, _) = generate_expression(context, expression)?;
     if context.return_type != ValueType::Void && typ != context.return_type {
         return Err(CompilerError {
             message: format!("Return type mismatch, expected {:?} but got {:?}", context.return_type, typ),
@@ -90,4 +90,29 @@ pub fn generate_return_statement(context: &mut GlobalContext, expression: &Expre
     let arg_types = context.curr_function_args.clone();
     context.generated_functions.get_mut(&(signature.clone(), arg_types)).map(|val| val.1 = Some(typ.clone()));
     Ok(format!("return {}", code))
+}
+
+pub fn generate_function_call(context: &mut GlobalContext, name: &str, args: &Vec<Expression>) -> CompilerResult<(String, ValueType)> {
+    let (signature, block) = context.functions.iter().find(|f| f.0.name == *name).expect("Function not found").clone();
+    let mut arg_types = Vec::new();
+    let mut arg_codes = Vec::new();
+    for arg in args {
+        let res = generate_expression(context, arg)?;
+        arg_types.push(res.1);
+        arg_codes.push(res.0);
+    }
+
+    let (func_name, return_val) = generate_function(context, &signature, &block, &arg_types)?;
+
+    let mut code = func_name;
+    code.push_str("(");
+    for arg in &arg_codes {
+        code.push_str(arg);
+        code.push_str(",");
+    }
+    if !arg_codes.is_empty() {
+        assert_eq!(code.pop(), Some(','));
+    }
+    code.push_str(")");
+    Ok((code, return_val))
 }

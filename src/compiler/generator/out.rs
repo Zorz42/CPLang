@@ -21,7 +21,7 @@ pub fn generate_out_statement(context: &mut GlobalContext, expression: &PrintSta
     let mut parts = Vec::new();
 
     for val in &expression.values {
-        let (mut code, typ) = generate_expression(context, val)?;
+        let (mut code, typ, _) = generate_expression(context, val)?;
 
         let printf_format = type_to_printf_format(&typ);
         let mut curr_typ = typ;

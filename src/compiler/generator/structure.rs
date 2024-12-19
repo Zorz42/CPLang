@@ -1,6 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::generator::expression::{ValueType};
+use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
+use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::structure::StructDeclaration;
 
 pub fn generate_struct(context: &mut GlobalContext, declaration: &StructDeclaration, field_types: &Vec<ValueType>) -> CompilerResult<String> {
@@ -55,4 +56,30 @@ pub fn generate_field_access(context: &mut GlobalContext, mut expr_code: String,
             position: Some(pos.clone()),
         })
     }
+}
+
+pub fn generate_struct_instantiation(context: &mut GlobalContext, name: String, args: &Vec<Expression>) -> CompilerResult<(String, ValueType)> {
+    let declaration = context.structs.iter().find(|s| s.name == *name).expect("Struct not found").clone();
+    let mut arg_types = Vec::new();
+    let mut arg_codes = Vec::new();
+    for arg in args {
+        let res = generate_expression(context, arg)?;
+        arg_types.push(res.1);
+        arg_codes.push(res.0);
+    }
+
+    let c_name = generate_struct(context, &declaration, &arg_types)?;
+    let typ = ValueType::Struct(name, arg_types);
+
+    let mut code = String::new();
+    code.push_str(&format!("({c_name}){{"));
+    for arg in &arg_codes {
+        code.push_str(arg);
+        code.push_str(",");
+    }
+    if !arg_codes.is_empty() {
+        code.pop();
+    }
+    code.push_str("}");
+    Ok((code, typ))
 }

@@ -5,7 +5,7 @@ use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::statement::{IfStatement, WhileStatement};
 
 pub fn generate_if_statement(context: &mut GlobalContext, statement: &IfStatement) -> CompilerResult<String> {
-    let (condition_code, _) = generate_expression(context, &statement.condition)?;
+    let (condition_code, _, _) = generate_expression(context, &statement.condition)?;
 
     let mut code = format!("if ({}) ", condition_code);
     let block_code = generate_block(context, &statement.block)?;
@@ -21,7 +21,7 @@ pub fn generate_if_statement(context: &mut GlobalContext, statement: &IfStatemen
 }
 
 pub fn generate_while_statement(context: &mut GlobalContext, statement: &WhileStatement) -> CompilerResult<String> {
-    let (condition_code, _) = generate_expression(context, &statement.condition)?;
+    let (condition_code, _, _) = generate_expression(context, &statement.condition)?;
 
     let mut code = format!("while ({}) ", condition_code);
     let block_code = generate_block(context, &statement.block)?;

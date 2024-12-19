@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::generator::function::generate_function;
+use crate::compiler::generator::function::{generate_function, generate_function_call};
 use crate::compiler::generator::GlobalContext;
-use crate::compiler::generator::structure::{generate_field_access, generate_struct};
+use crate::compiler::generator::structure::{generate_field_access, generate_struct, generate_struct_instantiation};
 use crate::compiler::parser::expression::{Expression, Operator};
 
 #[derive(Clone, Eq, Hash, PartialEq, Debug)]
@@ -53,23 +53,24 @@ pub fn setup_default_operators(context: &mut GlobalContext) {
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Minus, "-");
 }
 
-pub fn generate_expression(context: &mut GlobalContext, expression: &Expression) -> CompilerResult<(String, ValueType)> {
+// third return type says if the value is physical (you can take a reference of it)
+pub fn generate_expression(context: &mut GlobalContext, expression: &Expression) -> CompilerResult<(String, ValueType, bool)> {
     match expression {
         Expression::Integer(val) => {
-            Ok((val.to_string(), ValueType::I32))
+            Ok((val.to_string(), ValueType::I32, false))
         }
         Expression::Float(val) => {
-            Ok((val.to_string(), ValueType::F32))
+            Ok((val.to_string(), ValueType::F32, false))
         }
         Expression::String(val) => {
-            Ok((format!("\"{}\"", val), ValueType::String))
+            Ok((format!("\"{}\"", val), ValueType::String, false))
         }
         Expression::Boolean(val) => {
-            Ok((val.to_string(), ValueType::Boolean))
+            Ok((val.to_string(), ValueType::Boolean, false))
         }
         Expression::Variable(ident, pos) => {
             if let Some(typ) = context.get_variable_type(ident) {
-                Ok((ident.clone(), typ))
+                Ok((ident.clone(), typ, true))
             } else {
                 Err(CompilerError {
                     message: format!("Variable {} not found", ident),
@@ -78,73 +79,27 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             }
         }
         Expression::StructInitialization(name, args) => {
-            let declaration = context.structs.iter().find(|s| s.name == *name).expect("Struct not found").clone();
-            let mut arg_types = Vec::new();
-            let mut arg_codes = Vec::new();
-            for arg in args {
-                let res = generate_expression(context, arg)?;
-                arg_types.push(res.1);
-                arg_codes.push(res.0);
-            }
-
-            let c_name = generate_struct(context, &declaration, &arg_types)?;
-            let typ = ValueType::Struct(name.clone(), arg_types);
-
-            let mut code = String::new();
-            code.push_str(&format!("({c_name}){{"));
-            for arg in &arg_codes {
-                code.push_str(arg);
-                code.push_str(",");
-            }
-            if !arg_codes.is_empty() {
-                code.pop();
-            }
-            code.push_str("}");
-            Ok((code, typ))
+            let res = generate_struct_instantiation(context, name.clone(), args)?;
+            Ok((res.0, res.1, false))
         }
         Expression::Reference(ident, pos) => {
-            let (mut code, mut typ) = if let Some(typ) = context.get_variable_type(&ident[0]) {
-                (format!("{}", ident[0]), typ.clone())
-            } else {
+            let (code, typ, is_phys) = generate_expression(context, ident)?;
+            if !is_phys {
                 return Err(CompilerError {
-                    message: format!("Variable {} not found", ident[0]),
+                    message: "Cannot take reference of non-physical value".to_string(),
                     position: Some(pos.clone()),
-                })
-            };
-
-            for field in ident.iter().skip(1) {
-                (code, typ) = generate_field_access(context, code, typ, field, pos)?;
+                });
             }
 
-            Ok((format!("&{}", code), ValueType::Reference(Box::new(typ.clone()))))
+            Ok((format!("&{}", code), ValueType::Reference(Box::new(typ.clone())), false))
         }
         Expression::FunctionCall(name, args) => {
-            let (signature, block) = context.functions.iter().find(|f| f.0.name == *name).expect("Function not found").clone();
-            let mut arg_types = Vec::new();
-            let mut arg_codes = Vec::new();
-            for arg in args {
-                let res = generate_expression(context, arg)?;
-                arg_types.push(res.1);
-                arg_codes.push(res.0);
-            }
-
-            let (func_name, return_val) = generate_function(context, &signature, &block, &arg_types)?;
-
-            let mut code = func_name;
-            code.push_str("(");
-            for arg in &arg_codes {
-                code.push_str(arg);
-                code.push_str(",");
-            }
-            if !arg_codes.is_empty() {
-                assert_eq!(code.pop(), Some(','));
-            }
-            code.push_str(")");
-            Ok((code, return_val))
+            let res = generate_function_call(context, name, args)?;
+            Ok((res.0, res.1, false))
         }
         Expression::BinaryOperation(val1, op, val2, pos) => {
-            let (val1_code, val1_type) = generate_expression(context, val1)?;
-            let (val2_code, val2_type) = generate_expression(context, val2)?;
+            let (val1_code, val1_type, _) = generate_expression(context, val1)?;
+            let (val2_code, val2_type, _) = generate_expression(context, val2)?;
 
             let operator = context.operators.get(&(val1_type.clone(), op.clone(), val2_type.clone()));
 
@@ -156,11 +111,12 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
                 }),
             };
 
-            Ok((func(val1_code, val2_code), return_val.clone()))
+            Ok((func(val1_code, val2_code), return_val.clone(), false))
         }
         Expression::FieldAccess(expr, field, pos) => {
-            let (expr_code, expr_type) = generate_expression(context, expr)?;
-            generate_field_access(context, expr_code, expr_type, field, pos)
+            let (expr_code, expr_type, is_phys) = generate_expression(context, expr)?;
+            let res = generate_field_access(context, expr_code, expr_type, field, pos)?;
+            Ok((res.0, res.1, is_phys))
         }
     }
 }

@@ -23,7 +23,7 @@ pub enum Expression {
     String(String),
     Boolean(bool),
     Variable(String, FilePosition),
-    Reference(Vec<String>, FilePosition),
+    Reference(Box<Expression>, FilePosition),
     FunctionCall(String, Vec<Expression>),
     StructInitialization(String, Vec<Expression>),
     FieldAccess(Box<Expression>, String, FilePosition),
@@ -113,39 +113,9 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
         },
         Token::Symbol(Symbol::Reference) => {
             *curr_idx += 1;
-            let mut res = Vec::new();
+            let (res, pos) = parse_value(functions, structs, block, curr_idx)?;
 
-            match &block.children[*curr_idx].0 {
-                Token::Identifier(identifier) => {
-                    *curr_idx += 1;
-                    res.push(identifier.clone());
-                },
-                _ => {
-                    let pos = &block.children[*curr_idx].1;
-                    return Err(CompilerError {
-                        message: "Expected identifier after reference symbol".to_owned(),
-                        position: Some(pos.clone())
-                    });
-                },
-            }
-
-            while let Some((Token::Symbol(Symbol::Dot), _)) = block.children.get(*curr_idx) {
-                *curr_idx += 1;
-                match block.children.get(*curr_idx) {
-                    Some((Token::Identifier(s), pos)) => {
-                        res.push(s.clone());
-                        *curr_idx += 1;
-                    }
-                    _ => {
-                        return Err(CompilerError {
-                            message: "Expected identifier after dot".to_owned(),
-                            position: Some(block.children[*curr_idx - 1].1.clone())
-                        });
-                    }
-                }
-            }
-
-            (Expression::Reference(res, pos.clone()), pos)
+            (Expression::Reference(Box::new(res), pos.clone()), pos)
         }
         Token::Symbol(Symbol::LeftBracket) => {
             *curr_idx += 1;

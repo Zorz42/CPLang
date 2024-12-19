@@ -8,7 +8,7 @@ pub fn generate_variable_declaration(context: &mut GlobalContext, declaration: &
     let mut var_name = declaration.name[0].clone();
 
     let value_type2 = context.get_variable_type(&var_name);
-    let (value_code, value_type) = generate_expression(context, &declaration.value)?;
+    let (value_code, value_type, _) = generate_expression(context, &declaration.value)?;
     if let Some(mut value_type2) = value_type2 {
         for field in declaration.name.iter().skip(1) {
             while let ValueType::Reference(inner) = value_type2 {
