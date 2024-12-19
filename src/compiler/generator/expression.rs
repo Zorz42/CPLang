@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::generator::function::{generate_function, generate_function_call};
+use crate::compiler::generator::function::{generate_function_call};
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::generator::structure::{generate_field_access, generate_struct, generate_struct_instantiation};
 use crate::compiler::parser::expression::{Expression, Operator};

@@ -1,18 +1,29 @@
 //OUT=10
 
+struct Vec
+    data
+    size
+
 create_vec size
     dummy = 0
     ptr = &dummy
     inline_c "ptr = malloc(size * 4)"
-    ret ptr
+    ret Vec data ptr size size
 
 get_vec vec idx
+    if idx < 0
+        ret 0
+    if idx >= vec.size
+        ret 0
+
     res = 0
-    inline_c "res = vec[idx]"
+    data = vec.data
+    inline_c "res = data[idx]"
     ret res
 
 set_vec vec idx val
-    inline_c "vec[idx] = val"
+    data = vec.data
+    inline_c "data[idx] = val"
 
 main
     vec = create_vec 10
