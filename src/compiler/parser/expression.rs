@@ -34,21 +34,16 @@ pub enum Expression {
 fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
     let mut pos = block.children[*curr_idx].1.clone();
     let mut res = match &block.children[*curr_idx].0 {
-        Token::Constant(Constant::Integer(int)) => {
+        Token::Constant(constant) => {
             *curr_idx += 1;
-            (Expression::Integer(*int), pos)
-        },
-        Token::Constant(Constant::Float(float)) => {
-            *curr_idx += 1;
-            (Expression::Float(*float), pos)
-        },
-        Token::Constant(Constant::String(string)) => {
-            *curr_idx += 1;
-            (Expression::String(string.clone()), pos)
-        },
-        Token::Constant(Constant::Boolean(boolean)) => {
-            *curr_idx += 1;
-            (Expression::Boolean(*boolean), pos)
+            let expr = match constant {
+                Constant::Integer(int) => Expression::Integer(*int),
+                Constant::Float(float) => Expression::Float(*float),
+                Constant::String(string) => Expression::String(string.clone()),
+                Constant::Boolean(boolean) => Expression::Boolean(*boolean),
+            };
+
+            (expr, pos)
         },
         Token::Identifier(identifier) => {
             *curr_idx += 1;

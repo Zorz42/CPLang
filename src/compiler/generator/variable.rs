@@ -1,46 +1,48 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::expression::{generate_expression, ValueType};
 use crate::compiler::generator::GlobalContext;
-use crate::compiler::generator::structure::generate_field_access;
+use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::variable::VariableDeclaration;
 
 pub fn generate_variable_declaration(context: &mut GlobalContext, declaration: &VariableDeclaration) -> CompilerResult<String> {
-    let mut var_name = declaration.name[0].clone();
+    let (value_code, typ, _) = generate_expression(context, &declaration.value)?;
 
-    let value_type2 = context.get_variable_type(&var_name);
-    let (value_code, value_type, _) = generate_expression(context, &declaration.value)?;
-    if let Some(mut value_type2) = value_type2 {
-        for field in declaration.name.iter().skip(1) {
-            while let ValueType::Reference(inner) = value_type2 {
-                var_name = format!("*({})", var_name);
-                value_type2 = *inner;
-            }
-
-            (var_name, value_type2) = generate_field_access(context, var_name.clone(), value_type2.clone(), field, &declaration.pos)?;
+    let mut is_new = false;
+    if let Expression::Variable(ident, _) = &declaration.assign_to {
+        if context.get_variable_type(ident).is_none() {
+            context.variables.insert(ident.clone(), typ.clone());
+            is_new = true;
         }
+    }
 
-        while let ValueType::Reference(inner) = value_type2 {
-            var_name = format!("*({})", var_name);
-            value_type2 = *inner;
-        }
+    let (mut code, mut typ2, is_phys) = generate_expression(context, &declaration.assign_to)?;
 
-        if value_type != value_type2 {
-            let message = format!("Cannot assign {:?} to type {:?}", value_type, value_type2);
-            return Err(CompilerError{
-                message,
-                position: Some(declaration.pos.clone()),
-            })
+
+    while let ValueType::Reference(inner) = &typ2 {
+        if typ == typ2 {
+            break;
         }
-        Ok(format!("{} = {}", var_name, value_code))
+        code = format!("*{}", code);
+        typ2 = *inner.clone();
+    }
+
+    if typ != typ2 {
+        return Err(CompilerError {
+            message: format!("Cannot assign {:?} to type {:?}", typ, typ2),
+            position: Some(declaration.pos.clone()),
+        });
+    }
+
+    if !is_phys {
+        return Err(CompilerError {
+            message: "Cannot assign to non-physical value".to_string(),
+            position: Some(declaration.pos.clone()),
+        });
+    }
+
+    if is_new {
+        Ok(format!("{} {} = {}", typ.to_c_type(context)?, code, value_code))
     } else {
-        if declaration.name.len() != 1 {
-            return Err(CompilerError {
-                message: format!("Variable {} was not declared yet", var_name),
-                position: Some(declaration.pos.clone()),
-            })
-        }
-
-        context.variables.insert(var_name.clone(), value_type.clone());
-        Ok(format!("{} {} = {}", value_type.to_c_type(context)?, var_name, value_code))
+        Ok(format!("{} = {}", code, value_code))
     }
 }

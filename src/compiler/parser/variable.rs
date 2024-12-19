@@ -6,7 +6,7 @@ use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
 
 #[derive(Debug, Clone)]
 pub struct VariableDeclaration {
-    pub name: Vec<String>,
+    pub assign_to: Expression,
     pub value: Expression,
     pub pos: FilePosition,
 }
@@ -17,32 +17,13 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, structs: &
         return Ok(None);
     }
 
-    let mut name = Vec::new();
-
-    // check if first token is identifier and second token is assignment
-    match block.children.get(*curr_idx).map(|x| x.0.clone()) {
-        Some(Token::Identifier(ident)) => {
-            name.push(ident.clone());
-        },
-        _ => return Ok(None),
-    }
-
-    let begin_pos = &block.children[*curr_idx].1;
-    *curr_idx += 1;
-
-    while let Some(Token::Symbol(Symbol::Dot)) = block.children.get(*curr_idx).map(|x| x.0.clone()) {
-        *curr_idx += 1;
-        match block.children.get(*curr_idx).map(|x| x.0.clone()) {
-            Some(Token::Identifier(ident)) => {
-                name.push(ident.clone());
-                *curr_idx += 1;
-            },
-            _ => return Err(CompilerError {
-                message: "Expected identifier after dot".to_string(),
-                position: Some(block.children[*curr_idx - 1].1.clone()),
-            })
+    let (expr1, expr1_pos) = match parse_expression(functions, structs, block, curr_idx) {
+        Ok(x) => x,
+        Err(_) => {
+            *curr_idx = old_idx;
+            return Ok(None);
         }
-    }
+    };
 
     if Some(Token::Symbol(Symbol::Assign)) != block.children.get(*curr_idx).map(|x| x.0.clone()) {
         *curr_idx = old_idx;
@@ -51,11 +32,11 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, structs: &
 
     *curr_idx += 1;
 
-    let (value, expr_pos) = parse_expression(functions, structs, block, curr_idx)?;
+    let (expr2, expr2_pos) = parse_expression(functions, structs, block, curr_idx)?;
 
     Ok(Some(VariableDeclaration{
-        name,
-        value,
-        pos: merge_file_positions(begin_pos, &expr_pos),
+        assign_to: expr1,
+        value: expr2,
+        pos: merge_file_positions(&expr1_pos, &expr2_pos),
     }))
 }
