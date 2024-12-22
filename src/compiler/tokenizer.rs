@@ -44,6 +44,10 @@ pub enum Symbol {
     Minus,
     Reference,
     Dot,
+    Increase,
+    Decrease,
+    Increment,
+    Decrement,
 }
 
 impl Symbol {
@@ -69,6 +73,10 @@ impl Symbol {
             ('!', '=') => Some(Symbol::NotEquals),
             ('<', '=') => Some(Symbol::LessThanOrEqual),
             ('>', '=') => Some(Symbol::GreaterThanOrEqual),
+            ('+', '=') => Some(Symbol::Increase),
+            ('-', '=') => Some(Symbol::Decrease),
+            ('+', '+') => Some(Symbol::Increment),
+            ('-', '-') => Some(Symbol::Decrement),
             _ => None,
         }
     }

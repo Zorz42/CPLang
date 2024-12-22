@@ -1,5 +1,5 @@
 use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
-use crate::compiler::parser::expression::{parse_expression, Expression};
+use crate::compiler::parser::expression::{parse_expression, Expression, Operator};
 use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::parser::structure::StructDeclaration;
 use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
@@ -25,14 +25,40 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, structs: &
         }
     };
 
-    if Some(Token::Symbol(Symbol::Assign)) != block.children.get(*curr_idx).map(|x| x.0.clone()) {
+    let symbol = if let Some(Token::Symbol(symbol)) = block.children.get(*curr_idx).map(|x| x.0.clone()) {
+        if symbol == Symbol::Assign || symbol == Symbol::Increase || symbol == Symbol::Decrease || symbol == Symbol::Increment || symbol == Symbol::Decrement {
+            symbol
+        } else {
+            *curr_idx = old_idx;
+            return Ok(None);
+        }
+    } else {
         *curr_idx = old_idx;
         return Ok(None);
-    }
+    };
 
     *curr_idx += 1;
 
-    let (expr2, expr2_pos) = parse_expression(functions, structs, block, curr_idx)?;
+    let (expr2, expr2_pos) = match symbol {
+        Symbol::Assign => {
+            parse_expression(functions, structs, block, curr_idx)?
+        },
+        Symbol::Increase => {
+            let (expr2, expr2_pos) = parse_expression(functions, structs, block, curr_idx)?;
+            (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Plus, Box::new(expr2), expr2_pos.clone()), merge_file_positions(&expr1_pos, &expr2_pos))
+        },
+        Symbol::Decrease => {
+            let (expr2, expr2_pos) = parse_expression(functions, structs, block, curr_idx)?;
+            (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Minus, Box::new(expr2), expr2_pos.clone()), merge_file_positions(&expr1_pos, &expr2_pos))
+        },
+        Symbol::Increment => {
+            (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Plus, Box::new(Expression::Integer(1)), expr1_pos.clone()), expr1_pos.clone())
+        },
+        Symbol::Decrement => {
+            (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Minus, Box::new(Expression::Integer(1)), expr1_pos.clone()), expr1_pos.clone())
+        },
+        _ => unreachable!()
+    };
 
     Ok(Some(VariableDeclaration{
         assign_to: expr1,
