@@ -1,6 +1,5 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::expression::{parse_expression, Expression};
-use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::parser::structure::StructDeclaration;
 use crate::compiler::tokenizer::{tokenize_string, Constant, Keyword, Token, TokenBlock};
 

@@ -129,5 +129,8 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             let res = generate_field_access(context, expr_code, expr_type, field, pos)?;
             Ok((res.0, res.1, is_phys))
         }
+        Expression::MethodCall(expr, method, args) => {
+            todo!()
+        }
     }
 }

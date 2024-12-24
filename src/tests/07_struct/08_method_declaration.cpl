@@ -1,0 +1,10 @@
+//OUT=compile
+
+struct TestStruct
+    x
+
+    fn set_x
+        x = "compile"
+
+main
+    out "compile"

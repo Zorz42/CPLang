@@ -1,0 +1,7 @@
+//OUT=OK
+
+print
+    out "OK"
+
+main
+    print()

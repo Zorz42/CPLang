@@ -10,6 +10,7 @@ pub enum Keyword {
     Return,
     Struct,
     InlineC,
+    Fn,
 }
 
 impl Keyword {
@@ -23,6 +24,7 @@ impl Keyword {
             "ret" => Some(Keyword::Return),
             "struct" => Some(Keyword::Struct),
             "inline_c" => Some(Keyword::InlineC),
+            "fn" => Some(Keyword::Fn),
             _ => None,
         }
     }
