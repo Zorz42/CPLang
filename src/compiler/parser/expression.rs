@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
-use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::parser::structure::StructDeclaration;
 use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 
@@ -32,7 +31,7 @@ pub enum Expression {
 }
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
-fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
+fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
     let mut pos = block.children[*curr_idx].1.clone();
     let mut res = match &block.children[*curr_idx].0 {
         Token::Constant(constant) => {
@@ -50,11 +49,15 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
             *curr_idx += 1;
 
             // we need to know if this is a function call, a struct instantiation or a variable
-            if let Some(function) = functions.iter().find(|f| f.name == *identifier) {
-                let num_args = function.args.len();
+            if Some(Token::Symbol(Symbol::LeftBracket)) == block.children.get(*curr_idx).map(|x| x.0.clone()) {
+                *curr_idx += 1;
                 let mut args = Vec::new();
-                for _ in 0..num_args {
-                    let (expr, expr_pos) = parse_expression(functions, structs, block, curr_idx)?;
+                loop {
+                    if Some(Token::Symbol(Symbol::RightBracket)) == block.children.get(*curr_idx).map(|x| x.0.clone()) {
+                        *curr_idx += 1;
+                        break;
+                    }
+                    let (expr, expr_pos) = parse_expression(structs, block, curr_idx)?;
                     args.push(expr);
                     pos = merge_file_positions(&pos, &expr_pos);
                 }
@@ -76,7 +79,7 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
 
                     *curr_idx += 1;
 
-                    let (expr, expr_pos) = parse_expression(functions, structs, block, curr_idx)?;
+                    let (expr, expr_pos) = parse_expression(structs, block, curr_idx)?;
 
                     if fields.contains_key(&field_name) {
                         return Err(CompilerError{
@@ -109,19 +112,19 @@ fn parse_value(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclarati
         },
         Token::Symbol(Symbol::Reference) => {
             *curr_idx += 1;
-            let (res, pos) = parse_value(functions, structs, block, curr_idx)?;
+            let (res, pos) = parse_value(structs, block, curr_idx)?;
 
             (Expression::Reference(Box::new(res), pos.clone()), pos)
         }
         Token::Symbol(Symbol::Star) => {
             *curr_idx += 1;
-            let (res, pos) = parse_value(functions, structs, block, curr_idx)?;
+            let (res, pos) = parse_value(structs, block, curr_idx)?;
 
             (Expression::Dereference(Box::new(res), pos.clone()), pos)
         }
         Token::Symbol(Symbol::LeftBracket) => {
             *curr_idx += 1;
-            let res = parse_expression(functions, structs, block, curr_idx)?;
+            let res = parse_expression(structs, block, curr_idx)?;
             match &block.children[*curr_idx].0 {
                 Token::Symbol(Symbol::RightBracket) => {
                     *curr_idx += 1;
@@ -179,10 +182,10 @@ fn symbol_to_operator(symbol: &Symbol) -> Option<Operator> {
 }
 
 // looks for operators and values
-pub fn parse_expression(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
+pub fn parse_expression(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
-    let (first_val, first_pos) = parse_value(functions, structs, block, curr_idx)?;
+    let (first_val, first_pos) = parse_value(structs, block, curr_idx)?;
     vals.push((first_val, first_pos));
     while *curr_idx < block.children.len() {
         match &block.children[*curr_idx].0 {
@@ -194,7 +197,7 @@ pub fn parse_expression(functions: &Vec<FunctionSignature>, structs: &Vec<Struct
                     break;
                 }
 
-                vals.push(parse_value(functions, structs, block, curr_idx)?);
+                vals.push(parse_value(structs, block, curr_idx)?);
             },
             _ => break,
         }

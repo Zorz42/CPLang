@@ -5,5 +5,5 @@ set20 x
 
 main
     a = 10
-    set20 &a
+    set20(&a)
     out "{a}"

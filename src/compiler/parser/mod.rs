@@ -47,12 +47,10 @@ pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<(Vec<(Function
 
     let mut res = Vec::new();
 
-    let functions = function_declarations.iter().map(|(signature, _)| signature.clone()).collect::<Vec<_>>();
-
     let mut found_main = false;
     for (signature, function_block) in function_declarations {
         //println!("Parsing {}", signature.name);
-        let parsed_block = parse_block(&functions, &struct_declarations, &function_block)?;
+        let parsed_block = parse_block(&struct_declarations, &function_block)?;
 
         if signature.name == "main" {
             found_main = true;

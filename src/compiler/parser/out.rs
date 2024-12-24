@@ -9,7 +9,7 @@ pub struct PrintStatement {
     pub values: Vec<Expression>,
 }
 
-fn parse_format_string(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, string: &str, pos: &FilePosition) -> CompilerResult<Vec<Expression>> {
+fn parse_format_string(structs: &Vec<StructDeclaration>, string: &str, pos: &FilePosition) -> CompilerResult<Vec<Expression>> {
     let mut res = Vec::new();
     let mut curr = String::new();
     let mut in_format = false;
@@ -28,7 +28,7 @@ fn parse_format_string(functions: &Vec<FunctionSignature>, structs: &Vec<StructD
                 }
                 let token_block = TokenBlock { children: tokenize_string(&string)? };
                 let mut idx2 = 0;
-                let (expression, _) = parse_expression(functions, structs, &token_block, &mut idx2)?;
+                let (expression, _) = parse_expression(structs, &token_block, &mut idx2)?;
 
                 let end_pos = FilePosition {
                     first_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 2),
@@ -81,7 +81,7 @@ fn parse_format_string(functions: &Vec<FunctionSignature>, structs: &Vec<StructD
     Ok(res)
 }
 
-pub fn parse_out_statement(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<PrintStatement>> {
+pub fn parse_out_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<PrintStatement>> {
     let print_pos = &block.children[*curr_idx].1;
     if block.children[*curr_idx].0 == Token::Keyword(Keyword::Out) {
         *curr_idx += 1;
@@ -90,7 +90,7 @@ pub fn parse_out_statement(functions: &Vec<FunctionSignature>, structs: &Vec<Str
             Token::Constant(Constant::String(string)) => {
                 *curr_idx += 1;
                 Ok(Some(PrintStatement {
-                    values: parse_format_string(functions, structs, string, pos)?,
+                    values: parse_format_string(structs, string, pos)?,
                 }))
             },
             _ => Err(CompilerError {

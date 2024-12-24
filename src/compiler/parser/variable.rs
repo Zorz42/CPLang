@@ -1,6 +1,5 @@
 use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
 use crate::compiler::parser::expression::{parse_expression, Expression, Operator};
-use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::parser::structure::StructDeclaration;
 use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
 
@@ -11,13 +10,13 @@ pub struct VariableDeclaration {
     pub pos: FilePosition,
 }
 
-pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<VariableDeclaration>> {
+pub fn parse_variable_declaration(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<VariableDeclaration>> {
     let old_idx = *curr_idx;
     if *curr_idx + 1 >= block.children.len() {
         return Ok(None);
     }
 
-    let (expr1, expr1_pos) = match parse_expression(functions, structs, block, curr_idx) {
+    let (expr1, expr1_pos) = match parse_expression(structs, block, curr_idx) {
         Ok(x) => x,
         Err(_) => {
             *curr_idx = old_idx;
@@ -41,14 +40,14 @@ pub fn parse_variable_declaration(functions: &Vec<FunctionSignature>, structs: &
 
     let (expr2, expr2_pos) = match symbol {
         Symbol::Assign => {
-            parse_expression(functions, structs, block, curr_idx)?
+            parse_expression(structs, block, curr_idx)?
         },
         Symbol::Increase => {
-            let (expr2, expr2_pos) = parse_expression(functions, structs, block, curr_idx)?;
+            let (expr2, expr2_pos) = parse_expression(structs, block, curr_idx)?;
             (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Plus, Box::new(expr2), expr2_pos.clone()), merge_file_positions(&expr1_pos, &expr2_pos))
         },
         Symbol::Decrease => {
-            let (expr2, expr2_pos) = parse_expression(functions, structs, block, curr_idx)?;
+            let (expr2, expr2_pos) = parse_expression(structs, block, curr_idx)?;
             (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Minus, Box::new(expr2), expr2_pos.clone()), merge_file_positions(&expr1_pos, &expr2_pos))
         },
         Symbol::Increment => {

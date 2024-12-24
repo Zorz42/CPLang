@@ -4,8 +4,8 @@ id x
     ret x
 
 print_with_hello x
-    out "Hello, {id x}"
+    out "Hello, {id(x)}"
 
 main
-    val = id "test"
-    print_with_hello 10
+    val = id("test")
+    print_with_hello(10)

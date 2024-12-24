@@ -53,7 +53,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
     Ok((res_signature, res_block))
 }
 
-pub fn parse_return_statement(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<Statement>> {
+pub fn parse_return_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<Statement>> {
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::Return) {
         return Ok(None);
     }
@@ -63,6 +63,6 @@ pub fn parse_return_statement(functions: &Vec<FunctionSignature>, structs: &Vec<
         return Ok(Some(Statement::Return(None, pos1)))
     }
 
-    let (expression, pos2) = parse_expression(functions, structs, block, curr_idx)?;
+    let (expression, pos2) = parse_expression(structs, block, curr_idx)?;
     Ok(Some(Statement::Return(Some(expression), merge_file_positions(&pos1, &pos2))))
 }

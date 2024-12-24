@@ -9,4 +9,4 @@ print x
 main
     a = T x 20
     b = a
-    print b
+    print(b)

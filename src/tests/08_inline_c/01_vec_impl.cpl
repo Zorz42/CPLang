@@ -26,6 +26,6 @@ set_vec vec idx val
     inline_c "data[idx] = val"
 
 main
-    vec = create_vec 10
-    set_vec vec 0 10
-    out "{get_vec vec 0}"
+    vec = create_vec(10)
+    set_vec(vec 0 10)
+    out "{get_vec(vec 0)}"

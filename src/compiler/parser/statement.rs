@@ -1,7 +1,6 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::parser::block::{parse_block, Block};
 use crate::compiler::parser::expression::{parse_expression, Expression};
-use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::parser::structure::StructDeclaration;
 use crate::compiler::tokenizer::{Keyword, Token, TokenBlock};
 
@@ -12,17 +11,17 @@ pub struct IfStatement {
     pub else_block: Option<Block>,
 }
 
-pub fn parse_if_statement(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<IfStatement>> {
+pub fn parse_if_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<IfStatement>> {
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::If) {
         return Ok(None);
     }
     *curr_idx += 1;
-    let (condition, _) = parse_expression(functions, structs, block, curr_idx)?;
+    let (condition, _) = parse_expression(structs, block, curr_idx)?;
 
     let res_block;
     if let Token::Block(token_block) = &block.children[*curr_idx].0 {
         *curr_idx += 1;
-        res_block = parse_block(functions, structs, token_block)?;
+        res_block = parse_block(structs, token_block)?;
     } else {
         return Err(CompilerError {
             message: "Expected block after if condition".to_string(),
@@ -35,7 +34,7 @@ pub fn parse_if_statement(functions: &Vec<FunctionSignature>, structs: &Vec<Stru
         *curr_idx += 1;
         if let Token::Block(token_block) = &block.children[*curr_idx].0 {
             *curr_idx += 1;
-            else_block = Some(parse_block(functions, structs, token_block)?);
+            else_block = Some(parse_block(structs, token_block)?);
         } else {
             return Err(CompilerError {
                 message: "Expected block after else keyword".to_string(),
@@ -57,18 +56,18 @@ pub struct WhileStatement {
     pub block: Block,
 }
 
-pub fn parse_while_statement(functions: &Vec<FunctionSignature>, structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<WhileStatement>> {
+pub fn parse_while_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<WhileStatement>> {
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::While) {
         return Ok(None);
     }
 
     *curr_idx += 1;
-    let (condition, _) = parse_expression(functions, structs, block, curr_idx)?;
+    let (condition, _) = parse_expression(structs, block, curr_idx)?;
 
     let res_block;
     if let Token::Block(token_block) = &block.children[*curr_idx].0 {
         *curr_idx += 1;
-        res_block = parse_block(functions, structs, token_block)?;
+        res_block = parse_block(structs, token_block)?;
     } else {
         return Err(CompilerError {
             message: "Expected block after while condition".to_string(),

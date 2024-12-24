@@ -4,4 +4,4 @@ test a b c
     ret a + b + c
 
 main
-    out "{test 10 20 30}"
+    out "{test(10 20 30)}"
