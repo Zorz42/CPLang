@@ -25,9 +25,9 @@ pub enum Statement {
     Expression(Expression),
     Print(PrintStatement),
     Return(Option<Expression>, FilePosition),
-    IfStatement(IfStatement),
-    WhileStatement(WhileStatement),
-    InlineCStatement(InlineCStatement),
+    If(IfStatement),
+    While(WhileStatement),
+    InlineC(InlineCStatement),
 }
 
 pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<(Vec<(FunctionSignature, Block)>, Vec<StructDeclaration>)> {

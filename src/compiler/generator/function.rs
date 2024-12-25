@@ -89,7 +89,9 @@ pub fn generate_return_statement(context: &mut GlobalContext, expression: Option
         context.return_type = Some(typ.clone());
         let signature = context.curr_function_signature.as_ref().expect("Return statement outside of function");
         let arg_types = context.curr_function_args.clone();
-        context.generated_functions.get_mut(&(signature.clone(), arg_types)).map(|val| val.1 = Some(typ.clone()));
+        if let Some(val) = context.generated_functions.get_mut(&(signature.clone(), arg_types)) {
+            val.1 = Some(typ.clone());
+        }
         Ok(format!("return {}", code))
     } else {
         Ok("return".to_owned())

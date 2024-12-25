@@ -30,13 +30,13 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> CompilerRes
             Statement::Return(expression, pos) => {
                 generate_return_statement(context, expression.as_ref(), pos)?
             }
-            Statement::IfStatement(statement) => {
+            Statement::If(statement) => {
                 generate_if_statement(context, statement)?
             }
-            Statement::WhileStatement(statement) => {
+            Statement::While(statement) => {
                 generate_while_statement(context, statement)?
             }
-            Statement::InlineCStatement(statement) => {
+            Statement::InlineC(statement) => {
                 statement.code.clone()
             }
         };

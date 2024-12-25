@@ -144,7 +144,7 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
     let mut token_pos = FilePosition::invalid();
 
     let new_token = |tokens: &mut Vec<(Token, FilePosition)>, curr_token: &mut String, token_pos: &mut FilePosition| {
-        tokens.push((string_to_token(&curr_token), token_pos.clone()));
+        tokens.push((string_to_token(curr_token), token_pos.clone()));
         curr_token.clear();
     };
 
@@ -152,12 +152,12 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
         if curr_token.is_empty() {
             *token_pos = pos.clone();
         } else {
-            *token_pos = merge_file_positions(&token_pos, pos);
+            *token_pos = merge_file_positions(token_pos, pos);
         }
         curr_token.push(*c);
     };
 
-    let mut iter = string.into_iter().peekable();
+    let mut iter = string.iter().peekable();
     while let Some((c, pos)) = iter.next() {
         if in_string {
             if *c == '\\' && iter.peek().map(|x| x.0) == Some('"') {
@@ -172,23 +172,23 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
             }
         } else if *c == '"' {
             in_string = true;
-            if curr_token.len() > 0 {
+            if !curr_token.is_empty() {
                 new_token(&mut tokens,&mut curr_token, &mut token_pos);
             }
             add_to_token(&mut curr_token, &mut token_pos, c, pos);
         } else if let Some(symbol) = Symbol::from_two_chars(*c, iter.peek().map(|x| x.0).unwrap_or(' ')) {
-            if curr_token.len() > 0 {
+            if !curr_token.is_empty() {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
             }
             tokens.push((Token::Symbol(symbol), pos.clone()));
             iter.next();
         } else if let Some(symbol) = Symbol::from_char(*c) {
-            if curr_token.len() > 0 {
+            if !curr_token.is_empty() {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
             }
             tokens.push((Token::Symbol(symbol), pos.clone()));
         } else if *c == ' ' {
-            if curr_token.len() > 0 {
+            if !curr_token.is_empty() {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
             }
         } else {
@@ -203,7 +203,7 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
         });
     }
 
-    if curr_token.len() > 0 {
+    if !curr_token.is_empty() {
         tokens.push((string_to_token(&curr_token), token_pos.clone()));
     }
 

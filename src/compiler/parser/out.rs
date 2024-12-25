@@ -47,20 +47,18 @@ fn parse_format_string(structs: &Vec<StructDeclaration>, string: &str, pos: &Fil
             } else {
                 curr.push(c);
             }
-        } else {
-            if c == '{' {
-                in_format = true;
-                if !curr.is_empty() {
-                    res.push(Expression::String(curr));
-                }
-                curr = String::new();
-                format_pos = FilePosition {
-                    first_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 1),
-                    last_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 1)
-                }
-            } else {
-                curr.push(c);
+        } else if c == '{' {
+            in_format = true;
+            if !curr.is_empty() {
+                res.push(Expression::String(curr));
             }
+            curr = String::new();
+            format_pos = FilePosition {
+                first_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 1),
+                last_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 1)
+            }
+        } else {
+            curr.push(c);
         }
     }
     if in_format {

@@ -35,11 +35,11 @@ pub fn parse_block(structs: &Vec<StructDeclaration>, block: &TokenBlock) -> Comp
                 } else if let Some(statement) = parse_out_statement(structs, block, &mut curr_idx)? {
                     res.children.push(Statement::Print(statement));
                 } else if let Some(statement) = parse_if_statement(structs, block, &mut curr_idx)? {
-                    res.children.push(Statement::IfStatement(statement));
+                    res.children.push(Statement::If(statement));
                 } else if let Some(statement) = parse_while_statement(structs, block, &mut curr_idx)? {
-                    res.children.push(Statement::WhileStatement(statement));
+                    res.children.push(Statement::While(statement));
                 } else if let Some(statement) = parse_inline_c(block, &mut curr_idx)? {
-                    res.children.push(Statement::InlineCStatement(statement));
+                    res.children.push(Statement::InlineC(statement));
                 } else {
                     let (expression, _) = parse_expression(structs, block, &mut curr_idx)?;
                     res.children.push(Statement::Expression(expression));
