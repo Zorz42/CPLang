@@ -4,10 +4,10 @@ struct TestStruct
     x
 
     fn set_x
-        x = "compile"
+        self.x = "compile"
 
     fn get_x
-        ret x
+        ret self.x
 
 main
     a = TestStruct x "no good"

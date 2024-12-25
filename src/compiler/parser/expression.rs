@@ -26,7 +26,7 @@ pub enum Expression {
     FunctionCall(String, Vec<Expression>),
     StructInitialization(String, Vec<Expression>),
     FieldAccess(Box<Expression>, String, FilePosition),
-    MethodCall(Box<Expression>, String, Vec<Expression>),
+    MethodCall(Box<Expression>, FilePosition, String, Vec<Expression>),
     Dereference(Box<Expression>, FilePosition),
     BinaryOperation(Box<Expression>, Operator, Box<Expression>, FilePosition),
 }
@@ -165,7 +165,7 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
                         let (expr, _) = parse_expression(structs, block, curr_idx)?;
                         args.push(expr);
                     }
-                    res.0 = Expression::MethodCall(Box::new(res.0), s.clone(), args);
+                    res.0 = Expression::MethodCall(Box::new(res.0), pos.clone(), s.clone(), args);
                 } else {
                     res.0 = Expression::FieldAccess(Box::new(res.0), s.clone(), pos.clone());
                 }

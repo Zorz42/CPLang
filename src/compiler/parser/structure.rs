@@ -1,4 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
+use crate::compiler::parser::block::{parse_block, Block};
 use crate::compiler::parser::function::{parse_function_declaration, FunctionSignature};
 use crate::compiler::tokenizer::{Keyword, Token, TokenBlock};
 
@@ -6,7 +7,7 @@ use crate::compiler::tokenizer::{Keyword, Token, TokenBlock};
 pub struct StructDeclaration {
     pub name: String,
     pub fields: Vec<String>,
-    pub methods: Vec<(FunctionSignature, TokenBlock)>,
+    pub methods: Vec<(FunctionSignature, Block)>,
 }
 
 pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<StructDeclaration>> {
@@ -49,8 +50,9 @@ pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> Com
             }
             Some(Token::Keyword(Keyword::Fn)) => {
                 idx += 1;
-                let res = parse_function_declaration(&block, &mut idx)?;
-                methods.push(res);
+                let (signature, block) = parse_function_declaration(&block, &mut idx)?;
+                let block = parse_block(&Vec::new(), &block)?;
+                methods.push((signature, block));
             }
             _ => return Err(CompilerError {
                 message: "Expected field name".to_owned(),

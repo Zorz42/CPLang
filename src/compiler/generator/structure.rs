@@ -1,5 +1,6 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::generator::expression::{generate_expression, ValueType};
+use crate::compiler::generator::function::generate_function;
 use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::structure::StructDeclaration;
@@ -82,4 +83,87 @@ pub fn generate_struct_instantiation(context: &mut GlobalContext, name: String, 
     }
     code.push_str("}");
     Ok((code, typ))
+}
+
+pub fn generate_method_call(context: &mut GlobalContext, name: &str, expr: &Expression, expr_pos: &FilePosition, args: &Vec<Expression>) -> CompilerResult<(String, ValueType)> {
+    /*let (signature, block) = context.functions.iter().find(|f| f.0.name == *name).expect("Function not found").clone();
+    let mut arg_types = Vec::new();
+    let mut arg_codes = Vec::new();
+    for arg in args {
+        let res = generate_expression(context, arg)?;
+        arg_types.push(res.1);
+        arg_codes.push(res.0);
+    }
+
+    let (func_name, return_val) = generate_function(context, &signature, &block, &arg_types)?;
+
+    let mut code = func_name;
+    code.push_str("(");
+    for arg in &arg_codes {
+        code.push_str(arg);
+        code.push_str(",");
+    }
+    if !arg_codes.is_empty() {
+        assert_eq!(code.pop(), Some(','));
+    }
+    code.push_str(")");
+    Ok((code, return_val))*/
+
+    let (expr_code, expr_type, is_phys) = generate_expression(context, expr)?;
+
+    if !is_phys {
+        return Err(CompilerError {
+            message: "Cannot call method on non-physical value".to_string(),
+            position: Some(expr_pos.clone()),
+        });
+    }
+
+    let struct_name = if let ValueType::Struct(name, _) = expr_type.clone() {
+        name
+    } else {
+        return Err(CompilerError {
+            message: "Method call on non-struct type".to_string(),
+            position: Some(expr_pos.clone()),
+        });
+    };
+
+    let struct_declaration = context.structs.iter().find(|s| s.name == struct_name).expect("Struct not found").clone();
+    let method_declaration = struct_declaration.methods.iter().find(|m| m.0.name == *name);
+
+    let (signature, block) = if let Some(x) = method_declaration {
+        x
+    } else {
+        return Err(CompilerError {
+            message: format!("Method {} not found in struct {}", name, struct_name),
+            position: Some(expr_pos.clone()),
+        });
+    };
+
+    let mut signature = signature.clone();
+    signature.args.insert(0, "self".to_owned());
+
+    let mut arg_types = Vec::new();
+    let mut arg_codes = Vec::new();
+    arg_types.push(ValueType::Reference(Box::new(expr_type)));
+    arg_codes.push(format!("&({expr_code})"));
+
+    for arg in args {
+        let res = generate_expression(context, arg)?;
+        arg_types.push(res.1);
+        arg_codes.push(res.0);
+    }
+
+    let (func_name, return_val) = generate_function(context, &signature, block, &arg_types)?;
+
+    let mut code = func_name;
+    code.push_str("(");
+    for arg in &arg_codes {
+        code.push_str(arg);
+        code.push_str(",");
+    }
+    if !arg_codes.is_empty() {
+        assert_eq!(code.pop(), Some(','));
+    }
+    code.push_str(")");
+    Ok((code, return_val))
 }

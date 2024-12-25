@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::generator::function::{generate_function_call};
 use crate::compiler::generator::GlobalContext;
-use crate::compiler::generator::structure::{generate_field_access, generate_struct, generate_struct_instantiation};
+use crate::compiler::generator::structure::{generate_field_access, generate_method_call, generate_struct, generate_struct_instantiation};
 use crate::compiler::parser::expression::{Expression, Operator};
 
 #[derive(Clone, Eq, Hash, PartialEq, Debug)]
@@ -129,8 +129,9 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             let res = generate_field_access(context, expr_code, expr_type, field, pos)?;
             Ok((res.0, res.1, is_phys))
         }
-        Expression::MethodCall(expr, method, args) => {
-            todo!()
+        Expression::MethodCall(expr, expr_pos, method, args) => {
+            let res = generate_method_call(context, method, expr, expr_pos, args)?;
+            Ok((res.0, res.1, false))
         }
     }
 }
