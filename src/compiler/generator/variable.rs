@@ -15,7 +15,7 @@ pub fn generate_variable_declaration(context: &mut GlobalContext, declaration: &
         }
     }
 
-    let (mut code, mut typ2, is_phys) = generate_expression(context, &declaration.assign_to)?;
+    let (mut code, mut typ2, mut is_phys) = generate_expression(context, &declaration.assign_to)?;
 
 
     while let ValueType::Reference(inner) = &typ2 {
@@ -24,6 +24,7 @@ pub fn generate_variable_declaration(context: &mut GlobalContext, declaration: &
         }
         code = format!("*{}", code);
         typ2 = *inner.clone();
+        is_phys = true;
     }
 
     if typ != typ2 {
