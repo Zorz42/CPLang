@@ -16,7 +16,7 @@ impl FilePosition {
 
 pub fn merge_file_positions(position1: &FilePosition, position2: &FilePosition) -> FilePosition {
     if *position1 == FilePosition::invalid() || *position2 == FilePosition::invalid() {
-        panic!("Invalid file position");
+        unreachable!();
     }
     FilePosition {
         first_pos: position1.first_pos.min(position2.first_pos),
@@ -47,7 +47,7 @@ pub fn display_error(error: &CompilerError, input: &str) {
         let line_end = position.last_pos.0;
 
         if *position == FilePosition::invalid() {
-            panic!("Invalid error position");
+            unreachable!();
         }
 
         let lines: Vec<&str> = input.lines().collect();

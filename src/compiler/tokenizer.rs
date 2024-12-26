@@ -176,6 +176,8 @@ pub fn tokenize_string(string: &Vec<(char, FilePosition)>) -> CompilerResult<Vec
                 new_token(&mut tokens,&mut curr_token, &mut token_pos);
             }
             add_to_token(&mut curr_token, &mut token_pos, c, pos);
+        } else if *c == '.' && curr_token.parse::<i32>().is_ok() {
+            add_to_token(&mut curr_token, &mut token_pos, c, pos);
         } else if let Some(symbol) = Symbol::from_two_chars(*c, iter.peek().map(|x| x.0).unwrap_or(' ')) {
             if !curr_token.is_empty() {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);

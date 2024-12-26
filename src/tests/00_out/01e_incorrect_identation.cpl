@@ -1,0 +1,7 @@
+//ERR 4 0 4 3
+
+main
+    a = 10
+   b = 20
+    c = 30
+    out "good"

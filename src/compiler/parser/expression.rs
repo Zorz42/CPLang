@@ -8,6 +8,7 @@ pub enum Operator {
     Plus,
     Mul,
     Equals,
+    NotEquals,
     Greater,
     Less,
     GreaterEquals,
@@ -192,6 +193,7 @@ fn symbol_to_operator(symbol: &Symbol) -> Option<Operator> {
         Symbol::GreaterThanOrEqual => Some(Operator::GreaterEquals),
         Symbol::LessThanOrEqual => Some(Operator::LessEquals),
         Symbol::Minus => Some(Operator::Minus),
+        Symbol::NotEquals => Some(Operator::NotEquals),
         _ => None,
     }
 }
@@ -221,7 +223,7 @@ pub fn parse_expression(structs: &Vec<StructDeclaration>, block: &TokenBlock, cu
     let operator_precedence = vec![
         vec![Operator::Mul],
         vec![Operator::Plus, Operator::Minus],
-        vec![Operator::Equals, Operator::Greater, Operator::Less, Operator::GreaterEquals, Operator::LessEquals]
+        vec![Operator::Equals, Operator::Greater, Operator::Less, Operator::GreaterEquals, Operator::LessEquals, Operator::NotEquals],
     ];
 
     for operators in operator_precedence {

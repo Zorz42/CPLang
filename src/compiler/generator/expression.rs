@@ -51,6 +51,7 @@ pub fn setup_default_operators(context: &mut GlobalContext) {
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::LessEquals, "<=");
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::GreaterEquals, ">=");
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Minus, "-");
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::NotEquals, "!=");
 }
 
 // third return type says if the value is physical (you can take a reference of it)
@@ -66,7 +67,7 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             Ok((format!("\"{}\"", val), ValueType::String, false))
         }
         Expression::Boolean(val) => {
-            Ok((val.to_string(), ValueType::Boolean, false))
+            Ok((if *val { "1".to_owned() } else { "0".to_owned() }, ValueType::Boolean, false))
         }
         Expression::Variable(ident, pos) => {
             if let Some(typ) = context.get_variable_type(ident) {
