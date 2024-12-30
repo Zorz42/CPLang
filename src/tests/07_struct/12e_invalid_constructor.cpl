@@ -1,0 +1,8 @@
+//ERR 6 8 6 18
+
+struct TestStruct
+    x
+
+main
+    a = TestStruct
+    out "ok"

@@ -97,14 +97,7 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
 
                 let mut fields_res = Vec::new();
                 for field in struct_declaration.fields.iter() {
-                    if let Some(expr) = fields.get(field) {
-                        fields_res.push(expr.clone());
-                    } else {
-                        return Err(CompilerError{
-                            message: format!("Field {} not assigned.", field),
-                            position: Some(pos),
-                        })
-                    }
+                    fields_res.push(fields[field].clone());
                 }
 
                 (Expression::StructInitialization(identifier.clone(), fields_res), pos)
