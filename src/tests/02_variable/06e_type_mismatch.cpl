@@ -1,0 +1,7 @@
+//ERR 4 4 4 11
+
+main
+    a = 10
+    a = "a"
+    out "hello {a}"
+

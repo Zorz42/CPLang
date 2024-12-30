@@ -91,7 +91,7 @@ pub fn parse_out_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock,
                 }))
             },
             _ => Err(CompilerError {
-                message: "Expected string after print keyword".to_string(),
+                message: "Expected string after out keyword".to_string(),
                 position: Some(print_pos.clone()),
             })
         }

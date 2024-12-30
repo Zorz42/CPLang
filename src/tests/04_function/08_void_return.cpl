@@ -1,0 +1,8 @@
+//OUT=OK
+
+func
+    ret
+
+main
+    func()
+    out "OK"

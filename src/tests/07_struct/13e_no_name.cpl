@@ -1,0 +1,7 @@
+//ERR 2 0 2 6
+
+struct
+    x
+
+main
+    out "compile"

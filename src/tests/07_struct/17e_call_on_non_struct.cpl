@@ -1,0 +1,5 @@
+//ERR 4 6 4 12
+
+main
+    a = 10
+    a.method()

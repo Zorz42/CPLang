@@ -1,0 +1,14 @@
+//ERR 12 33 12 38
+
+struct TestStruct
+    x
+
+    fn set_x
+        self.x = "compile"
+
+    fn get_x
+        ret self.x
+
+main
+    a = (TestStruct x "no good").set_x()
+    out "{a.get_x()}"

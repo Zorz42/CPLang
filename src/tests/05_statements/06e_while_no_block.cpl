@@ -1,0 +1,9 @@
+//ERR 8 4 8 7
+
+main
+    a = 0
+    b = 1
+    cnt = 0
+    while cnt < 20
+
+    out "{a}"

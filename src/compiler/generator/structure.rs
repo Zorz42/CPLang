@@ -86,29 +86,6 @@ pub fn generate_struct_instantiation(context: &mut GlobalContext, name: String, 
 }
 
 pub fn generate_method_call(context: &mut GlobalContext, name: &str, expr: &Expression, expr_pos: &FilePosition, args: &Vec<Expression>) -> CompilerResult<(String, ValueType)> {
-    /*let (signature, block) = context.functions.iter().find(|f| f.0.name == *name).expect("Function not found").clone();
-    let mut arg_types = Vec::new();
-    let mut arg_codes = Vec::new();
-    for arg in args {
-        let res = generate_expression(context, arg)?;
-        arg_types.push(res.1);
-        arg_codes.push(res.0);
-    }
-
-    let (func_name, return_val) = generate_function(context, &signature, &block, &arg_types)?;
-
-    let mut code = func_name;
-    code.push_str("(");
-    for arg in &arg_codes {
-        code.push_str(arg);
-        code.push_str(",");
-    }
-    if !arg_codes.is_empty() {
-        assert_eq!(code.pop(), Some(','));
-    }
-    code.push_str(")");
-    Ok((code, return_val))*/
-
     let (expr_code, expr_type, is_phys) = generate_expression(context, expr)?;
 
     if !is_phys {

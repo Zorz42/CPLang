@@ -1,0 +1,8 @@
+//ERR 4 4 4 13
+
+func
+    ret 10
+    ret "abc"
+
+main
+    func()

@@ -1,0 +1,7 @@
+//ERR 2 7 2 17
+
+struct TestStruct
+
+
+main
+    out "compile"
