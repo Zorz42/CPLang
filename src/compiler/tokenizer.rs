@@ -34,6 +34,7 @@ impl Keyword {
 pub enum Symbol {
     Plus,
     Star,
+    Slash,
     LeftBracket,
     RightBracket,
     Assign,
@@ -57,6 +58,7 @@ impl Symbol {
         match c {
             '+' => Some(Symbol::Plus),
             '*' => Some(Symbol::Star),
+            '/' => Some(Symbol::Slash),
             '(' => Some(Symbol::LeftBracket),
             ')' => Some(Symbol::RightBracket),
             '=' => Some(Symbol::Assign),

@@ -5,6 +5,7 @@ use crate::compiler::generator::structure::{generate_field_access, generate_meth
 use crate::compiler::parser::expression::{Expression, Operator};
 
 #[derive(Clone, Eq, Hash, PartialEq, Debug)]
+#[allow(dead_code)]
 pub enum ValueType {
     I32,
     I64,
@@ -45,6 +46,7 @@ fn add_operator(context: &mut GlobalContext, val1: ValueType, val2: ValueType, r
 pub fn setup_default_operators(context: &mut GlobalContext) {
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Plus, "+");
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Mul, "*");
+    add_operator(context, ValueType::I32, ValueType::I32, ValueType::I32, Operator::Div, "/");
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::Equals, "==");
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::Less, "<");
     add_operator(context, ValueType::I32, ValueType::I32, ValueType::Boolean, Operator::Greater, ">");

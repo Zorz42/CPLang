@@ -7,6 +7,7 @@ use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 pub enum Operator {
     Plus,
     Mul,
+    Div,
     Equals,
     NotEquals,
     Greater,
@@ -180,6 +181,7 @@ fn symbol_to_operator(symbol: &Symbol) -> Option<Operator> {
     match symbol {
         Symbol::Plus => Some(Operator::Plus),
         Symbol::Star => Some(Operator::Mul),
+        Symbol::Slash => Some(Operator::Div),
         Symbol::Equals => Some(Operator::Equals),
         Symbol::GreaterThan => Some(Operator::Greater),
         Symbol::LessThan => Some(Operator::Less),
@@ -214,7 +216,7 @@ pub fn parse_expression(structs: &Vec<StructDeclaration>, block: &TokenBlock, cu
     }
 
     let operator_precedence = vec![
-        vec![Operator::Mul],
+        vec![Operator::Mul, Operator::Div],
         vec![Operator::Plus, Operator::Minus],
         vec![Operator::Equals, Operator::Greater, Operator::Less, Operator::GreaterEquals, Operator::LessEquals, Operator::NotEquals],
     ];

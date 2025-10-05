@@ -94,12 +94,35 @@ pub fn generate_return_statement(context: &mut GlobalContext, expression: Option
         }
         Ok(format!("return {}", code))
     } else {
+        // returning without an expression implies void
+        if let Some(existing) = &context.return_type {
+            if *existing != ValueType::Void {
+                return Err(CompilerError {
+                    message: format!("Return type mismatch, expected {:?} but got Void", existing),
+                    position: Some(pos.clone()),
+                });
+            }
+        }
+
+        context.return_type = Some(ValueType::Void);
+        if let Some(signature) = context.curr_function_signature.clone() {
+            let arg_types = context.curr_function_args.clone();
+            if let Some(val) = context.generated_functions.get_mut(&(signature, arg_types)) {
+                val.1 = Some(ValueType::Void);
+            }
+        }
+
         Ok("return".to_owned())
     }
 }
 
 pub fn generate_function_call(context: &mut GlobalContext, name: &str, args: &Vec<Expression>) -> CompilerResult<(String, ValueType)> {
-    let (signature, block) = context.functions.iter().find(|f| f.0.name == *name).expect("Function not found").clone();
+    let (signature, block) = match context.functions.iter().find(|f| f.0.name == *name) {
+        Some(pair) => pair.clone(),
+        None => {
+            return Err(CompilerError { message: format!("Function {} not found", name), position: None });
+        }
+    };
     let mut arg_types = Vec::new();
     let mut arg_codes = Vec::new();
     for arg in args {
