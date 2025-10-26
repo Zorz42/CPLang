@@ -3,10 +3,39 @@ mod tests {
     use test_derive::generate_tests;
     use crate::compiler::compile;
     use crate::compiler::error::FilePosition;
+    use std::hash::Hasher;
+
+    fn compile_gcc(c_file: &str) -> String {
+        let cache_dir = "./.test_cache";
+        std::fs::create_dir_all(cache_dir).unwrap();
+        // hash contents of c_file to create unique file name (with only digit characters)
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        let contents = std::fs::read_to_string(&c_file).unwrap();
+        hasher.write(contents.as_bytes());
+        let hash = hasher.finish();
+        let exec_file = format!("{}/test_exec_{}", cache_dir, hash);
+        
+        if std::path::Path::new(&exec_file).exists() {
+            println!("Using cached executable");
+            return exec_file;
+        }
+        let output = std::process::Command::new("gcc")
+            .arg(&c_file)
+            .arg("-o")
+            .arg(&exec_file)
+            .output()
+            .expect("failed to compile test");
+
+        if !output.status.success() {
+            println!("{}", String::from_utf8(output.stderr).unwrap());
+            panic!("failed to compile test");
+        }
+
+        exec_file
+    }
 
     fn run_test(test_file: &str) {
         let c_file = test_file.replace(".cpl", ".c");
-        let exec_file = test_file.replace(".cpl", "");
 
         let binding = std::fs::read_to_string(&test_file).unwrap();
         let first_line = binding.lines().next().unwrap();
@@ -40,17 +69,8 @@ mod tests {
             expected_output.push('\n');
 
             compile(&test_file, &c_file).unwrap();
-            let output = std::process::Command::new("gcc")
-                .arg(&c_file)
-                .arg("-o")
-                .arg(&exec_file)
-                .output()
-                .expect("failed to compile test");
+            let exec_file = compile_gcc(&c_file);
 
-            if !output.status.success() {
-                println!("{}", String::from_utf8(output.stderr).unwrap());
-                panic!("failed to compile test");
-            }
             let output = std::process::Command::new(format!("./{exec_file}"))
                 .output()
                 .expect("failed to run test");
@@ -58,7 +78,6 @@ mod tests {
             assert_eq!(String::from_utf8(output.stdout).unwrap(), expected_output);
 
             std::fs::remove_file(&c_file).unwrap();
-            std::fs::remove_file(&exec_file).unwrap();
         } else {
             panic!("Invalid test file, first line must start with //ERR or //OUT=");
         }
