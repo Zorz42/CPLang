@@ -14,7 +14,7 @@ pub fn parse_inline_c(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResul
             Token::Constant(Constant::String(string)) => {
                 *curr_idx += 1;
                 Ok(Some(InlineCStatement {
-                    code: string.clone(),
+                    code: string.iter().map(|x| x.c).collect::<String>(),
                 }))
             },
             _ => Err(CompilerError {

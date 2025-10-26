@@ -1,0 +1,14 @@
+//OUT=it works!
+
+main
+    // "
+
+    /*
+        "
+        */
+
+    out "it works!"
+
+    /*
+    "
+    */

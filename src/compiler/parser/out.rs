@@ -1,31 +1,32 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::expression::{parse_expression, Expression};
 use crate::compiler::parser::structure::StructDeclaration;
-use crate::compiler::tokenizer::{tokenize_string, Constant, Keyword, Token, TokenBlock};
+use crate::compiler::preprocessor::{Fragment, PosChar};
+use crate::compiler::tokenizer::{tokenize_fragments, Constant, Keyword, Token, TokenBlock};
 
 #[derive(Debug, Clone)]
 pub struct PrintStatement {
     pub values: Vec<Expression>,
 }
 
-fn parse_format_string(structs: &Vec<StructDeclaration>, string: &str, pos: &FilePosition) -> CompilerResult<Vec<Expression>> {
+fn parse_format_string(structs: &Vec<StructDeclaration>, string: &Vec<PosChar>, pos: &FilePosition) -> CompilerResult<Vec<Expression>> {
     let mut res = Vec::new();
     let mut curr = String::new();
     let mut in_format = false;
     let mut format_pos = FilePosition::invalid();
-    for (idx, c) in string.chars().enumerate() {
+    for (idx, pc) in string.iter().enumerate() {
         if in_format {
-            if c == '}' {
+            if pc.c == '}' {
                 in_format = false;
 
                 let mut string = Vec::new();
                 for (i, c) in curr.chars().enumerate() {
-                    string.push((c, FilePosition {
+                    string.push(Fragment::Char(PosChar::new(c, FilePosition {
                         first_pos: (format_pos.first_pos.0, format_pos.first_pos.1 + i + 1),
                         last_pos: (format_pos.first_pos.0, format_pos.first_pos.1 + i + 2),
-                    }));
+                    })));
                 }
-                let token_block = TokenBlock { children: tokenize_string(&string)? };
+                let token_block = TokenBlock { children: tokenize_fragments(&string)? };
                 let mut idx2 = 0;
                 let (expression, _) = parse_expression(structs, &token_block, &mut idx2)?;
 
@@ -45,20 +46,17 @@ fn parse_format_string(structs: &Vec<StructDeclaration>, string: &str, pos: &Fil
 
                 curr = String::new();
             } else {
-                curr.push(c);
+                curr.push(pc.c);
             }
-        } else if c == '{' {
+        } else if pc.c == '{' {
             in_format = true;
             if !curr.is_empty() {
                 res.push(Expression::String(curr));
             }
             curr = String::new();
-            format_pos = FilePosition {
-                first_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 1),
-                last_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 1)
-            }
+            format_pos = pc.pos.clone();
         } else {
-            curr.push(c);
+            curr.push(pc.c);
         }
     }
     if in_format {

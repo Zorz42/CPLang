@@ -1,11 +1,24 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 
-pub fn add_file_positions(test: &str) -> Vec<(char, FilePosition)> {
+// A character with its position in the file
+#[derive(Clone, Debug, PartialEq)]
+pub struct PosChar {
+    pub(crate) c: char,
+    pub(crate) pos: FilePosition,
+}
+
+impl PosChar {
+    pub fn new(c: char, pos: FilePosition) -> Self {
+        Self { c, pos }
+    }
+}
+
+pub fn add_file_positions(test: &str) -> Vec<PosChar> {
     let mut res = Vec::new();
     let mut line = 0;
     let mut column = 0;
     for c in test.chars() {
-        res.push((c, FilePosition {
+        res.push(PosChar::new(c, FilePosition {
             first_pos: (line, column),
             last_pos: (line, column + 1),
         }));
@@ -19,98 +32,186 @@ pub fn add_file_positions(test: &str) -> Vec<(char, FilePosition)> {
     res
 }
 
-pub fn remove_comments(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec<(char, FilePosition)>> {
+// The compiler first takes all the strings, because string
+// literals can contain comment-like sequences. Comments also contain
+// quotes. It breaks it into fragments. A `Fragment` is a structure of
+// two types: either a string literal or a char (of code).
+// Strings also contain quotes so that their whole location can be tracked.
+#[derive(Clone, Debug)]
+pub enum Fragment {
+    String(Vec<PosChar>),
+    Char(PosChar),
+}
+
+fn tabs_to_spaces(input: &Vec<PosChar>) -> Vec<PosChar> {
+    let mut res = Vec::new();
+    for pos_char in input {
+        if pos_char.c == '\t' {
+            for _ in 0..4 {
+                res.push(PosChar::new(' ', pos_char.pos.clone()));
+            }
+        } else {
+            res.push(pos_char.clone());
+        }
+    }
+    res
+}
+
+pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fragment>> {
     let mut res = Vec::new();
 
-    let mut in_comment_depth = 0;
-    let mut multiline_comment_positions = Vec::new();
-    let mut in_single_line_comment = false;
-    let mut in_string = false;
+    let input = tabs_to_spaces(input);
 
+    #[derive(PartialEq, Clone)]
+    enum Location {
+        InString,
+        InSingleLineComment,
+        // depth of nested comments
+        InMultiLineComment(i32),
+        InCode,
+    }
+
+    let mut location = Location::InCode;
+    let mut current_string = Vec::new();
+    let mut multiline_comment_start_positions = Vec::new();
+    let mut string_quote_position = None;
+
+    // first split into fragments based on strings and comments
+    // ignore indentation and line breaks for now
     let mut chars = input.iter().peekable();
-    while let Some((c, pos)) = chars.next() {
-        if !in_string && !in_single_line_comment {
-            if *c == '/' {
-                // check for /*
-                if let Some(('*', _)) = chars.peek() {
-                    in_comment_depth += 1;
-                    multiline_comment_positions.push(pos.clone());
-                    if in_comment_depth == 1 {
-                        res.push((' ', pos.clone()));
+    while let Some(pos_char) = chars.next() {
+        match location.clone() {
+            Location::InCode => {
+                if pos_char.c == '"' {
+                    location = Location::InString;
+                    string_quote_position = Some(pos_char.pos.clone());
+                    current_string = vec![pos_char.clone()];
+                } else if pos_char.c == '/' {
+                    if let Some(next_char) = chars.peek() {
+                        if next_char.c == '/' {
+                            location = Location::InSingleLineComment;
+                            chars.next();
+                        } else if next_char.c == '*' {
+                            location = Location::InMultiLineComment(1);
+                            multiline_comment_start_positions.push(pos_char.pos.clone());
+                            chars.next();
+                            res.push(Fragment::Char(PosChar::new(' ', pos_char.pos.clone())));
+                        } else {
+                            res.push(Fragment::Char(pos_char.clone()));
+                        }
+                    } else {
+                        res.push(Fragment::Char(pos_char.clone()));
                     }
-                    continue;
+                } else {
+                    res.push(Fragment::Char(pos_char.clone()));
                 }
-            } else if *c == '*' {
-                // check for */
-                if let Some(('/', _)) = chars.peek() {
-                    chars.next().unwrap();
-                    in_comment_depth -= 1;
-                    multiline_comment_positions.pop().unwrap();
-                    continue;
+            },
+            Location::InString => {
+                current_string.push(pos_char.clone());
+                if pos_char.c == '"' {
+                    res.push(Fragment::String(current_string.clone()));
+                    location = Location::InCode;
                 }
-            }
-        }
-
-        if in_comment_depth == 0 {
-            if *c == '"' {
-                in_string = !in_string;
-            }
-            if !in_string {
-                if *c == '/' {
-                    if let Some(('/', _)) = chars.peek() {
-                        chars.next();
-                        in_single_line_comment = true;
-                        continue;
+                // check for \
+                else if pos_char.c == '\\' {
+                    if let Some(next_char) = chars.peek() {
+                        if next_char.c == '"' {
+                            // remove the \
+                            current_string.pop();
+                            current_string.push((*next_char).clone());
+                            chars.next();
+                            continue;
+                        }
                     }
-                } else if *c == '\n' {
-                    in_single_line_comment = false;
                 }
-            }
-        }
-
-        if in_comment_depth == 0 && !in_single_line_comment {
-            res.push((*c, pos.clone()));
+            },
+            Location::InSingleLineComment => {
+                if pos_char.c == '\n' {
+                    location = Location::InCode;
+                }
+            },
+            Location::InMultiLineComment(depth) => {
+                if pos_char.c == '*' {
+                    if let Some(next_char) = chars.peek() {
+                        if next_char.c == '/' {
+                            location = match depth {
+                                1 => Location::InCode,
+                                _ => Location::InMultiLineComment(depth - 1),
+                            };
+                            multiline_comment_start_positions.pop();
+                            chars.next();
+                        }
+                    }
+                }
+                if pos_char.c == '/' {
+                    if let Some(next_char) = chars.peek() {
+                        if next_char.c == '*' {
+                            location = Location::InMultiLineComment(depth + 1);
+                            multiline_comment_start_positions.push(pos_char.pos.clone());
+                            chars.next();
+                        }
+                    }
+                }
+            },
         }
     }
 
-    if in_comment_depth > 0 {
-        let position = merge_file_positions(&multiline_comment_positions.pop().unwrap(), &input.last().unwrap().1);
+    match &location {
+        Location::InString => {
+            let start_pos = &string_quote_position.unwrap();
+            let end_pos = &input.last().unwrap().pos;
 
-        return Err(CompilerError {
-            message: "Unclosed multiline comment".to_string(),
-            position: Some(position),
-        });
+            return Err(CompilerError {
+                message: "Unclosed string literal".to_string(),
+                position: Some(merge_file_positions(start_pos, end_pos)),
+            });
+        },
+        Location::InMultiLineComment(_) => {
+            let start_pos = &multiline_comment_start_positions.pop().unwrap();
+            let end_pos = &input.last().unwrap().pos;
+
+            return Err(CompilerError {
+                message: "Unclosed multiline comment".to_string(),
+                position: Some(merge_file_positions(start_pos, end_pos)),
+            });
+        }
+        _ => {},
     }
 
     Ok(res)
 }
 
 // splits input into lines and parses indentation levels
-pub fn parse_indentation(input: Vec<(char, FilePosition)>) -> CompilerResult<Vec<(i32, Vec<(char, FilePosition)>)>> {
+pub fn parse_indentation(input: &Vec<Fragment>) -> CompilerResult<Vec<(i32, Vec<Fragment>)>> {
     let mut lines = Vec::new();
     lines.push((0, Vec::new()));
 
-    for (ch, pos) in input {
-        if ch == '\n' {
+    for i in input {
+        if matches!(i, Fragment::Char(PosChar { c: '\n', pos: _ })) {
             lines.push((0, Vec::new()));
         } else {
-            lines.last_mut().unwrap().1.push((ch, pos));
+            lines.last_mut().unwrap().1.push(i.clone());
         }
     }
 
-    lines.retain(|(_, line)| !line.iter().all(|(c, _)| *c == ' '));
+    // remove lines with only spaces
+    lines.retain(|(_, line)| !line.iter().all(|i| matches!(i, Fragment::Char(PosChar { c: ' ', pos: _ }))));
 
     for (indent, line) in &mut lines {
-        let leading_spaces = line.iter().take_while(|c| c.0 == ' ').count();
+        let leading_spaces = line.iter().take_while(|i| matches!(i, Fragment::Char(PosChar { c: ' ', pos: _ }))).count();
         if leading_spaces % 4 != 0 {
-            let pos = FilePosition {
-                first_pos: (line[0].1.first_pos.0, 0),
-                last_pos: (line[0].1.first_pos.0, leading_spaces),
+            let first_char_pos = match line[0] {
+                Fragment::Char(ref pc) => &pc.pos,
+                Fragment::String(_) => panic!()
+            };
+            let last_char_pos = match line[leading_spaces-1] {
+                Fragment::Char(ref pc) => &pc.pos,
+                Fragment::String(_) => panic!()
             };
 
             return Err(CompilerError {
-                message: format!("Identation must have a multiple of 4 spaces, found {} spaces", leading_spaces),
-                position: Some(pos),
+                message: format!("Indentation must have a multiple of 4 spaces, found {} spaces", leading_spaces),
+                position: Some(merge_file_positions(first_char_pos, last_char_pos)),
             })
         }
 

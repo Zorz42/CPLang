@@ -66,7 +66,18 @@ pub fn generate_expression(context: &mut GlobalContext, expression: &Expression)
             Ok((val.to_string(), ValueType::F32, false))
         }
         Expression::String(val) => {
-            Ok((format!("\"{}\"", val), ValueType::String, false))
+            let mut escaped = String::new();
+            for c in val.chars() {
+                match c {
+                    '\n' => escaped.push_str("\\n"),
+                    '\r' => escaped.push_str("\\r"),
+                    '\t' => escaped.push_str("\\t"),
+                    '\"' => escaped.push_str("\\\""),
+                    '\\' => escaped.push_str("\\\\"),
+                    _ => escaped.push(c),
+                }
+            }
+            Ok((format!("\"{}\"", escaped), ValueType::String, false))
         }
         Expression::Boolean(val) => {
             Ok((if *val { "1".to_owned() } else { "0".to_owned() }, ValueType::Boolean, false))
