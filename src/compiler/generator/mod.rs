@@ -17,6 +17,7 @@ use crate::compiler::parser::structure::StructDeclaration;
 
 pub struct GlobalContext {
     pub functions: Vec<(FunctionSignature, Block)>,
+    #[allow(clippy::type_complexity)]
     pub operators: HashMap<(ValueType, Operator, ValueType), (Box<dyn Fn(String, String) -> String>, ValueType)>,
     pub variables: HashMap<String, ValueType>,
     pub code: String, // the code generated so far
@@ -62,7 +63,7 @@ pub fn generate_code(functions: Vec<(FunctionSignature, Block)>, structs: Vec<St
         });
     }
 
-    let (main_name, main_return_type) = generate_function(&mut context, &main_signature, &main_block, &vec![])?;
+    let (main_name, main_return_type) = generate_function(&mut context, &main_signature, &main_block, &[])?;
 
     if main_return_type != ValueType::Void {
         return Err(CompilerError {

@@ -9,7 +9,7 @@ pub struct PrintStatement {
     pub values: Vec<Expression>,
 }
 
-fn parse_format_string(structs: &Vec<StructDeclaration>, string: &Vec<PosChar>, pos: &FilePosition) -> CompilerResult<Vec<Expression>> {
+fn parse_format_string(structs: &Vec<StructDeclaration>, string: &[PosChar], pos: &FilePosition) -> CompilerResult<Vec<Expression>> {
     let mut res = Vec::new();
     let mut curr = String::new();
     let mut in_format = false;

@@ -25,7 +25,7 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
     let fragment_block = preprocess(&input)?;
     let program_block = tokenize_fragments(&fragment_block.fragments)?;
-    println!("{:?}", program_block);
+    //println!("{:?}", program_block);
     let (functions, structs) = parse_tokens(&program_block)?;
 
     let code = generate_code(functions, structs)?;

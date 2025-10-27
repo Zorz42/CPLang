@@ -30,6 +30,7 @@ pub enum Statement {
     InlineC(InlineCStatement),
 }
 
+#[allow(clippy::type_complexity)]
 pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<(Vec<(FunctionSignature, Block)>, Vec<StructDeclaration>)> {
     let mut curr_idx = 0;
     let mut function_declarations = Vec::new();

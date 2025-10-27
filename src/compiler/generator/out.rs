@@ -45,7 +45,7 @@ pub fn generate_out_statement(context: &mut GlobalContext, expression: &PrintSta
         code.push_str(&format!(", {}", part));
     }
 
-    code.push_str(")");
+    code.push(')');
 
     Ok(code)
 }

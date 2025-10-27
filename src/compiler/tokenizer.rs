@@ -131,7 +131,7 @@ fn string_to_token(string: &str) -> Token {
     Token::Identifier(string.to_string())
 }
 
-pub fn tokenize_fragments(string: &Vec<Fragment>) -> CompilerResult<TokenBlock> {
+pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
     let mut tokens = Vec::new();
     let mut curr_token = String::new();
     let mut token_pos = FilePosition::unknown();

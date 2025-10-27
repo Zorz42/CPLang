@@ -7,10 +7,10 @@ use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::function::FunctionSignature;
 
 // it returns generated function name and its return type
-pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignature, block: &Block, arg_types: &Vec<ValueType>) -> CompilerResult<(String, ValueType)> {
+pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignature, block: &Block, arg_types: &[ValueType]) -> CompilerResult<(String, ValueType)> {
     assert_eq!(arg_types.len(), signature.args.len(), "Function signature and arguments mismatch");
 
-    if let Some((name, typ)) = context.generated_functions.get(&(signature.clone(), arg_types.clone())) {
+    if let Some((name, typ)) = context.generated_functions.get(&(signature.clone(), arg_types.to_vec())) {
         if let Some(typ) = typ {
             return Ok((name.clone(), typ.clone()));
         } else {
@@ -27,7 +27,7 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
     let prev_variables = context.variables.clone();
     context.return_type = None;
     context.curr_function_signature = Some(signature.clone());
-    context.curr_function_args = arg_types.clone();
+    context.curr_function_args = arg_types.to_vec();
 
     // introduce arguments as variables
     for (typ, name) in arg_types.iter().zip(signature.args.iter()) {
@@ -47,7 +47,7 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
     }
     context.taken_symbol_names.insert(function_name.clone());
 
-    context.generated_functions.insert((signature.clone(), arg_types.clone()), (function_name.clone(), None));
+    context.generated_functions.insert((signature.clone(), arg_types.to_vec()), (function_name.clone(), None));
 
     let mut code = String::new();
 
@@ -72,7 +72,7 @@ pub fn generate_function(context: &mut GlobalContext, signature: &FunctionSignat
     context.curr_function_signature = prev_function_signature;
     context.curr_function_args = prev_function_args;
 
-    context.generated_functions.insert((signature.clone(), arg_types.clone()), (function_name.clone(), Some(return_type.clone())));
+    context.generated_functions.insert((signature.clone(), arg_types.to_vec()), (function_name.clone(), Some(return_type.clone())));
     Ok((function_name, return_type))
 }
 
@@ -95,13 +95,11 @@ pub fn generate_return_statement(context: &mut GlobalContext, expression: Option
         Ok(format!("return {}", code))
     } else {
         // returning without an expression implies void
-        if let Some(existing) = &context.return_type {
-            if *existing != ValueType::Void {
-                return Err(CompilerError {
-                    message: format!("Return type mismatch, expected {:?} but got Void", existing),
-                    position: Some(pos.clone()),
-                });
-            }
+        if let Some(existing) = &context.return_type && *existing != ValueType::Void {
+            return Err(CompilerError {
+                message: format!("Return type mismatch, expected {:?} but got Void", existing),
+                position: Some(pos.clone()),
+            });
         }
 
         context.return_type = Some(ValueType::Void);
@@ -134,14 +132,14 @@ pub fn generate_function_call(context: &mut GlobalContext, name: &str, args: &Ve
     let (func_name, return_val) = generate_function(context, &signature, &block, &arg_types)?;
 
     let mut code = func_name;
-    code.push_str("(");
+    code.push('(');
     for arg in &arg_codes {
         code.push_str(arg);
-        code.push_str(",");
+        code.push(',');
     }
     if !arg_codes.is_empty() {
         assert_eq!(code.pop(), Some(','));
     }
-    code.push_str(")");
+    code.push(')');
     Ok((code, return_val))
 }

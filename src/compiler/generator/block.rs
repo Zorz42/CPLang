@@ -48,6 +48,6 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> CompilerRes
 
     context.variables = prev_variables;
 
-    code.push_str("}");
+    code.push('}');
     Ok(code)
 }

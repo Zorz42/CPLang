@@ -5,8 +5,8 @@ use crate::compiler::generator::GlobalContext;
 use crate::compiler::parser::expression::Expression;
 use crate::compiler::parser::structure::StructDeclaration;
 
-pub fn generate_struct(context: &mut GlobalContext, declaration: &StructDeclaration, field_types: &Vec<ValueType>) -> CompilerResult<String> {
-    if let Some(res) = context.generated_structs.get(&(declaration.name.clone(), field_types.clone())) {
+pub fn generate_struct(context: &mut GlobalContext, declaration: &StructDeclaration, field_types: &[ValueType]) -> CompilerResult<String> {
+    if let Some(res) = context.generated_structs.get(&(declaration.name.clone(), field_types.to_vec())) {
         return Ok(res.clone());
     }
 
@@ -17,7 +17,7 @@ pub fn generate_struct(context: &mut GlobalContext, declaration: &StructDeclarat
 
     let c_name = format!("cplang_{}{}", declaration.name, idx);
     context.taken_symbol_names.insert(c_name.clone());
-    context.generated_structs.insert((declaration.name.clone(), field_types.clone()), c_name.clone());
+    context.generated_structs.insert((declaration.name.clone(), field_types.to_vec()), c_name.clone());
 
     let mut code = String::new();
     code.push_str(&format!("typedef struct {} {{\n", c_name));
@@ -76,12 +76,12 @@ pub fn generate_struct_instantiation(context: &mut GlobalContext, name: String, 
     code.push_str(&format!("({c_name}){{"));
     for arg in &arg_codes {
         code.push_str(arg);
-        code.push_str(",");
+        code.push(',');
     }
     if !arg_codes.is_empty() {
         code.pop();
     }
-    code.push_str("}");
+    code.push('}');
     Ok((code, typ))
 }
 
@@ -133,14 +133,14 @@ pub fn generate_method_call(context: &mut GlobalContext, name: &str, expr: &Expr
     let (func_name, return_val) = generate_function(context, &signature, block, &arg_types)?;
 
     let mut code = func_name;
-    code.push_str("(");
+    code.push('(');
     for arg in &arg_codes {
         code.push_str(arg);
-        code.push_str(",");
+        code.push(',');
     }
     if !arg_codes.is_empty() {
         assert_eq!(code.pop(), Some(','));
     }
-    code.push_str(")");
+    code.push(')');
     Ok((code, return_val))
 }

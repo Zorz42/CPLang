@@ -8,11 +8,9 @@ pub fn generate_variable_declaration(context: &mut GlobalContext, declaration: &
     let (value_code, typ, _) = generate_expression(context, &declaration.value)?;
 
     let mut is_new = false;
-    if let Expression::Variable(ident, _) = &declaration.assign_to {
-        if context.get_variable_type(ident).is_none() {
-            context.variables.insert(ident.clone(), typ.clone());
-            is_new = true;
-        }
+    if let Expression::Variable(ident, _) = &declaration.assign_to && context.get_variable_type(ident).is_none() {
+        context.variables.insert(ident.clone(), typ.clone());
+        is_new = true;
     }
 
     let (mut code, mut typ2, mut is_phys) = generate_expression(context, &declaration.assign_to)?;

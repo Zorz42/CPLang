@@ -138,7 +138,7 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
                     let mut block_idx = 0;
                     *curr_idx += 1;
                     while block_idx < call_block.children.len() {
-                        let (expr, _) = parse_expression(structs, &call_block, &mut block_idx)?;
+                        let (expr, _) = parse_expression(structs, call_block, &mut block_idx)?;
                         args.push(expr);
                     }
                     res.0 = Expression::MethodCall(Box::new(res.0), pos.clone(), s.clone(), args);

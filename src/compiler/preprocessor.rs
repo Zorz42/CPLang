@@ -112,10 +112,8 @@ fn tabs_to_spaces(input: &Vec<PosChar>) -> Vec<PosChar> {
 
 fn newlines_to_spaces(mut input: FragmentBlock) -> FragmentBlock {
     for i in &mut input.fragments {
-        if let Fragment::Char(pos_char) = i {
-            if pos_char.c == '\n' {
-                pos_char.c = ' ';
-            }
+        if let Fragment::Char(pos_char) = i && pos_char.c == '\n' {
+            pos_char.c = ' ';
         }
 
         if let Fragment::BraceBlock(block) = i {
@@ -138,14 +136,14 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
 
     #[derive(PartialEq, Clone)]
     enum Location {
-        InString,
-        InSingleLineComment,
+        String,
+        SingleLineComment,
         // depth of nested comments
-        InMultiLineComment(i32),
-        InCode,
+        MultiLineComment(i32),
+        Code,
     }
 
-    let mut location = Location::InCode;
+    let mut location = Location::Code;
     let mut current_string = Vec::new();
     let mut multiline_comment_start_positions = Vec::new();
     let mut string_quote_position = None;
@@ -155,18 +153,18 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
     let mut chars = input.iter().peekable();
     while let Some(pos_char) = chars.next() {
         match location.clone() {
-            Location::InCode => {
+            Location::Code => {
                 if pos_char.c == '"' {
-                    location = Location::InString;
+                    location = Location::String;
                     string_quote_position = Some(pos_char.pos.clone());
                     current_string = Vec::new();
                 } else if pos_char.c == '/' {
                     if let Some(next_char) = chars.peek() {
                         if next_char.c == '/' {
-                            location = Location::InSingleLineComment;
+                            location = Location::SingleLineComment;
                             chars.next();
                         } else if next_char.c == '*' {
-                            location = Location::InMultiLineComment(1);
+                            location = Location::MultiLineComment(1);
                             multiline_comment_start_positions.push(pos_char.pos.clone());
                             chars.next();
                             res.push(Fragment::Char(PosChar::new(' ', pos_char.pos.clone())));
@@ -180,11 +178,11 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                     res.push(Fragment::Char(pos_char.clone()));
                 }
             },
-            Location::InString => {
+            Location::String => {
                 if pos_char.c == '"' {
                     let pos = merge_file_positions(string_quote_position.as_ref().unwrap(), &pos_char.pos);
                     res.push(Fragment::String(current_string.clone(), pos));
-                    location = Location::InCode;
+                    location = Location::Code;
                 }
                 // check for \
                 else if pos_char.c == '\\' && let Some(next_char) = chars.peek() && next_char.c == '"' {
@@ -195,39 +193,33 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                     current_string.push(pos_char.clone());
                 }
             },
-            Location::InSingleLineComment => {
+            Location::SingleLineComment => {
                 if pos_char.c == '\n' {
-                    location = Location::InCode;
+                    location = Location::Code;
                 }
             },
-            Location::InMultiLineComment(depth) => {
-                if pos_char.c == '*' {
-                    if let Some(next_char) = chars.peek() {
-                        if next_char.c == '/' {
-                            location = match depth {
-                                1 => Location::InCode,
-                                _ => Location::InMultiLineComment(depth - 1),
-                            };
-                            multiline_comment_start_positions.pop();
-                            chars.next();
-                        }
-                    }
+            Location::MultiLineComment(depth) => {
+                // check for */
+                if pos_char.c == '*' && let Some(next_char) = chars.peek() && next_char.c == '/' {
+                    location = match depth {
+                        1 => Location::Code,
+                        _ => Location::MultiLineComment(depth - 1),
+                    };
+                    multiline_comment_start_positions.pop();
+                    chars.next();
                 }
-                if pos_char.c == '/' {
-                    if let Some(next_char) = chars.peek() {
-                        if next_char.c == '*' {
-                            location = Location::InMultiLineComment(depth + 1);
-                            multiline_comment_start_positions.push(pos_char.pos.clone());
-                            chars.next();
-                        }
-                    }
+                // check for /*
+                else if pos_char.c == '/' && let Some(next_char) = chars.peek() && next_char.c == '*' {
+                    location = Location::MultiLineComment(depth + 1);
+                    multiline_comment_start_positions.push(pos_char.pos.clone());
+                    chars.next();
                 }
             },
         }
     }
 
     match &location {
-        Location::InString => {
+        Location::String => {
             let start_pos = &string_quote_position.unwrap();
             let end_pos = &input.last().unwrap().pos;
 
@@ -236,7 +228,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                 position: Some(merge_file_positions(start_pos, end_pos)),
             });
         },
-        Location::InMultiLineComment(_) => {
+        Location::MultiLineComment(_) => {
             let start_pos = &multiline_comment_start_positions.pop().unwrap();
             let end_pos = &input.last().unwrap().pos;
 
@@ -384,5 +376,5 @@ fn parse_indentation(input: &FragmentBlock) -> CompilerResult<FragmentBlock> {
         *indent = (leading_spaces / 4) as i32;
     }
 
-    Ok(parse_indentation_block(&lines, &mut 0)?)
+    parse_indentation_block(&lines, &mut 0)
 }
