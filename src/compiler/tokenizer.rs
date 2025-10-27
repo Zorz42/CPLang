@@ -153,21 +153,11 @@ pub fn tokenize_fragments(string: &Vec<Fragment>) -> CompilerResult<TokenBlock> 
     let mut iter = string.iter().peekable();
     while let Some(frag) = iter.next() {
         match frag {
-            Fragment::String(s) => {
+            Fragment::String(s, pos) => {
                 if !curr_token.is_empty() {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 }
-                let mut str_content = Vec::new();
-                let mut str_pos = s[0].pos.clone();
-                for (i, pos_char) in s.iter().enumerate() {
-                    str_pos = merge_file_positions(&str_pos, &pos_char.pos);
-
-                    if i != 0 && i != s.len() - 1 {
-                        // skip the quotes
-                        str_content.push(pos_char.clone());
-                    }
-                }
-                tokens.push((Token::Constant(Constant::String(str_content)), str_pos));
+                tokens.push((Token::Constant(Constant::String(s.clone())), pos.clone()));
             },
             Fragment::Char(pos_char) => {
                 let c = pos_char.c;

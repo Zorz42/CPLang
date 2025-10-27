@@ -40,7 +40,7 @@ pub struct FragmentBlock {
 
 #[derive(Clone, Debug)]
 pub enum Fragment {
-    String(Vec<PosChar>),
+    String(Vec<PosChar>, FilePosition),
     Char(PosChar),
     BraceBlock(FragmentBlock),
     BracketBlock(FragmentBlock),
@@ -52,13 +52,7 @@ impl FragmentBlock {
         let mut position = FilePosition::unknown();
         for fragment in &fragments {
             let fragment_pos = match fragment {
-                Fragment::String(s) => {
-                    if s.is_empty() {
-                        FilePosition::unknown()
-                    } else {
-                        merge_file_positions(&s.first().unwrap().pos, &s.last().unwrap().pos)
-                    }
-                },
+                Fragment::String(_s, pos) => pos.clone(),
                 Fragment::Char(pc) => pc.pos.clone(),
                 Fragment::BraceBlock(b) |
                 Fragment::BracketBlock(b) |
@@ -165,7 +159,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                 if pos_char.c == '"' {
                     location = Location::InString;
                     string_quote_position = Some(pos_char.pos.clone());
-                    current_string = vec![pos_char.clone()];
+                    current_string = Vec::new();
                 } else if pos_char.c == '/' {
                     if let Some(next_char) = chars.peek() {
                         if next_char.c == '/' {
@@ -187,22 +181,18 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                 }
             },
             Location::InString => {
-                current_string.push(pos_char.clone());
                 if pos_char.c == '"' {
-                    res.push(Fragment::String(current_string.clone()));
+                    let pos = merge_file_positions(string_quote_position.as_ref().unwrap(), &pos_char.pos);
+                    res.push(Fragment::String(current_string.clone(), pos));
                     location = Location::InCode;
                 }
                 // check for \
-                else if pos_char.c == '\\' {
-                    if let Some(next_char) = chars.peek() {
-                        if next_char.c == '"' {
-                            // remove the \
-                            current_string.pop();
-                            current_string.push((*next_char).clone());
-                            chars.next();
-                            continue;
-                        }
-                    }
+                else if pos_char.c == '\\' && let Some(next_char) = chars.peek() && next_char.c == '"' {
+                    // remove the \
+                    current_string.push((*next_char).clone());
+                    chars.next();
+                } else {
+                    current_string.push(pos_char.clone());
                 }
             },
             Location::InSingleLineComment => {
