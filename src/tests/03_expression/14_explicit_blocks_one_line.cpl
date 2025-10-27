@@ -1,0 +1,3 @@
+//OUT=210
+
+main { res = 10+20*10 out "{res}" }

@@ -19,7 +19,7 @@ pub fn parse_if_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, 
     let (condition, _) = parse_expression(structs, block, curr_idx)?;
 
     let res_block;
-    if let Token::Block(token_block) = &block.children[*curr_idx].0 {
+    if let Token::BraceBlock(token_block) = &block.children[*curr_idx].0 {
         *curr_idx += 1;
         res_block = parse_block(structs, token_block)?;
     } else {
@@ -32,7 +32,7 @@ pub fn parse_if_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, 
     let mut else_block = None;
     if let Some(Token::Keyword(Keyword::Else)) = block.children.get(*curr_idx).map(|x| &x.0) {
         *curr_idx += 1;
-        if let Token::Block(token_block) = &block.children[*curr_idx].0 {
+        if let Token::BraceBlock(token_block) = &block.children[*curr_idx].0 {
             *curr_idx += 1;
             else_block = Some(parse_block(structs, token_block)?);
         } else {
@@ -65,7 +65,7 @@ pub fn parse_while_statement(structs: &Vec<StructDeclaration>, block: &TokenBloc
     let (condition, _) = parse_expression(structs, block, curr_idx)?;
 
     let res_block;
-    if let Token::Block(token_block) = &block.children[*curr_idx].0 {
+    if let Token::BraceBlock(token_block) = &block.children[*curr_idx].0 {
         *curr_idx += 1;
         res_block = parse_block(structs, token_block)?;
     } else {

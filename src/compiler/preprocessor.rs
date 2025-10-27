@@ -1,5 +1,24 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 
+/*
+The compiler first breaks the code into fragments.
+A `Fragment` is a structure of a few types:
+- String literal
+- Single character
+- Brace block (enclosed in `{}`)
+- Bracket block (enclosed in `[]`)
+- Parenthesis block (enclosed in `()`)
+
+Preprocessor does the following in the exact order:
+1. It annotates all characters with their file positions so that errors can be reported accurately.
+2. It parses the input for strings and comments. It handles escape sequences within strings and edge cases such as
+comments inside strings, strings inside comments, and nested comments. This is why this step is done first.
+3. It parses the matching braces, brackets, and parentheses, creating a hierarchical structure of `FragmentBlock`s.
+4. It processes indentation levels to determine code blocks and artificially adds brace blocks which can be deduced from indentation.
+It processes raw string into a FragmentBlock which is effectively and array of Fragments with nested blocks. This is then tokenized.
+ */
+
+
 // A character with its position in the file
 #[derive(Clone, Debug, PartialEq)]
 pub struct PosChar {
@@ -13,7 +32,57 @@ impl PosChar {
     }
 }
 
-pub fn add_file_positions(test: &str) -> Vec<PosChar> {
+#[derive(Clone, Debug)]
+pub struct FragmentBlock {
+    pub fragments: Vec<Fragment>,
+    pub position: FilePosition,
+}
+
+#[derive(Clone, Debug)]
+pub enum Fragment {
+    String(Vec<PosChar>),
+    Char(PosChar),
+    BraceBlock(FragmentBlock),
+    BracketBlock(FragmentBlock),
+    ParenthesisBlock(FragmentBlock),
+}
+
+impl FragmentBlock {
+    pub fn from_vec(fragments: Vec<Fragment>) -> Self {
+        let mut position = FilePosition::unknown();
+        for fragment in &fragments {
+            let fragment_pos = match fragment {
+                Fragment::String(s) => {
+                    if s.is_empty() {
+                        FilePosition::unknown()
+                    } else {
+                        merge_file_positions(&s.first().unwrap().pos, &s.last().unwrap().pos)
+                    }
+                },
+                Fragment::Char(pc) => pc.pos.clone(),
+                Fragment::BraceBlock(b) |
+                Fragment::BracketBlock(b) |
+                Fragment::ParenthesisBlock(b) => b.position.clone(),
+            };
+            position = merge_file_positions(&position, &fragment_pos);
+        }
+        Self {
+            fragments,
+            position,
+        }
+    }
+}
+
+pub fn preprocess(input: &str) -> CompilerResult<FragmentBlock> {
+    let pos_chars = add_file_positions(input);
+    let fragments = parse_strings_and_comments(&pos_chars)?;
+    let fragment_block = parse_blocks(&fragments, &mut 0)?;
+    let fragment_block = parse_indentation(&fragment_block)?;
+    let fragment_block = newlines_to_spaces(fragment_block);
+    Ok(fragment_block)
+}
+
+fn add_file_positions(test: &str) -> Vec<PosChar> {
     let mut res = Vec::new();
     let mut line = 0;
     let mut column = 0;
@@ -32,16 +101,6 @@ pub fn add_file_positions(test: &str) -> Vec<PosChar> {
     res
 }
 
-// The compiler first takes all the strings, because string
-// literals can contain comment-like sequences. Comments also contain
-// quotes. It breaks it into fragments. A `Fragment` is a structure of
-// two types: either a string literal or a char (of code).
-// Strings also contain quotes so that their whole location can be tracked.
-#[derive(Clone, Debug)]
-pub enum Fragment {
-    String(Vec<PosChar>),
-    Char(PosChar),
-}
 
 fn tabs_to_spaces(input: &Vec<PosChar>) -> Vec<PosChar> {
     let mut res = Vec::new();
@@ -55,6 +114,27 @@ fn tabs_to_spaces(input: &Vec<PosChar>) -> Vec<PosChar> {
         }
     }
     res
+}
+
+fn newlines_to_spaces(mut input: FragmentBlock) -> FragmentBlock {
+    for i in &mut input.fragments {
+        if let Fragment::Char(pos_char) = i {
+            if pos_char.c == '\n' {
+                pos_char.c = ' ';
+            }
+        }
+
+        if let Fragment::BraceBlock(block) = i {
+            *block = newlines_to_spaces(block.clone());
+        }
+        if let Fragment::BracketBlock(block) = i {
+            *block = newlines_to_spaces(block.clone());
+        }
+        if let Fragment::ParenthesisBlock(block) = i {
+            *block = newlines_to_spaces(block.clone());
+        }
+    }
+    input
 }
 
 pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fragment>> {
@@ -181,12 +261,108 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
     Ok(res)
 }
 
+// Parses ( ), { }, [ ] blocks recursively
+pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<FragmentBlock> {
+    let mut res = Vec::new();
+
+    while *idx < input.len() {
+        match &input[*idx] {
+            Fragment::Char(PosChar { c: ')', .. }) |
+            Fragment::Char(PosChar { c: ']', .. }) |
+            Fragment::Char(PosChar { c: '}', .. }) => {
+                return Ok(FragmentBlock::from_vec(res));
+            }
+            Fragment::Char(PosChar { c: '(', .. }) |
+            Fragment::Char(PosChar { c: '[', .. }) |
+            Fragment::Char(PosChar { c: '{', .. }) => {
+                let (opening_char, opening_pos) = match &input[*idx] {
+                    Fragment::Char(PosChar { c: '(', pos }) => ('(', pos),
+                    Fragment::Char(PosChar { c: '[', pos }) => ('[', pos),
+                    Fragment::Char(PosChar { c: '{', pos }) => ('{', pos),
+                    _ => unreachable!(),
+                };
+
+                let closing_char = match opening_char {
+                    '(' => ')',
+                    '[' => ']',
+                    '{' => '}',
+                    _ => unreachable!(),
+                };
+
+                *idx += 1; // consume opening char
+
+                let fragment_block = parse_blocks(input, idx)?;
+
+                // expect closing char
+                if *idx >= input.len() {
+                    return Err(CompilerError {
+                        message: format!("Unclosed {}", opening_char),
+                        position: Some(opening_pos.clone()),
+                    });
+                }
+                match &input[*idx] {
+                    Fragment::Char(PosChar { c, .. }) if *c == closing_char => {
+                        *idx += 1; // consume closing char
+                        let fragment = match opening_char {
+                            '(' => Fragment::ParenthesisBlock(fragment_block),
+                            '[' => Fragment::BracketBlock(fragment_block),
+                            '{' => Fragment::BraceBlock(fragment_block),
+                            _ => unreachable!(),
+                        };
+                        res.push(fragment);
+                    }
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Expected closing '{}'", closing_char),
+                            position: None,
+                        });
+                    }
+                }
+            }
+            _ => {
+                res.push(input[*idx].clone());
+                *idx += 1;
+            }
+        }
+    }
+
+    Ok(FragmentBlock::from_vec(res))
+}
+
+// recursively convert indentation levels into blocks
+fn parse_indentation_block(lines: &Vec<(i32, Vec<Fragment>)>, curr_idx: &mut usize) -> CompilerResult<FragmentBlock> {
+    let mut res = Vec::new();
+
+    let curr_ident = lines[*curr_idx].0;
+
+    while *curr_idx < lines.len() {
+        let ident = lines[*curr_idx].0;
+
+        if ident == curr_ident {
+            for i in &lines[*curr_idx].1 {
+                res.push(i.clone());
+            }
+            res.push(Fragment::Char(PosChar::new(' ', FilePosition::unknown())));
+            *curr_idx += 1;
+
+        } else if ident > curr_ident {
+            let child_block = parse_indentation_block(lines, curr_idx)?;
+            res.push(Fragment::BraceBlock(child_block));
+
+        } else if ident < curr_ident {
+            return Ok(FragmentBlock::from_vec(res));
+        }
+    }
+
+    Ok(FragmentBlock::from_vec(res))
+}
+
 // splits input into lines and parses indentation levels
-pub fn parse_indentation(input: &Vec<Fragment>) -> CompilerResult<Vec<(i32, Vec<Fragment>)>> {
+fn parse_indentation(input: &FragmentBlock) -> CompilerResult<FragmentBlock> {
     let mut lines = Vec::new();
     lines.push((0, Vec::new()));
 
-    for i in input {
+    for i in &input.fragments {
         if matches!(i, Fragment::Char(PosChar { c: '\n', pos: _ })) {
             lines.push((0, Vec::new()));
         } else {
@@ -202,11 +378,11 @@ pub fn parse_indentation(input: &Vec<Fragment>) -> CompilerResult<Vec<(i32, Vec<
         if leading_spaces % 4 != 0 {
             let first_char_pos = match line[0] {
                 Fragment::Char(ref pc) => &pc.pos,
-                Fragment::String(_) => panic!()
+                _ => panic!()
             };
             let last_char_pos = match line[leading_spaces-1] {
                 Fragment::Char(ref pc) => &pc.pos,
-                Fragment::String(_) => panic!()
+                _ => panic!()
             };
 
             return Err(CompilerError {
@@ -218,5 +394,5 @@ pub fn parse_indentation(input: &Vec<Fragment>) -> CompilerResult<Vec<(i32, Vec<
         *indent = (leading_spaces / 4) as i32;
     }
 
-    Ok(lines)
+    Ok(parse_indentation_block(&lines, &mut 0)?)
 }

@@ -23,7 +23,7 @@ pub fn parse_block(structs: &Vec<StructDeclaration>, block: &TokenBlock) -> Comp
 
     while curr_idx < block.children.len() {
         match &block.children[curr_idx].0 {
-            Token::Block(sub_block) => {
+            Token::BraceBlock(sub_block) => {
                 res.children.push(Statement::Block(parse_block(structs, sub_block)?));
                 curr_idx += 1;
             },

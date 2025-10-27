@@ -6,7 +6,7 @@ pub struct FilePosition {
 }
 
 impl FilePosition {
-    pub fn invalid() -> Self {
+    pub fn unknown() -> Self {
         Self {
             first_pos: (usize::MAX, usize::MAX),
             last_pos: (usize::MAX, usize::MAX),
@@ -15,8 +15,11 @@ impl FilePosition {
 }
 
 pub fn merge_file_positions(position1: &FilePosition, position2: &FilePosition) -> FilePosition {
-    if *position1 == FilePosition::invalid() || *position2 == FilePosition::invalid() {
-        unreachable!();
+    if *position1 == FilePosition::unknown()  {
+        return position2.clone();
+    }
+    if *position2 == FilePosition::unknown()  {
+        return position1.clone();
     }
     FilePosition {
         first_pos: position1.first_pos.min(position2.first_pos),
@@ -46,7 +49,7 @@ pub fn display_error(error: &CompilerError, input: &str) {
         let line_start = position.first_pos.0;
         let line_end = position.last_pos.0;
 
-        if *position == FilePosition::invalid() {
+        if *position == FilePosition::unknown() {
             unreachable!();
         }
 

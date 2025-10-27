@@ -36,8 +36,6 @@ pub enum Symbol {
     Plus,
     Star,
     Slash,
-    LeftBracket,
-    RightBracket,
     Assign,
     Equals,
     NotEquals,
@@ -60,8 +58,6 @@ impl Symbol {
             '+' => Some(Symbol::Plus),
             '*' => Some(Symbol::Star),
             '/' => Some(Symbol::Slash),
-            '(' => Some(Symbol::LeftBracket),
-            ')' => Some(Symbol::RightBracket),
             '=' => Some(Symbol::Assign),
             '<' => Some(Symbol::LessThan),
             '>' => Some(Symbol::GreaterThan),
@@ -101,6 +97,7 @@ pub enum Constant {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TokenBlock {
     pub(crate) children: Vec<(Token, FilePosition)>,
+    pub pos: FilePosition,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -109,7 +106,9 @@ pub enum Token {
     Identifier(String),
     Symbol(Symbol),
     Constant(Constant),
-    Block(TokenBlock),
+    BraceBlock(TokenBlock),
+    BracketBlock(TokenBlock),
+    ParenthesisBlock(TokenBlock),
 }
 
 fn string_to_token(string: &str) -> Token {
@@ -132,10 +131,10 @@ fn string_to_token(string: &str) -> Token {
     Token::Identifier(string.to_string())
 }
 
-pub fn tokenize_fragments(string: &Vec<Fragment>) -> CompilerResult<Vec<(Token, FilePosition)>> {
+pub fn tokenize_fragments(string: &Vec<Fragment>) -> CompilerResult<TokenBlock> {
     let mut tokens = Vec::new();
     let mut curr_token = String::new();
-    let mut token_pos = FilePosition::invalid();
+    let mut token_pos = FilePosition::unknown();
 
     let new_token = |tokens: &mut Vec<(Token, FilePosition)>, curr_token: &mut String, token_pos: &mut FilePosition| {
         tokens.push((string_to_token(curr_token), token_pos.clone()));
@@ -162,7 +161,7 @@ pub fn tokenize_fragments(string: &Vec<Fragment>) -> CompilerResult<Vec<(Token, 
                 let mut str_pos = s[0].pos.clone();
                 for (i, pos_char) in s.iter().enumerate() {
                     str_pos = merge_file_positions(&str_pos, &pos_char.pos);
-                    
+
                     if i != 0 && i != s.len() - 1 {
                         // skip the quotes
                         str_content.push(pos_char.clone());
@@ -175,7 +174,7 @@ pub fn tokenize_fragments(string: &Vec<Fragment>) -> CompilerResult<Vec<(Token, 
                 let pos = &pos_char.pos;
                 let next_char = iter.peek().map(|x| match x {
                     Fragment::Char(pc) => pc.c,
-                    Fragment::String(_) => '\0',
+                    _ => '\0',
                 }).unwrap_or('\0');
 
                 if c == '.' && curr_token.parse::<i32>().is_ok() {
@@ -200,6 +199,27 @@ pub fn tokenize_fragments(string: &Vec<Fragment>) -> CompilerResult<Vec<(Token, 
                     add_to_token(&mut curr_token, &mut token_pos, c, pos);
                 }
             }
+            Fragment::BraceBlock(block) => {
+                if !curr_token.is_empty() {
+                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
+                }
+                let token_block = tokenize_fragments(&block.fragments)?;
+                tokens.push((Token::BraceBlock(token_block), block.position.clone()));
+            }
+            Fragment::BracketBlock(block) => {
+                if !curr_token.is_empty() {
+                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
+                }
+                let token_block = tokenize_fragments(&block.fragments)?;
+                tokens.push((Token::BracketBlock(token_block), block.position.clone()));
+            }
+            Fragment::ParenthesisBlock(block) => {
+                if !curr_token.is_empty() {
+                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
+                }
+                let token_block = tokenize_fragments(&block.fragments)?;
+                tokens.push((Token::ParenthesisBlock(token_block), block.position.clone()));
+            }
         }
     }
 
@@ -207,51 +227,8 @@ pub fn tokenize_fragments(string: &Vec<Fragment>) -> CompilerResult<Vec<(Token, 
         tokens.push((string_to_token(&curr_token), token_pos.clone()));
     }
 
-    Ok(tokens)
-}
-
-fn get_block_position(block: &TokenBlock) -> FilePosition {
-    let mut result = block.children[0].1.clone();
-
-    for (_, pos) in &block.children {
-        result = merge_file_positions(&result, pos);
-    }
-
-    result
-}
-
-fn tokenize_into_block(lines: &Vec<(i32, Vec<Fragment>)>, curr_idx: &mut usize) -> CompilerResult<TokenBlock> {
-    let mut block = TokenBlock {
-        children: Vec::new(),
-    };
-
-    let curr_ident = lines[*curr_idx].0;
-
-    while *curr_idx < lines.len() {
-        let ident = lines[*curr_idx].0;
-
-        if ident == curr_ident {
-            let tokens = tokenize_fragments(&lines[*curr_idx].1)?;
-            for i in tokens {
-                block.children.push(i);
-            }
-            *curr_idx += 1;
-
-        } else if ident > curr_ident {
-            let child_block = tokenize_into_block(lines, curr_idx)?;
-            let pos = get_block_position(&child_block);
-            block.children.push((Token::Block(child_block), pos));
-
-        } else if ident < curr_ident {
-            return Ok(block);
-        }
-    }
-
-    Ok(block)
-}
-
-// parses indentation into blocks: a block is a list of lines with the same indentation level
-// line is (indentation, line)
-pub fn tokenize_lines(lines: &Vec<(i32, Vec<Fragment>)>) -> CompilerResult<TokenBlock> {
-    tokenize_into_block(lines, &mut 0)
+    Ok(TokenBlock {
+        children: tokens,
+        pos: FilePosition::unknown(),
+    })
 }

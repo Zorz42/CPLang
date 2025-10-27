@@ -52,15 +52,12 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
             *curr_idx += 1;
 
             // we need to know if this is a function call, a struct instantiation or a variable
-            if Some(Token::Symbol(Symbol::LeftBracket)) == block.children.get(*curr_idx).map(|x| x.0.clone()) {
-                *curr_idx += 1;
+            if let Some(Token::ParenthesisBlock(call_block)) = block.children.get(*curr_idx).map(|x| x.0.clone()) {
                 let mut args = Vec::new();
-                loop {
-                    if Some(Token::Symbol(Symbol::RightBracket)) == block.children.get(*curr_idx).map(|x| x.0.clone()) {
-                        *curr_idx += 1;
-                        break;
-                    }
-                    let (expr, expr_pos) = parse_expression(structs, block, curr_idx)?;
+                let mut block_idx = 0;
+                *curr_idx += 1;
+                while block_idx < call_block.children.len() {
+                    let (expr, expr_pos) = parse_expression(structs, &call_block, &mut block_idx)?;
                     args.push(expr);
                     pos = merge_file_positions(&pos, &expr_pos);
                 }
@@ -118,22 +115,9 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
 
             (Expression::Dereference(Box::new(res), pos.clone()), pos)
         }
-        Token::Symbol(Symbol::LeftBracket) => {
+        Token::ParenthesisBlock(block) => {
             *curr_idx += 1;
-            let res = parse_expression(structs, block, curr_idx)?;
-            match &block.children[*curr_idx].0 {
-                Token::Symbol(Symbol::RightBracket) => {
-                    *curr_idx += 1;
-                    res
-                },
-                _ => {
-                    let pos = &block.children[*curr_idx - 1].1;
-                    return Err(CompilerError {
-                        message: "Expected right bracket".to_owned(),
-                        position: Some(pos.clone())
-                    });
-                },
-            }
+            parse_expression(structs, block, &mut 0)?
         },
         _ => {
             let pos = &block.children[*curr_idx].1;
@@ -149,15 +133,12 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
         match block.children.get(*curr_idx) {
             Some((Token::Identifier(s), pos)) => {
                 *curr_idx += 1;
-                if let Some(Token::Symbol(Symbol::LeftBracket)) = block.children.get(*curr_idx).map(|x| &x.0) {
-                    *curr_idx += 1;
+                if let Some(Token::ParenthesisBlock(call_block)) = block.children.get(*curr_idx).map(|x| &x.0) {
                     let mut args = Vec::new();
-                    loop {
-                        if Some(Token::Symbol(Symbol::RightBracket)) == block.children.get(*curr_idx).map(|x| x.0.clone()) {
-                            *curr_idx += 1;
-                            break;
-                        }
-                        let (expr, _) = parse_expression(structs, block, curr_idx)?;
+                    let mut block_idx = 0;
+                    *curr_idx += 1;
+                    while block_idx < call_block.children.len() {
+                        let (expr, _) = parse_expression(structs, &call_block, &mut block_idx)?;
                         args.push(expr);
                     }
                     res.0 = Expression::MethodCall(Box::new(res.0), pos.clone(), s.clone(), args);

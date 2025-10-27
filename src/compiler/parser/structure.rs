@@ -28,7 +28,7 @@ pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> Com
     *curr_idx += 1;
 
     let block = match block.children.get(*curr_idx).map(|x| &x.0) {
-        Some(Token::Block(block)) => block.clone(),
+        Some(Token::BraceBlock(block)) => block.clone(),
         _ => return Err(CompilerError {
             message: "Expected block after struct name".to_owned(),
             position: Some(block.children[*curr_idx - 1].1.clone()),

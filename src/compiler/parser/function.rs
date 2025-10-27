@@ -32,7 +32,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
 
     loop {
         match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
-            Some(Token::Block(block)) => {
+            Some(Token::BraceBlock(block)) => {
                 res_block = block.clone();
                 *curr_idx += 1;
                 break;

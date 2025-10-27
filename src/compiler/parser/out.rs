@@ -1,7 +1,7 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::expression::{parse_expression, Expression};
 use crate::compiler::parser::structure::StructDeclaration;
-use crate::compiler::preprocessor::{Fragment, PosChar};
+use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
 use crate::compiler::tokenizer::{tokenize_fragments, Constant, Keyword, Token, TokenBlock};
 
 #[derive(Debug, Clone)]
@@ -13,7 +13,7 @@ fn parse_format_string(structs: &Vec<StructDeclaration>, string: &Vec<PosChar>, 
     let mut res = Vec::new();
     let mut curr = String::new();
     let mut in_format = false;
-    let mut format_pos = FilePosition::invalid();
+    let mut format_pos = FilePosition::unknown();
     for (idx, pc) in string.iter().enumerate() {
         if in_format {
             if pc.c == '}' {
@@ -26,7 +26,8 @@ fn parse_format_string(structs: &Vec<StructDeclaration>, string: &Vec<PosChar>, 
                         last_pos: (format_pos.first_pos.0, format_pos.first_pos.1 + i + 2),
                     })));
                 }
-                let token_block = TokenBlock { children: tokenize_fragments(&string)? };
+                let fragment_block = parse_blocks(&string, &mut 0)?;
+                let token_block = tokenize_fragments(&fragment_block.fragments)?;
                 let mut idx2 = 0;
                 let (expression, _) = parse_expression(structs, &token_block, &mut idx2)?;
 
