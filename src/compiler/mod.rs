@@ -1,5 +1,5 @@
 use crate::compiler::error::CompilerResult;
-use crate::compiler::generator::generate_code;
+use crate::compiler::normalizer::normalize;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
 use crate::compiler::tokenizer::tokenize_fragments;
@@ -9,7 +9,7 @@ mod parser;
 mod generator;
 mod preprocessor;
 pub mod error;
-mod ir;
+mod normalizer;
 /*
 The compiler works in the following steps:
 1. Preprocessing: The input source code is preprocessed to parse strings, comments, indentation and parses bracket/brace/parenthesis structure.
@@ -27,12 +27,11 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
     let fragment_block = preprocess(&input)?;
     let program_block = tokenize_fragments(&fragment_block.fragments)?;
-    //println!("{:?}", program_block);
-    let (functions, structs) = parse_tokens(&program_block)?;
+    let ast = parse_tokens(&program_block)?;
 
-    let code = generate_code(functions, structs)?;
-    // write code to output file
-    std::fs::write(output_file, code).unwrap();
+    let ir = normalize(&ast);
+
+    println!("{:?}", ir);
 
     Ok(())
 }

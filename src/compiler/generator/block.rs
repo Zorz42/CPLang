@@ -36,9 +36,6 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> CompilerRes
             Statement::While(statement) => {
                 generate_while_statement(context, statement)?
             }
-            Statement::InlineC(statement) => {
-                statement.code.clone()
-            }
         };
 
         code.push_str(&new_code);
