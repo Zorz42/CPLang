@@ -9,14 +9,16 @@ mod parser;
 mod generator;
 mod preprocessor;
 pub mod error;
-
-
+mod ir;
 /*
 The compiler works in the following steps:
 1. Preprocessing: The input source code is preprocessed to parse strings, comments, indentation and parses bracket/brace/parenthesis structure.
 2. Tokenization: The preprocessed fragments are tokenized into a stream of tokens.
 3. Parsing: The token stream is parsed into an Abstract Syntax Tree (AST) representing the program structure.
-4. Code Generation: The AST is traversed to generate the target code
+4. Normalization: Syntactic sugar is transformed into more rudimentary operations. For example for loop -> while loop
+Names/labels are resolved. AST is transformed into IR (Immediate representation), which is AST with less different types of nodes.
+5. Type resolution: All types are resolved so every type is now known.
+6. Code generation: IR with types is converted to C code.
  */
 
 pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
