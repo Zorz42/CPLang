@@ -10,6 +10,7 @@ pub type IRFieldLabel = usize;
 pub struct IR {
     pub structs: Vec<IRStruct>,
     pub functions: Vec<IRFunction>,
+    pub types: Vec<IRType>,
     pub main_function: IRFunctionLabel,
 }
 
@@ -31,6 +32,11 @@ pub enum IRType {
     Tuple(Vec<IRType>),
     Enum(Vec<IRType>),
     Struct(Vec<(String, IRType)>),
+}
+
+pub enum IRTypeHint {
+    Is(IRTypeLabel, IRPrimitiveType),
+    Eq(IRTypeLabel, IRTypeLabel),
 }
 
 #[derive(Debug)]

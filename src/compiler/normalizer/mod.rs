@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 use crate::compiler::error::CompilerResult;
 use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRStatement, IRStruct, IRTypeLabel, IRVariableLabel, IR};
+use crate::compiler::normalizer::type_resolver::resolve_types;
 use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
 use crate::compiler::parser::function::FunctionSignature;
 
 mod ir;
+mod type_resolver;
 
 fn operator_to_ir_operator(operator: Operator) -> IROperator {
     match operator {
@@ -62,6 +64,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         structs: Vec::new(),
         functions: Vec::new(),
         main_function: 0,
+        types: Vec::new(),
     };
     let mut state = NormalizerState {
         variables: HashMap::new(),
@@ -87,6 +90,8 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
     } else {
         panic!();
     }
+
+    resolve_types(&mut res, state.curr_type_label);
 
     Ok(res)
 }
