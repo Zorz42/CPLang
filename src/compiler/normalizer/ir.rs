@@ -1,3 +1,4 @@
+use std::fmt::Write;
 use std::fmt::{Debug, Formatter};
 
 pub type IRFunctionLabel = usize;
@@ -5,6 +6,12 @@ pub type IRVariableLabel = usize;
 pub type IRTypeLabel = usize;
 pub type IRStructLabel = usize;
 pub type IRFieldLabel = usize;
+
+pub struct IR {
+    pub structs: Vec<IRStruct>,
+    pub functions: Vec<IRFunction>,
+    pub main_function: IRFunctionLabel,
+}
 
 #[derive(Debug)]
 pub enum IRPrimitiveType {
@@ -65,17 +72,6 @@ pub struct IRBlock {
     pub statements: Vec<IRStatement>,
 }
 
-impl Debug for IRBlock {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Variables: {:?}", self.variables)?;
-        writeln!(f, "Statements:")?;
-        for statement in &self.statements {
-            writeln!(f, "{:?}", statement)?;
-        }
-        Ok(())
-    }
-}
-
 #[derive(Debug)]
 pub enum IRStatement {
     Block(IRBlock),
@@ -87,7 +83,6 @@ pub enum IRStatement {
     Assignment(IRExpression, IRExpression),
 }
 
-#[derive(Debug)]
 pub struct IRFunction {
     pub arguments: Vec<IRVariableLabel>,
     pub block: IRBlock,
@@ -96,4 +91,43 @@ pub struct IRFunction {
 #[derive(Debug)]
 pub struct IRStruct {
     pub fields: Vec<IRFieldLabel>,
+}
+
+impl Debug for IRBlock {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Variables: {:?}", self.variables)?;
+        writeln!(f, "Statements:")?;
+        let mut output = String::new();
+        for statement in &self.statements {
+            writeln!(&mut output, "{:?}", statement)?;
+        }
+        writeln!(f, "    {}", output.replace("\n", "\n    "))?;
+        Ok(())
+    }
+}
+
+impl Debug for IRFunction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Arguments: {:?}", self.arguments)?;
+        write!(f, "{:?}", self.block)?;
+        Ok(())
+    }
+}
+
+impl Debug for IR {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Structs: ")?;
+        let mut output = String::new();
+        for statement in &self.structs {
+            writeln!(&mut output, "{:?}", statement)?;
+        }
+        writeln!(f, "    {}", output.replace("\n", "\n    "))?;
+        writeln!(f, "Functions: ")?;
+        let mut output = String::new();
+        for statement in &self.functions {
+            writeln!(&mut output, "{:?}", statement)?;
+        }
+        writeln!(f, "    {}", output.replace("\n", "\n    "))?;
+        Ok(())
+    }
 }

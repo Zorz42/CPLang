@@ -1,19 +1,12 @@
 use std::collections::HashMap;
 use crate::compiler::error::CompilerResult;
-use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRStatement, IRStruct, IRTypeLabel, IRVariableLabel};
+use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRStatement, IRStruct, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
 use crate::compiler::parser::function::FunctionSignature;
 
 mod ir;
-
-#[derive(Debug)]
-pub struct IR {
-    structs: Vec<IRStruct>,
-    functions: Vec<IRFunction>,
-    main_function: IRFunctionLabel,
-}
 
 fn operator_to_ir_operator(operator: Operator) -> IROperator {
     match operator {

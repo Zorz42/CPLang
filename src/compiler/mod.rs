@@ -29,7 +29,7 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let program_block = tokenize_fragments(&fragment_block.fragments)?;
     let ast = parse_tokens(&program_block)?;
 
-    let ir = normalize_ast(ast);
+    let ir = normalize_ast(ast)?;
 
     println!("{:?}", ir);
 
