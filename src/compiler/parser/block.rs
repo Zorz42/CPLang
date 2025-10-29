@@ -30,7 +30,7 @@ pub fn parse_block(structs: &Vec<StructDeclaration>, block: &TokenBlock) -> Comp
                 if let Some(statement) = parse_return_statement(structs, block, &mut curr_idx)? {
                     res.children.push(statement);
                 } else if let Some(statement) = parse_variable_declaration(structs, block, &mut curr_idx)? {
-                    res.children.push(Statement::VariableDeclaration(statement));
+                    res.children.push(Statement::Assignment(statement));
                 } else if let Some(statement) = parse_out_statement(structs, block, &mut curr_idx)? {
                     res.children.push(Statement::Print(statement));
                 } else if let Some(statement) = parse_if_statement(structs, block, &mut curr_idx)? {

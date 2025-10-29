@@ -43,18 +43,16 @@ pub fn parse_variable_declaration(structs: &Vec<StructDeclaration>, block: &Toke
             parse_expression(structs, block, curr_idx)?
         },
         Symbol::Increase => {
-            let (expr2, expr2_pos) = parse_expression(structs, block, curr_idx)?;
-            (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Plus, Box::new(expr2), expr2_pos.clone()), merge_file_positions(&expr1_pos, &expr2_pos))
+            todo!()
         },
         Symbol::Decrease => {
-            let (expr2, expr2_pos) = parse_expression(structs, block, curr_idx)?;
-            (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Minus, Box::new(expr2), expr2_pos.clone()), merge_file_positions(&expr1_pos, &expr2_pos))
+            todo!()
         },
         Symbol::Increment => {
-            (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Plus, Box::new(Expression::Integer(1)), expr1_pos.clone()), expr1_pos.clone())
+            todo!()
         },
         Symbol::Decrement => {
-            (Expression::BinaryOperation(Box::new(expr1.clone()), Operator::Minus, Box::new(Expression::Integer(1)), expr1_pos.clone()), expr1_pos.clone())
+            todo!()
         },
         _ => unreachable!()
     };

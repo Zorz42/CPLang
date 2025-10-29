@@ -1,5 +1,5 @@
 use crate::compiler::error::CompilerResult;
-use crate::compiler::normalizer::normalize;
+use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
 use crate::compiler::tokenizer::tokenize_fragments;
@@ -29,7 +29,7 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let program_block = tokenize_fragments(&fragment_block.fragments)?;
     let ast = parse_tokens(&program_block)?;
 
-    let ir = normalize(&ast);
+    let ir = normalize_ast(ast);
 
     println!("{:?}", ir);
 

@@ -18,7 +18,7 @@ pub mod structure;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-    VariableDeclaration(VariableDeclaration),
+    Assignment(VariableDeclaration),
     Block(Block),
     Expression(Expression),
     Print(PrintStatement),

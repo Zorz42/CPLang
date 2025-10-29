@@ -15,7 +15,7 @@ pub fn generate_block(context: &mut GlobalContext, block: &Block) -> CompilerRes
 
     for statement in &block.children {
         let new_code = match statement {
-            Statement::VariableDeclaration(declaration) => {
+            Statement::Assignment(declaration) => {
                 generate_variable_declaration(context, declaration)?
             }
             Statement::Block(block) => {

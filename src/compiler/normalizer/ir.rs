@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Formatter};
+
 pub type IRFunctionLabel = usize;
 pub type IRVariableLabel = usize;
 pub type IRTypeLabel = usize;
@@ -48,9 +50,9 @@ pub enum IRConstant {
 
 #[derive(Debug)]
 pub enum IRExpression {
-    Operator(IROperator, Box<(IRExpression, IRExpression)>),
+    BinaryOperation(IROperator, Box<(IRExpression, IRExpression)>),
     Constant(IRConstant),
-    FunctionCall(IRFunctionLabel, Box<IRExpression>),
+    FunctionCall(IRFunctionLabel, Vec<IRExpression>),
     FieldAccess(Box<IRExpression>, IRFieldLabel),
     Dereference(Box<IRExpression>),
     StructInitialization(IRStructLabel, Vec<IRExpression>),
@@ -58,10 +60,20 @@ pub enum IRExpression {
     Variable(IRVariableLabel),
 }
 
-#[derive(Debug)]
 pub struct IRBlock {
     pub variables: Vec<IRVariableLabel>,
     pub statements: Vec<IRStatement>,
+}
+
+impl Debug for IRBlock {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Variables: {:?}", self.variables)?;
+        writeln!(f, "Statements:")?;
+        for statement in &self.statements {
+            writeln!(f, "{:?}", statement)?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -72,6 +84,7 @@ pub enum IRStatement {
     Expression(IRExpression),
     Print(IRExpression),
     Return(Option<IRExpression>),
+    Assignment(IRExpression, IRExpression),
 }
 
 #[derive(Debug)]
