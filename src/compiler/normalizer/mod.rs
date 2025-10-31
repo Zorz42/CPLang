@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::compiler::error::CompilerResult;
-use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRStatement, IRStruct, IRTypeLabel, IRVariableLabel, IR};
+use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRTypeHint, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::resolve_types;
 use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::block::Block;
@@ -33,6 +33,7 @@ pub struct NormalizerState {
     fields: HashMap<String, IRFieldLabel>,
     curr_field_label: IRFieldLabel,
     curr_type_label: IRTypeLabel,
+    type_hints: Vec<IRTypeHint>,
 }
 
 impl NormalizerState {
@@ -63,8 +64,9 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
     let mut res = IR {
         structs: Vec::new(),
         functions: Vec::new(),
-        main_function: 0,
         types: Vec::new(),
+        variable_types: Vec::new(),
+        main_function: 0,
     };
     let mut state = NormalizerState {
         variables: HashMap::new(),
@@ -74,6 +76,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         fields: HashMap::new(),
         curr_field_label: 0,
         curr_type_label: 0,
+        type_hints: Vec::new(),
     };
 
 
@@ -91,7 +94,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         panic!();
     }
 
-    resolve_types(&mut res, state.curr_type_label);
+    resolve_types(&mut res, state.curr_type_label, &state.type_hints);
 
     Ok(res)
 }
@@ -102,19 +105,25 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
 
     let expr = match expression {
         Expression::Integer(x) => {
+            state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::I32));
             IRExpression::Constant(IRConstant::Int(x as i64))
         }
         Expression::Float(x) => {
+            state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::F32));
             IRExpression::Constant(IRConstant::Float(x as f64))
         }
         Expression::String(x) => {
+            state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::String));
             IRExpression::Constant(IRConstant::String(x.clone()))
         }
         Expression::Boolean(x) => {
+            state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
             IRExpression::Constant(IRConstant::Bool(x))
         }
         Expression::Variable(name, _pos) => {
             let label = state.variables[&name];
+            let var_type_label = ir.variable_types[label];
+            state.type_hints.push(IRTypeHint::Eq(type_label, var_type_label));
             IRExpression::Variable(label)
         }
         Expression::Reference(expr, _pos) => {
@@ -174,6 +183,8 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
                 if let Expression::Variable(name, _) = &declaration.assign_to && !state.variables.contains_key(name) {
                     let label = state.new_var(name);
                     res.variables.push(label);
+                    ir.variable_types.push(state.curr_type_label);
+                    state.curr_type_label += 1;
                 }
 
                 let (assign_to, _type_label) = normalize_expression(state, ir, declaration.assign_to);
@@ -220,9 +231,15 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: FunctionSi
     assert_eq!(arg_types.len(), sign.args.len());
 
     let prev_vars = state.variables.clone();
-    let arguments = sign.args.iter().map(|arg| state.new_var(arg)).collect::<Vec<_>>();
+    let mut arguments = Vec::new();
+    for (arg, arg_type) in sign.args.iter().zip(arg_types) {
+        let label = state.new_var(&arg);
+        arguments.push(label);
+        ir.variable_types.push(arg_type);
+    }
     let block = normalize_block(state, ir, block);
-    let label = ir.functions.len() as IRFunctionLabel;
+    let label = state.curr_func_label;
+    state.curr_func_label += 1;
     ir.functions.push(IRFunction {
         arguments,
         block,

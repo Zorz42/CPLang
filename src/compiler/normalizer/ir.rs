@@ -11,10 +11,11 @@ pub struct IR {
     pub structs: Vec<IRStruct>,
     pub functions: Vec<IRFunction>,
     pub types: Vec<IRType>,
+    pub variable_types: Vec<IRTypeLabel>,
     pub main_function: IRFunctionLabel,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum IRPrimitiveType {
     I32,
     I64,
@@ -25,7 +26,7 @@ pub enum IRPrimitiveType {
     Void,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum IRType {
     Primitive(IRPrimitiveType),
     Reference(Box<IRType>),
