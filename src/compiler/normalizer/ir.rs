@@ -15,7 +15,7 @@ pub struct IR {
     pub main_function: IRFunctionLabel,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum IRPrimitiveType {
     I32,
     I64,
@@ -26,7 +26,7 @@ pub enum IRPrimitiveType {
     Void,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum IRType {
     Primitive(IRPrimitiveType),
     Reference(Box<IRType>),
@@ -42,7 +42,7 @@ pub enum IRTypeHint {
     Operator(IRTypeLabel, IRTypeLabel, IROperator, IRTypeLabel),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum IROperator {
     Plus,
     Minus,

@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
-use crate::compiler::normalizer::ir::{IRType, IRTypeHint, IRTypeLabel, IR};
+use std::collections::{HashMap, VecDeque};
+use crate::compiler::normalizer::ir::{IROperator, IRPrimitiveType, IRType, IRTypeHint, IRTypeLabel, IR};
 
 pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>) {
     let mut known_types = Vec::new();
@@ -13,6 +13,14 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
         nodes.push(Vec::new());
         nodes_op.push(Vec::new());
     }
+
+    let operator_map = {
+        let mut operator_map = HashMap::new();
+
+        operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Plus, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
+
+        operator_map
+    };
 
     let mut queue = VecDeque::<IRTypeLabel>::new();
     for hint in type_hints {
@@ -41,18 +49,31 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
             } else {
                 break;
             };
-        let node_typ = known_types[node].as_ref().unwrap().clone();
+        let node_type = known_types[node].as_ref().unwrap().clone();
 
         for ne in &nodes[node] {
             if let Some(ne_typ) = &known_types[*ne] {
-                if *ne_typ != node_typ {
+                if *ne_typ != node_type {
                     panic!();
                 }
                 continue;
             }
 
-            known_types[*ne] = Some(node_typ.clone());
+            known_types[*ne] = Some(node_type.clone());
             queue.push_back(*ne);
+        }
+
+        for (ne, typ2, op) in &nodes_op[node] {
+            if let Some(node_type2) = known_types[*typ2].clone() {
+                let res_type = operator_map[&(node_type.clone(), *op, node_type2)].clone();
+                if known_types[*ne].is_some() && known_types[*ne].as_ref() != Some(&res_type) {
+                    panic!();
+                }
+                if known_types[*ne].is_none() {
+                    known_types[*ne] = Some(res_type);
+                    queue.push_back(*ne);
+                }
+            }
         }
     }
 
