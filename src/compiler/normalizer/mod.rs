@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::compiler::error::CompilerResult;
-use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRTypeHint, IRTypeLabel, IRVariableLabel, IR};
+use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRTypeHint, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::resolve_types;
 use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::block::Block;
@@ -58,6 +58,11 @@ impl NormalizerState {
         self.fields.insert(name.to_string(), label);
         label
     }
+
+    pub fn new_type_label(&mut self) -> IRTypeLabel {
+        self.curr_type_label += 1;
+        self.curr_type_label - 1
+    }
 }
 
 pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
@@ -100,8 +105,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
 }
 
 fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Expression) -> (IRExpression, IRTypeLabel) {
-    let type_label = state.curr_type_label;
-    state.curr_type_label += 1;
+    let type_label = state.new_type_label();
 
     let expr = match expression {
         Expression::Integer(x) => {
@@ -183,13 +187,12 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
                 if let Expression::Variable(name, _) = &declaration.assign_to && !state.variables.contains_key(name) {
                     let label = state.new_var(name);
                     res.variables.push(label);
-                    ir.variable_types.push(state.curr_type_label);
-                    state.curr_type_label += 1;
+                    ir.variable_types.push(state.new_type_label());
                 }
 
-                let (assign_to, _type_label) = normalize_expression(state, ir, declaration.assign_to);
-                let (value, _type_label) = normalize_expression(state, ir, declaration.value);
-
+                let (assign_to, type_label1) = normalize_expression(state, ir, declaration.assign_to);
+                let (value, type_label2) = normalize_expression(state, ir, declaration.value);
+                state.type_hints.push(IRTypeHint::Eq(type_label1, type_label2));
 
                 res.statements.push(IRStatement::Assignment(assign_to, value));
             }
@@ -210,12 +213,14 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
                 res.statements.push(IRStatement::Return(expr));
             }
             Statement::If(statement) => {
-                let (cond, _type_label) = normalize_expression(state, ir, statement.condition);
+                let (cond, type_label) = normalize_expression(state, ir, statement.condition);
+                state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
                 let block = normalize_block(state, ir, statement.block);
                 res.statements.push(IRStatement::If(cond, block));
             }
             Statement::While(statement) => {
-                let (cond, _type_label) = normalize_expression(state, ir, statement.condition);
+                let (cond, type_label) = normalize_expression(state, ir, statement.condition);
+                state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
                 let block = normalize_block(state, ir, statement.block);
                 res.statements.push(IRStatement::If(cond, block));
             }

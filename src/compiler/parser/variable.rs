@@ -1,5 +1,5 @@
 use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
-use crate::compiler::parser::expression::{parse_expression, Expression, Operator};
+use crate::compiler::parser::expression::{parse_expression, Expression};
 use crate::compiler::parser::structure::StructDeclaration;
 use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
 

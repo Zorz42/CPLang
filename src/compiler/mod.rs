@@ -16,9 +16,9 @@ The compiler works in the following steps:
 2. Tokenization: The preprocessed fragments are tokenized into a stream of tokens.
 3. Parsing: The token stream is parsed into an Abstract Syntax Tree (AST) representing the program structure.
 4. Normalization: Syntactic sugar is transformed into more rudimentary operations. For example for loop -> while loop
-Names/labels are resolved. AST is transformed into IR (Immediate representation), which is AST with less different types of nodes.
-5. Type resolution: All types are resolved so every type is now known.
-6. Code generation: IR with types is converted to C code.
+Names/labels and types are resolved/deduced. AST is transformed into IR (Immediate representation), which is AST with
+less different types of nodes and explicit types and indexes instead of string/name labels.
+5. Code generation: IR with types is converted to C code.
  */
 
 pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {

@@ -1,4 +1,3 @@
-use std::cmp::PartialEq;
 use std::collections::VecDeque;
 use crate::compiler::normalizer::ir::{IRType, IRTypeHint, IRTypeLabel, IR};
 
@@ -9,7 +8,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: &Vec<IRTypeHint>
     }
 
     let mut nodes = Vec::new();
-    for i in 0..num_types {
+    for _ in 0..num_types {
         nodes.push(Vec::new());
     }
 
