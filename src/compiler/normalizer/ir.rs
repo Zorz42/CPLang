@@ -37,10 +37,12 @@ pub enum IRType {
 
 pub enum IRTypeHint {
     Is(IRTypeLabel, IRPrimitiveType),
-    Eq(IRTypeLabel, IRTypeLabel),
+    Equal(IRTypeLabel, IRTypeLabel),
+    // arg0 = arg1 + arg3, + is arg2
+    Operator(IRTypeLabel, IRTypeLabel, IROperator, IRTypeLabel),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum IROperator {
     Plus,
     Minus,
@@ -75,7 +77,6 @@ pub enum IRExpression {
 }
 
 pub struct IRBlock {
-    pub variables: Vec<IRVariableLabel>,
     pub statements: Vec<IRStatement>,
 }
 
@@ -92,7 +93,9 @@ pub enum IRStatement {
 
 pub struct IRFunction {
     pub arguments: Vec<IRVariableLabel>,
+    pub variables: Vec<IRVariableLabel>,
     pub block: IRBlock,
+    pub ret_type: IRTypeLabel,
 }
 
 #[derive(Debug)]
@@ -102,7 +105,7 @@ pub struct IRStruct {
 
 impl Debug for IRBlock {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Variables: {:?}", self.variables)?;
+        writeln!(f, "IRBlock")?;
         writeln!(f, "Statements:")?;
         let mut output = String::new();
         for statement in &self.statements {
