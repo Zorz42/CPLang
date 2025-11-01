@@ -7,7 +7,7 @@ use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
 use crate::compiler::parser::function::FunctionSignature;
 
-mod ir;
+pub mod ir;
 mod type_resolver;
 
 fn operator_to_ir_operator(operator: Operator) -> IROperator {
@@ -177,7 +177,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
             state.type_hints.push(IRTypeHint::Operator(
                 type_label, type_label1, op, type_label2
             ));
-            IRExpression::BinaryOperation(op, Box::new((expr1, expr2)))
+            IRExpression::BinaryOperation(op, Box::new((expr1, type_label1, expr2, type_label2)))
         }
     };
 
@@ -215,7 +215,8 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
             }
             Statement::Print(statement) => {
                 for val in statement.values {
-                    res.statements.push(IRStatement::Print(normalize_expression(state, ir, val).0));
+                    let (expr, type_label) = normalize_expression(state, ir, val);
+                    res.statements.push(IRStatement::Print(expr, type_label));
                 }
             }
             Statement::Return(expr, _pos) => {
@@ -281,6 +282,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: FunctionSi
         variables: state.curr_func_vars.clone(),
         ret_type: state.curr_func_ret_type,
         block,
+        label,
     });
 
     state.variables_name_map = prev_vars;

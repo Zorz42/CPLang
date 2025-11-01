@@ -1,4 +1,5 @@
 use crate::compiler::error::CompilerResult;
+use crate::compiler::generator::generate_code;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
@@ -18,7 +19,7 @@ The compiler works in the following steps:
 4. Normalization: Syntactic sugar is transformed into more rudimentary operations. For example for loop -> while loop
 Names/labels and types are resolved/deduced. AST is transformed into IR (Immediate representation), which is AST with
 less different types of nodes and explicit types and indexes instead of string/name labels.
-5. Code generation: IR with types is converted to C code.
+5. Code generation: IR is converted to C code.
  */
 
 pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
@@ -32,6 +33,10 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let ir = normalize_ast(ast)?;
 
     println!("{:?}", ir);
+
+    let code = generate_code(ir);
+
+    println!("{code}");
 
     Ok(())
 }

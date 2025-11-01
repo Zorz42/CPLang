@@ -66,7 +66,7 @@ pub enum IRConstant {
 
 #[derive(Debug)]
 pub enum IRExpression {
-    BinaryOperation(IROperator, Box<(IRExpression, IRExpression)>),
+    BinaryOperation(IROperator, Box<(IRExpression, IRTypeLabel, IRExpression, IRTypeLabel)>),
     Constant(IRConstant),
     FunctionCall(IRFunctionLabel, Vec<IRExpression>),
     FieldAccess(Box<IRExpression>, IRFieldLabel),
@@ -86,7 +86,7 @@ pub enum IRStatement {
     If(IRExpression, IRBlock),
     While(IRExpression, IRBlock),
     Expression(IRExpression),
-    Print(IRExpression),
+    Print(IRExpression, IRTypeLabel),
     Return(Option<IRExpression>),
     Assignment(IRExpression, IRExpression),
 }
@@ -96,6 +96,7 @@ pub struct IRFunction {
     pub variables: Vec<IRVariableLabel>,
     pub block: IRBlock,
     pub ret_type: IRTypeLabel,
+    pub label: IRFunctionLabel,
 }
 
 #[derive(Debug)]
@@ -119,6 +120,7 @@ impl Debug for IRBlock {
 impl Debug for IRFunction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Arguments: {:?}", self.arguments)?;
+        writeln!(f, "Variables: {:?}", self.variables)?;
         write!(f, "{:?}", self.block)?;
         Ok(())
     }
