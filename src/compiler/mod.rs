@@ -38,5 +38,8 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
     println!("{code}");
 
+    // write code to output file
+    std::fs::write(output_file, code).unwrap();
+
     Ok(())
 }

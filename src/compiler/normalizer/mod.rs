@@ -100,7 +100,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
             panic!();
         }
 
-        normalize_function(&mut state, &mut res, sig, block, Vec::new());
+        res.main_function = normalize_function(&mut state, &mut res, sig, block, Vec::new());
     } else {
         panic!();
     }
@@ -214,7 +214,9 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
                 res.statements.push(IRStatement::Expression(normalize_expression(state, ir, expr).0));
             }
             Statement::Print(statement) => {
-                for val in statement.values {
+                let mut vals = statement.values;
+                vals.push(Expression::String("\n".to_string()));
+                for val in vals {
                     let (expr, type_label) = normalize_expression(state, ir, val);
                     res.statements.push(IRStatement::Print(expr, type_label));
                 }

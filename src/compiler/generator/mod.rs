@@ -31,6 +31,14 @@ pub fn generate_code(ir: IR) -> String {
         code += &gen_function(&ctx, func);
     }
 
+    let main_code = r#"
+int main(){
+    $main$();
+    return 0;
+}
+    "#;
+    code += &main_code.replace("$main$", &gen_function_label(ir.main_function));
+
     code
 }
 
@@ -104,7 +112,20 @@ fn gen_expression(ctx: &GeneratorContext, expression: IRExpression) -> String {
         }
         IRExpression::Constant(x) => {
             match x {
-                IRConstant::String(x) => format!("\"{x}\""),
+                IRConstant::String(x) => {
+                    let mut escaped = String::new();
+                    for c in x.chars() {
+                        match c {
+                            '\n' => escaped.push_str("\\n"),
+                            '\r' => escaped.push_str("\\r"),
+                            '\t' => escaped.push_str("\\t"),
+                            '\"' => escaped.push_str("\\\""),
+                            '\\' => escaped.push_str("\\\\"),
+                            _ => escaped.push(c),
+                        }
+                    }
+                    format!("\"{escaped}\"")
+                }
                 IRConstant::Int(x) => format!("{x}"),
                 IRConstant::Float(x) => format!("{x}"),
                 IRConstant::Bool(x) => (if x { "1" } else { "0" }).to_string()
