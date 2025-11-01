@@ -36,6 +36,7 @@ pub struct NormalizerState {
     type_hints: Vec<IRTypeHint>,
     curr_func_vars: Vec<IRVariableLabel>,
     curr_func_ret_type: IRTypeLabel,
+    has_ret_statement: bool,
 }
 
 impl NormalizerState {
@@ -86,6 +87,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         type_hints: Vec::new(),
         curr_func_vars: Vec::new(),
         curr_func_ret_type: 0,
+        has_ret_statement: false,
     };
 
 
@@ -153,6 +155,8 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
 
             let (sig, block) = state.functions_name_map.get(&name).cloned().unwrap();
             let func_label = normalize_function(state, ir, sig, block, expr_types);
+            let ret_type = ir.functions[func_label].ret_type;
+            state.type_hints.push(IRTypeHint::Equal(ret_type, type_label));
 
             IRExpression::FunctionCall(func_label, ir_args)
         }
@@ -215,6 +219,7 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
                 }
             }
             Statement::Return(expr, _pos) => {
+                state.has_ret_statement = true;
                 let st = if let Some(expr) = expr {
                     let (expr, type_label) = normalize_expression(state, ir, expr);
                     state.type_hints.push(IRTypeHint::Equal(state.curr_func_ret_type, type_label));
@@ -248,10 +253,15 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
 fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: FunctionSignature, block: Block, arg_types: Vec<IRTypeLabel>) -> IRFunctionLabel {
     assert_eq!(arg_types.len(), sign.args.len());
 
+    let prev_vars = state.variables_name_map.clone();
+    let prev_func_vars = state.curr_func_vars.clone();
+    let prev_func_ret_type = state.curr_func_ret_type.clone();
+    let prev_has_ret_statement = state.has_ret_statement;
+
     state.curr_func_vars = Vec::new();
     state.curr_func_ret_type = state.new_type_label();
+    state.has_ret_statement = false;
 
-    let prev_vars = state.variables_name_map.clone();
     let mut arguments = Vec::new();
     for (arg, arg_type) in sign.args.iter().zip(arg_types) {
         let label = state.new_var(&arg);
@@ -261,12 +271,22 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: FunctionSi
     let block = normalize_block(state, ir, block);
     let label = state.curr_func_label;
     state.curr_func_label += 1;
+
+    if !state.has_ret_statement {
+        state.type_hints.push(IRTypeHint::Is(state.curr_func_ret_type, IRPrimitiveType::Void));
+    }
+
     ir.functions.push(IRFunction {
         arguments,
         variables: state.curr_func_vars.clone(),
         ret_type: state.curr_func_ret_type,
         block,
     });
+
     state.variables_name_map = prev_vars;
+    state.curr_func_vars = prev_func_vars;
+    state.curr_func_ret_type = prev_func_ret_type;
+    state.has_ret_statement = prev_has_ret_statement;
+
     label
 }
