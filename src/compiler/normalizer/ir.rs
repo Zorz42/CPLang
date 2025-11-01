@@ -46,8 +46,8 @@ pub enum IRTypeHint {
 pub enum IROperator {
     Plus,
     Minus,
-    Times,
-    Divide,
+    Mul,
+    Div,
     Equals,
     NotEquals,
     Greater,

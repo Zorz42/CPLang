@@ -1,7 +1,7 @@
 //ERR 3 8 3 12
 
 func
-    ret func
+    ret func()
 
 main
     func()

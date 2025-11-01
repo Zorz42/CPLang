@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::os::macos::raw::stat;
 use crate::compiler::error::CompilerResult;
 use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRTypeHint, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::resolve_types;
@@ -13,8 +14,8 @@ mod type_resolver;
 fn operator_to_ir_operator(operator: Operator) -> IROperator {
     match operator {
         Operator::Plus => IROperator::Plus,
-        Operator::Mul => IROperator::Times,
-        Operator::Div => IROperator::Divide,
+        Operator::Mul => IROperator::Mul,
+        Operator::Div => IROperator::Div,
         Operator::Equals => IROperator::Equals,
         Operator::NotEquals => IROperator::NotEquals,
         Operator::Greater => IROperator::Greater,
@@ -37,6 +38,7 @@ pub struct NormalizerState {
     curr_func_vars: Vec<IRVariableLabel>,
     curr_func_ret_type: IRTypeLabel,
     has_ret_statement: bool,
+    depth: i32,
 }
 
 impl NormalizerState {
@@ -88,6 +90,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         curr_func_vars: Vec::new(),
         curr_func_ret_type: 0,
         has_ret_statement: false,
+        depth: 0,
     };
 
 
@@ -261,6 +264,12 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: FunctionSi
     let prev_func_ret_type = state.curr_func_ret_type.clone();
     let prev_has_ret_statement = state.has_ret_statement;
 
+    // avoid infinite recursion
+    if state.depth == 100 {
+        panic!();
+    }
+
+    state.depth += 1;
     state.curr_func_vars = Vec::new();
     state.curr_func_ret_type = state.new_type_label();
     state.has_ret_statement = false;
@@ -291,6 +300,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: FunctionSi
     state.curr_func_vars = prev_func_vars;
     state.curr_func_ret_type = prev_func_ret_type;
     state.has_ret_statement = prev_has_ret_statement;
+    state.depth -= 1;
 
     label
 }

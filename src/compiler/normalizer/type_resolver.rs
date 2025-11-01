@@ -1,6 +1,24 @@
 use std::collections::{HashMap, VecDeque};
 use crate::compiler::normalizer::ir::{IROperator, IRPrimitiveType, IRType, IRTypeHint, IRTypeLabel, IR};
 
+fn setup_operator_map() -> HashMap<(IRType, IROperator, IRType), IRType> {
+    let mut operator_map = HashMap::new();
+
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Plus, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Minus, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Mul, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Div, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
+
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Equals, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::NotEquals, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Greater, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::GreaterOrEq, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Lesser, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
+    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::LesserOrEq, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
+
+    operator_map
+}
+
 pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>) {
     let mut known_types = Vec::new();
     for _ in 0..num_types {
@@ -14,13 +32,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
         nodes_op.push(Vec::new());
     }
 
-    let operator_map = {
-        let mut operator_map = HashMap::new();
-
-        operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Plus, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
-
-        operator_map
-    };
+    let operator_map = setup_operator_map();
 
     let mut queue = VecDeque::<IRTypeLabel>::new();
     for hint in type_hints {

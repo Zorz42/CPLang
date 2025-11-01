@@ -10,10 +10,26 @@ struct GeneratorContext {
 fn init_default_operators() -> HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>> {
     let mut res: HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>> = HashMap::new();
 
-    let c_plus = |a: String, b: String| -> String {
-        format!("{a} + {b}")
-    };
+    let c_plus = |a: String, b: String| -> String { format!("{a} + {b}") };
+    let c_minus = |a: String, b: String| -> String { format!("{a} - {b}") };
+    let c_mul = |a: String, b: String| -> String { format!("{a} * {b}") };
+    let c_div = |a: String, b: String| -> String { format!("{a} / {b}") };
+    let c_equal = |a: String, b: String| -> String { format!("{a} == {b}") };
+    let c_not_equal = |a: String, b: String| -> String { format!("{a} != {b}") };
+    let c_greater = |a: String, b: String| -> String { format!("{a} > {b}") };
+    let c_greater_or_eq = |a: String, b: String| -> String { format!("{a} >= {b}") };
+    let c_lesser = |a: String, b: String| -> String { format!("{a} < {b}") };
+    let c_lesser_or_eq = |a: String, b: String| -> String { format!("{a} <= {b}") };
     res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Plus, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_plus));
+    res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Minus, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_minus));
+    res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Mul, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_mul));
+    res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Div, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_div));
+    res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Equals, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_equal));
+    res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::NotEquals, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_not_equal));
+    res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Greater, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_greater));
+    res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::GreaterOrEq, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_greater_or_eq));
+    res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Lesser, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_lesser));
+    res.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::LesserOrEq, IRType::Primitive(IRPrimitiveType::I32)), Box::new(c_lesser_or_eq));
 
     res
 }
@@ -153,15 +169,19 @@ fn gen_expression(ctx: &GeneratorContext, expression: IRExpression) -> String {
     }
 }
 
-fn gen_block(ctx: &GeneratorContext, block: IRBlock) -> String {
+fn gen_block(ctx: &GeneratorContext, block: IRBlock, code_prefix: String) -> String {
     let mut code = String::new();
+    code += "{\n";
+    code += &code_prefix;
 
     for statement in block.statements {
         let s_code = match statement {
-            IRStatement::Block(_) => todo!(),
+            IRStatement::Block(block) => {
+                gen_block(ctx, block, String::new())
+            }
             IRStatement::If(_, _) => todo!(),
             IRStatement::While(_, _) => todo!(),
-            IRStatement::Expression(expr) => gen_expression(ctx, expr),
+            IRStatement::Expression(expr) => format!("{};", gen_expression(ctx, expr)),
             IRStatement::Print(expr, type_label) => {
                 let typ = ctx.types[type_label].clone();
                 if typ == IRType::Primitive(IRPrimitiveType::Void) {
@@ -184,6 +204,11 @@ fn gen_block(ctx: &GeneratorContext, block: IRBlock) -> String {
         code += &s_code;
         code += "\n";
     }
+    while code.ends_with("\n") {
+        code.pop();
+    }
+    code = code.replace("\n", "\n  ");
+    code += "\n}\n";
 
     code
 }
@@ -198,20 +223,15 @@ fn gen_function(ctx: &GeneratorContext, func: IRFunction) -> String {
     args.pop();
 
     let mut code = format!("{} {}({})", gen_type(ctx.types[func.ret_type].clone()), gen_function_label(func.label), args);
-    code += "{\n";
-    let has_vars = !func.variables.is_empty();
+
+    let mut vars_code = String::new();
     for var in func.variables {
         let typ = ctx.types[ctx.var_types[var]].clone();
-        code += &format!("{} {};", gen_type(typ), gen_variable_label(var));
+        vars_code += &format!("{} {};", gen_type(typ), gen_variable_label(var));
     }
-    if has_vars {
-        code += "\n";
+    if !vars_code.is_empty() {
+        vars_code += "\n";
     }
-    code += &gen_block(ctx, func.block);
-    while code.ends_with("\n") {
-        code.pop();
-    }
-    code = code.replace("\n", "\n  ");
-    code += "\n}\n";
+    code += &gen_block(ctx, func.block, vars_code);
     code
 }
