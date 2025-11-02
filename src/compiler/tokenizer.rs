@@ -1,6 +1,12 @@
 use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
 use crate::compiler::preprocessor::{Fragment, PosChar};
 
+/*
+Tokenizer transforms a tree of fragments (see preprocessor for what fragment is) into a tree of tokens.
+It resolves all keywords and symbols and constants. The only data that is still stored as raw strings
+are identifiers which are later resolved by normalizer as well since they require more context.
+ */
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Keyword {
     If,

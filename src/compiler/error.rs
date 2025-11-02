@@ -55,7 +55,7 @@ pub fn display_error(error: &CompilerError, input: &str) {
 
         let lines: Vec<&str> = input.lines().collect();
 
-        // its cleaner that way
+        // this lint only makes things less readable
         #[allow(clippy::needless_range_loop)]
         for line in line_start.saturating_sub(2)..=(line_end + 2).min(lines.len() - 1) {
             // first, print line number and leave space after that for longer line numbers

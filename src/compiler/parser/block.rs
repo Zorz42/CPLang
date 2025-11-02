@@ -5,7 +5,7 @@ use crate::compiler::parser::out::parse_out_statement;
 use crate::compiler::parser::Statement;
 use crate::compiler::parser::statement::{parse_if_statement, parse_while_statement};
 use crate::compiler::parser::structure::StructDeclaration;
-use crate::compiler::parser::variable::parse_variable_declaration;
+use crate::compiler::parser::variable::parse_assignment;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
 #[derive(Debug, Clone)]
@@ -29,7 +29,7 @@ pub fn parse_block(structs: &Vec<StructDeclaration>, block: &TokenBlock) -> Comp
             _ => {
                 if let Some(statement) = parse_return_statement(structs, block, &mut curr_idx)? {
                     res.children.push(statement);
-                } else if let Some(statement) = parse_variable_declaration(structs, block, &mut curr_idx)? {
+                } else if let Some(statement) = parse_assignment(structs, block, &mut curr_idx)? {
                     res.children.push(Statement::Assignment(statement));
                 } else if let Some(statement) = parse_out_statement(structs, block, &mut curr_idx)? {
                     res.children.push(Statement::Print(statement));

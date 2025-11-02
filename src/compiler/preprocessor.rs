@@ -19,6 +19,15 @@ It processes raw string into a FragmentBlock which is effectively and array of F
  */
 
 
+#[derive(Clone, Debug)]
+pub enum Fragment {
+    String(Vec<PosChar>, FilePosition),
+    Char(PosChar),
+    BraceBlock(FragmentBlock), // {}
+    BracketBlock(FragmentBlock), // []
+    ParenthesisBlock(FragmentBlock), // ()
+}
+
 // A character with its position in the file
 #[derive(Clone, Debug, PartialEq)]
 pub struct PosChar {
@@ -38,26 +47,23 @@ pub struct FragmentBlock {
     pub position: FilePosition,
 }
 
-#[derive(Clone, Debug)]
-pub enum Fragment {
-    String(Vec<PosChar>, FilePosition),
-    Char(PosChar),
-    BraceBlock(FragmentBlock),
-    BracketBlock(FragmentBlock),
-    ParenthesisBlock(FragmentBlock),
+impl Fragment {
+    pub fn get_position(&self) -> FilePosition {
+        match self {
+            Fragment::String(_s, pos) => pos.clone(),
+            Fragment::Char(pc) => pc.pos.clone(),
+            Fragment::BraceBlock(b) |
+            Fragment::BracketBlock(b) |
+            Fragment::ParenthesisBlock(b) => b.position.clone(),
+        }
+    }
 }
 
 impl FragmentBlock {
     pub fn from_vec(fragments: Vec<Fragment>) -> Self {
         let mut position = FilePosition::unknown();
         for fragment in &fragments {
-            let fragment_pos = match fragment {
-                Fragment::String(_s, pos) => pos.clone(),
-                Fragment::Char(pc) => pc.pos.clone(),
-                Fragment::BraceBlock(b) |
-                Fragment::BracketBlock(b) |
-                Fragment::ParenthesisBlock(b) => b.position.clone(),
-            };
+            let fragment_pos = fragment.get_position();
             position = merge_file_positions(&position, &fragment_pos);
         }
         Self {

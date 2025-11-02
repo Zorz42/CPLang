@@ -89,6 +89,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
         }
     }
 
+    println!("{:?}", known_types);
     for typ in known_types {
         ir.types.push(typ.unwrap());
     }

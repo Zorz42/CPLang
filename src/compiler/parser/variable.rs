@@ -4,13 +4,23 @@ use crate::compiler::parser::structure::StructDeclaration;
 use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
 
 #[derive(Debug, Clone)]
-pub struct VariableDeclaration {
+pub enum AssignmentType {
+    Assign,
+    Increase,
+    Decrease,
+    Increment,
+    Decrement,
+}
+
+#[derive(Debug, Clone)]
+pub struct Assignment {
     pub assign_to: Expression,
     pub value: Expression,
+    pub typ: AssignmentType,
     pub pos: FilePosition,
 }
 
-pub fn parse_variable_declaration(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<VariableDeclaration>> {
+pub fn parse_assignment(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<Assignment>> {
     let old_idx = *curr_idx;
     if *curr_idx + 1 >= block.children.len() {
         return Ok(None);
@@ -25,11 +35,12 @@ pub fn parse_variable_declaration(structs: &Vec<StructDeclaration>, block: &Toke
     };
 
     let symbol = if let Some(Token::Symbol(symbol)) = block.children.get(*curr_idx).map(|x| x.0.clone()) {
-        if symbol == Symbol::Assign || symbol == Symbol::Increase || symbol == Symbol::Decrease || symbol == Symbol::Increment || symbol == Symbol::Decrement {
-            symbol
-        } else {
-            *curr_idx = old_idx;
-            return Ok(None);
+        match symbol {
+            Symbol::Assign |Symbol::Increase | Symbol::Decrease | Symbol::Increment | Symbol::Decrement => symbol,
+            _ => {
+                *curr_idx = old_idx;
+                return Ok(None);
+            }
         }
     } else {
         *curr_idx = old_idx;
@@ -38,28 +49,20 @@ pub fn parse_variable_declaration(structs: &Vec<StructDeclaration>, block: &Toke
 
     *curr_idx += 1;
 
-    let (expr2, expr2_pos) = match symbol {
-        Symbol::Assign => {
-            parse_expression(structs, block, curr_idx)?
-        },
-        Symbol::Increase => {
-            todo!()
-        },
-        Symbol::Decrease => {
-            todo!()
-        },
-        Symbol::Increment => {
-            todo!()
-        },
-        Symbol::Decrement => {
-            todo!()
-        },
-        _ => unreachable!()
+    let (expr2, expr2_pos) = parse_expression(structs, block, curr_idx)?;
+    let typ = match symbol {
+        Symbol::Assign => AssignmentType::Assign,
+        Symbol::Increase => AssignmentType::Increase,
+        Symbol::Decrease => AssignmentType::Decrease,
+        Symbol::Increment => AssignmentType::Increment,
+        Symbol::Decrement => AssignmentType::Decrement,
+        _ => unreachable!(),
     };
 
-    Ok(Some(VariableDeclaration{
+    Ok(Some(Assignment {
         assign_to: expr1,
         value: expr2,
+        typ,
         pos: merge_file_positions(&expr1_pos, &expr2_pos),
     }))
 }

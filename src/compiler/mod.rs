@@ -16,9 +16,9 @@ mod lowerer;
 /*
 The compiler works in the following steps:
 1. Preprocessing: The input source code is preprocessed to parse strings, comments, indentation and parses bracket/brace/parenthesis structure.
-2. Tokenization: The preprocessed fragments are tokenized into a stream of tokens.
+2. Tokenization: The preprocessed fragments are tokenized into a tree of tokens.
 3. Parsing: The token stream is parsed into an Abstract Syntax Tree (AST) representing the program structure.
-4. Lowering: Syntactic sugar is transformed into more rudimentary operations. For example for loop -> while loop.
+4. Lowering: Syntactic sugar is transformed into more rudimentary operations. For example for loop -> while loop, a += 1 -> a = a + 1
 5. Normalization: Names/labels and types are resolved/deduced. AST is transformed into IR (Immediate representation), which is AST with
 less different types of nodes and explicit types and indexes instead of string/name labels.
 6. Code generation: IR is converted to C code.
@@ -32,6 +32,8 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let program_block = tokenize_fragments(&fragment_block.fragments)?;
     let ast = parse_tokens(&program_block)?;
     let ast = lower_ast(ast);
+
+    println!("{:?}", ast);
 
     let ir = normalize_ast(ast)?;
 

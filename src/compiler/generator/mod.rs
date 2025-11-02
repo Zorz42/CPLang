@@ -1,6 +1,11 @@
 use std::collections::HashMap;
 use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRType, IRTypeLabel, IRVariableLabel, IR};
 
+/*
+Generator converts IR into raw C code. Could be easily replaced with any other language.
+
+ */
+
 struct GeneratorContext {
     types: Vec<IRType>,
     var_types: Vec<IRTypeLabel>,
