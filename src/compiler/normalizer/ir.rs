@@ -83,7 +83,7 @@ pub struct IRBlock {
 #[derive(Debug)]
 pub enum IRStatement {
     Block(IRBlock),
-    If(IRExpression, IRBlock),
+    If(IRExpression, IRBlock, Option<IRBlock>),
     While(IRExpression, IRBlock),
     Expression(IRExpression),
     Print(IRExpression, IRTypeLabel),

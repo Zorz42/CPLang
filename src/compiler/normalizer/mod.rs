@@ -240,13 +240,14 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
                 let (cond, type_label) = normalize_expression(state, ir, statement.condition);
                 state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
                 let block = normalize_block(state, ir, statement.block);
-                res.statements.push(IRStatement::If(cond, block));
+                let else_block = statement.else_block.map(|block| normalize_block(state, ir, block));
+                res.statements.push(IRStatement::If(cond, block, else_block));
             }
             Statement::While(statement) => {
                 let (cond, type_label) = normalize_expression(state, ir, statement.condition);
                 state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
                 let block = normalize_block(state, ir, statement.block);
-                res.statements.push(IRStatement::If(cond, block));
+                res.statements.push(IRStatement::While(cond, block));
             }
         }
     }

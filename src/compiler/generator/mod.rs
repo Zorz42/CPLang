@@ -179,8 +179,16 @@ fn gen_block(ctx: &GeneratorContext, block: IRBlock, code_prefix: String) -> Str
             IRStatement::Block(block) => {
                 gen_block(ctx, block, String::new())
             }
-            IRStatement::If(_, _) => todo!(),
-            IRStatement::While(_, _) => todo!(),
+            IRStatement::If(cond, block, else_block) => {
+                let mut code = format!("if({}){}", gen_expression(ctx, cond), gen_block(ctx, block, String::new()));
+                if let Some(else_block) = else_block {
+                    code += &format!("else {}", gen_block(ctx, else_block, String::new()));
+                }
+                code
+            }
+            IRStatement::While(cond, block) => {
+                format!("while({}){}", gen_expression(ctx, cond), gen_block(ctx, block, String::new()))
+            }
             IRStatement::Expression(expr) => format!("{};", gen_expression(ctx, expr)),
             IRStatement::Print(expr, type_label) => {
                 let typ = ctx.types[type_label].clone();
