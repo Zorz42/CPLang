@@ -5,13 +5,13 @@ use crate::compiler::parser::function::{parse_function_declaration, FunctionSign
 use crate::compiler::parser::out::PrintStatement;
 use crate::compiler::parser::statement::{IfStatement, WhileStatement};
 use crate::compiler::parser::structure::{parse_struct_declaration, StructDeclaration};
-use crate::compiler::parser::variable::Assignment;
+use crate::compiler::parser::assignment::Assignment;
 use crate::compiler::tokenizer::TokenBlock;
 
 pub mod function;
 pub mod block;
 pub mod expression;
-pub mod variable;
+pub mod assignment;
 pub mod out;
 pub mod statement;
 pub mod structure;

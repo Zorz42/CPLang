@@ -5,7 +5,7 @@ use crate::compiler::parser::out::parse_out_statement;
 use crate::compiler::parser::Statement;
 use crate::compiler::parser::statement::{parse_if_statement, parse_while_statement};
 use crate::compiler::parser::structure::StructDeclaration;
-use crate::compiler::parser::variable::parse_assignment;
+use crate::compiler::parser::assignment::parse_assignment;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
 #[derive(Debug, Clone)]

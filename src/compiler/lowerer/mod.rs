@@ -1,7 +1,7 @@
 use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
-use crate::compiler::parser::variable::{Assignment, AssignmentType};
+use crate::compiler::parser::assignment::{Assignment, AssignmentType};
 
 // Lowerer simply transforms AST into a more simple version that doesn't contain any syntax sugar.
 
