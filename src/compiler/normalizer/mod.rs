@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::os::macos::raw::stat;
 use crate::compiler::error::CompilerResult;
 use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRTypeHint, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::resolve_types;

@@ -62,6 +62,7 @@ mod tests {
                     }
                 }
             } else {
+                std::fs::remove_file(&c_file).unwrap();
                 panic!("Expected error, but got compilation success");
             }
         } else if first_line.starts_with("//OUT=") {
@@ -75,9 +76,9 @@ mod tests {
                 .output()
                 .expect("failed to run test");
 
-            assert_eq!(String::from_utf8(output.stdout).unwrap(), expected_output);
-
             std::fs::remove_file(&c_file).unwrap();
+
+            assert_eq!(String::from_utf8(output.stdout).unwrap(), expected_output);
         } else {
             panic!("Invalid test file, first line must start with //ERR or //OUT=");
         }

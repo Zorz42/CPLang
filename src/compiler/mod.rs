@@ -1,5 +1,6 @@
 use crate::compiler::error::CompilerResult;
 use crate::compiler::generator::generate_code;
+use crate::compiler::lowerer::lower_ast;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
@@ -11,15 +12,16 @@ mod generator;
 mod preprocessor;
 pub mod error;
 mod normalizer;
+mod lowerer;
 /*
 The compiler works in the following steps:
 1. Preprocessing: The input source code is preprocessed to parse strings, comments, indentation and parses bracket/brace/parenthesis structure.
 2. Tokenization: The preprocessed fragments are tokenized into a stream of tokens.
 3. Parsing: The token stream is parsed into an Abstract Syntax Tree (AST) representing the program structure.
-4. Normalization: Syntactic sugar is transformed into more rudimentary operations. For example for loop -> while loop
-Names/labels and types are resolved/deduced. AST is transformed into IR (Immediate representation), which is AST with
+4. Lowering: Syntactic sugar is transformed into more rudimentary operations. For example for loop -> while loop.
+5. Normalization: Names/labels and types are resolved/deduced. AST is transformed into IR (Immediate representation), which is AST with
 less different types of nodes and explicit types and indexes instead of string/name labels.
-5. Code generation: IR is converted to C code.
+6. Code generation: IR is converted to C code.
  */
 
 pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
@@ -29,6 +31,7 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let fragment_block = preprocess(&input)?;
     let program_block = tokenize_fragments(&fragment_block.fragments)?;
     let ast = parse_tokens(&program_block)?;
+    let ast = lower_ast(ast);
 
     let ir = normalize_ast(ast)?;
 
