@@ -1,5 +1,28 @@
 use std::collections::{HashMap, VecDeque};
-use crate::compiler::normalizer::ir::{IROperator, IRPrimitiveType, IRType, IRTypeHint, IRTypeLabel, IR};
+use crate::compiler::normalizer::ir::{IROperator, IRPrimitiveType, IRType, IRTypeLabel, IR};
+
+pub enum IRTypeHint {
+    Is(IRTypeLabel, IRPrimitiveType),
+    Equal(IRTypeLabel, IRTypeLabel),
+    // arg0 = arg1 + arg3, + is arg2
+    Operator(IRTypeLabel, IRTypeLabel, IROperator, IRTypeLabel),
+    // arg0 = &arg1
+    IsRef(IRTypeLabel, IRTypeLabel),
+}
+
+enum Conn {
+    // node = arg1
+    Is(IRTypeLabel),
+
+    // node = &arg1
+    IsRef(IRTypeLabel),
+
+    // node = :arg1
+    IsDeref(IRTypeLabel),
+
+    // node + arg1 = arg3 (+ is arg2)
+    Operator(IRTypeLabel, IROperator, IRTypeLabel),
+}
 
 fn setup_operator_map() -> HashMap<(IRType, IROperator, IRType), IRType> {
     let mut operator_map = HashMap::new();
@@ -26,10 +49,8 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
     }
 
     let mut nodes = Vec::new();
-    let mut nodes_op = Vec::new();
     for _ in 0..num_types {
         nodes.push(Vec::new());
-        nodes_op.push(Vec::new());
     }
 
     let operator_map = setup_operator_map();
@@ -44,15 +65,35 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                 queue.push_back(label);
             }
             IRTypeHint::Equal(label1, label2) => {
-                nodes[label1].push(label2);
-                nodes[label2].push(label1);
+                nodes[label1].push(Conn::Is(label2));
+                nodes[label2].push(Conn::Is(label1));
             }
             IRTypeHint::Operator(typ, typ1, op, typ2) => {
-                nodes_op[typ1].push((typ, typ2, op));
-                nodes_op[typ2].push((typ, typ1, op));
+                nodes[typ1].push(Conn::Operator(typ, op, typ2));
+                nodes[typ2].push(Conn::Operator(typ, op, typ1));
+            }
+            IRTypeHint::IsRef(typ1, typ2) => {
+                // typ1 = &typ2
+                nodes[typ2].push(Conn::IsRef(typ1));
+                nodes[typ1].push(Conn::IsDeref(typ2));
             }
         }
     }
+
+    let try_set = |
+        label: IRTypeLabel,
+        typ: IRType,
+        known_types: &mut Vec<Option<IRType>>,
+        queue: &mut VecDeque<IRTypeLabel>
+    | {
+        if known_types[label].is_some() && known_types[label].as_ref() != Some(&typ) {
+            panic!();
+        }
+        if known_types[label].is_none() {
+            known_types[label] = Some(typ);
+            queue.push_back(label);
+        }
+    };
 
     loop {
         let node =
@@ -64,26 +105,25 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
         let node_type = known_types[node].as_ref().unwrap().clone();
 
         for ne in &nodes[node] {
-            if let Some(ne_typ) = &known_types[*ne] {
-                if *ne_typ != node_type {
-                    panic!();
+            match ne {
+                Conn::Is(ne) => {
+                    try_set(*ne, node_type.clone(), &mut known_types, &mut queue);
                 }
-                continue;
-            }
-
-            known_types[*ne] = Some(node_type.clone());
-            queue.push_back(*ne);
-        }
-
-        for (ne, typ2, op) in &nodes_op[node] {
-            if let Some(node_type2) = known_types[*typ2].clone() {
-                let res_type = operator_map[&(node_type.clone(), *op, node_type2)].clone();
-                if known_types[*ne].is_some() && known_types[*ne].as_ref() != Some(&res_type) {
-                    panic!();
+                Conn::IsRef(ne) => {
+                    try_set(*ne, IRType::Reference(Box::new(node_type.clone())), &mut known_types, &mut queue);
                 }
-                if known_types[*ne].is_none() {
-                    known_types[*ne] = Some(res_type);
-                    queue.push_back(*ne);
+                Conn::IsDeref(ne) => {
+                    let typ = match node_type.clone() {
+                        IRType::Reference(typ) => typ,
+                        _ => panic!()
+                    };
+                    try_set(*ne, *typ, &mut known_types, &mut queue);
+                }
+                Conn::Operator(ne, op, typ2) => {
+                    if let Some(node_type2) = known_types[*typ2].clone() {
+                        let res_type = operator_map[&(node_type.clone(), *op, node_type2)].clone();
+                        try_set(*ne, res_type.clone(), &mut known_types, &mut queue);
+                    }
                 }
             }
         }

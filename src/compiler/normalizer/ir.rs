@@ -35,13 +35,6 @@ pub enum IRType {
     Struct(Vec<(String, IRType)>),
 }
 
-pub enum IRTypeHint {
-    Is(IRTypeLabel, IRPrimitiveType),
-    Equal(IRTypeLabel, IRTypeLabel),
-    // arg0 = arg1 + arg3, + is arg2
-    Operator(IRTypeLabel, IRTypeLabel, IROperator, IRTypeLabel),
-}
-
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum IROperator {
     Plus,

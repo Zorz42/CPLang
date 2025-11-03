@@ -1,7 +1,7 @@
 //OUT=20
 
 set20 x
-    x = 20
+    :x = 20
 
 main
     a = 10

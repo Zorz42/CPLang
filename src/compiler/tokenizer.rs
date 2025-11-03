@@ -56,6 +56,7 @@ pub enum Symbol {
     Decrease,
     Increment,
     Decrement,
+    Colon,
 }
 
 impl Symbol {
@@ -70,6 +71,7 @@ impl Symbol {
             '-' => Some(Symbol::Minus),
             '&' => Some(Symbol::Reference),
             '.' => Some(Symbol::Dot),
+            ':' => Some(Symbol::Colon),
             _ => None,
         }
     }

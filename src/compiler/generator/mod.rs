@@ -78,9 +78,7 @@ fn gen_primitive_type(typ: IRPrimitiveType) -> String {
 fn gen_type(typ: IRType) -> String {
     match typ {
         IRType::Primitive(typ) => gen_primitive_type(typ),
-        IRType::Reference(_) => {
-            todo!()
-        }
+        IRType::Reference(typ) => format!("{}*", gen_type(*typ)),
         IRType::Tuple(_) => {
             todo!()
         }
@@ -165,9 +163,9 @@ fn gen_expression(ctx: &GeneratorContext, expression: IRExpression) -> String {
             format!("{}({})", gen_function_label(func), args_code)
         }
         IRExpression::FieldAccess(_, _) => { todo!() }
-        IRExpression::Dereference(_) => { todo!() }
+        IRExpression::Dereference(expr) => format!("(*{})", gen_expression(ctx, *expr)),
         IRExpression::StructInitialization(_, _) => { todo!() }
-        IRExpression::Reference(_) => { todo!() }
+        IRExpression::Reference(expr) => format!("(&{})", gen_expression(ctx, *expr)),
         IRExpression::Variable(var) => {
             gen_variable_label(var)
         }

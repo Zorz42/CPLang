@@ -109,7 +109,7 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
 
             (Expression::Reference(Box::new(res), pos.clone()), pos)
         }
-        Token::Symbol(Symbol::Star) => {
+        Token::Symbol(Symbol::Colon) => {
             *curr_idx += 1;
             let (res, pos) = parse_value(structs, block, curr_idx)?;
 

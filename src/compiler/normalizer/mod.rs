@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::compiler::error::CompilerResult;
-use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRTypeHint, IRTypeLabel, IRVariableLabel, IR};
-use crate::compiler::normalizer::type_resolver::resolve_types;
+use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRTypeLabel, IRVariableLabel, IR};
+use crate::compiler::normalizer::type_resolver::{resolve_types, IRTypeHint};
 use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
@@ -139,11 +139,13 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
             IRExpression::Variable(label)
         }
         Expression::Reference(expr, _pos) => {
-            let (expr, _type_label) = normalize_expression(state, ir, *expr);
+            let (expr, type_label2) = normalize_expression(state, ir, *expr);
+            state.type_hints.push(IRTypeHint::IsRef(type_label, type_label2));
             IRExpression::Reference(Box::new(expr))
         }
         Expression::Dereference(expr, _pos) => {
-            let (expr, _type_label) = normalize_expression(state, ir, *expr);
+            let (expr, type_label2) = normalize_expression(state, ir, *expr);
+            state.type_hints.push(IRTypeHint::IsRef(type_label2, type_label));
             IRExpression::Dereference(Box::new(expr))
         }
         Expression::FunctionCall(name, args) => {
