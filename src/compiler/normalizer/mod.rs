@@ -3,6 +3,7 @@ use crate::compiler::error::CompilerResult;
 use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::{resolve_types, IRTypeHint};
 use crate::compiler::parser::{Statement, AST};
+use crate::compiler::parser::assignment::Assignment;
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
 use crate::compiler::parser::function::FunctionSignature;
@@ -197,15 +198,20 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
     for statement in block.children {
         match statement {
             Statement::Assignment(declaration) => {
+                let (assign_to, value, pos) = match declaration {
+                    Assignment::Assign(assign_to, value, pos) => (assign_to, value, pos),
+                    _ => unreachable!(), // lowerer took care of that
+                };
+
                 // if an unknown variable is assigned, create it
-                if let Expression::Variable(name, _) = &declaration.assign_to && !state.variables_name_map.contains_key(name) {
+                if let Expression::Variable(name, _) = &assign_to && !state.variables_name_map.contains_key(name) {
                     let label = state.new_var(name);
                     state.curr_func_vars.push(label);
                     ir.variable_types.push(state.new_type_label());
                 }
 
-                let (assign_to, type_label1) = normalize_expression(state, ir, declaration.assign_to);
-                let (value, type_label2) = normalize_expression(state, ir, declaration.value);
+                let (assign_to, type_label1) = normalize_expression(state, ir, assign_to);
+                let (value, type_label2) = normalize_expression(state, ir, value);
                 state.type_hints.push(IRTypeHint::Equal(type_label1, type_label2));
 
                 res.statements.push(IRStatement::Assignment(assign_to, value));
@@ -268,7 +274,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: FunctionSi
 
     // avoid infinite recursion
     if state.depth == 100 {
-        panic!();
+        panic!("Recursion too deep");
     }
 
     state.depth += 1;

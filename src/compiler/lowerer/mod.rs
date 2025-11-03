@@ -1,7 +1,8 @@
+use crate::compiler::error::FilePosition;
 use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
-use crate::compiler::parser::assignment::{Assignment, AssignmentType};
+use crate::compiler::parser::assignment::Assignment;
 
 // Lowerer simply transforms AST into a more simple version that doesn't contain any syntax sugar.
 
@@ -13,49 +14,47 @@ pub fn lower_ast(mut ast: AST) -> AST {
     ast
 }
 
+/* transform a += b into
+{
+    tmp = &a
+    :tmp = :tmp + a
+}
+ */
+fn gen_op_block(pos: FilePosition, op: Operator, assign_to: Expression, value: Expression) -> Statement {
+    let var_name = "tmp".to_string();
+    Statement::Block(Block {
+        children: vec![
+            Statement::Assignment(Assignment::Assign(
+                Expression::Variable(var_name.clone(), pos.clone()),
+                Expression::Reference(Box::new(assign_to), pos.clone()),
+                pos.clone(),
+            )),
+            Statement::Assignment(Assignment::Assign(
+                Expression::Dereference(Box::new(Expression::Variable(var_name.clone(), pos.clone())), pos.clone()),
+                Expression::BinaryOperation(Box::new(Expression::Dereference(Box::new(Expression::Variable(var_name.clone(), pos.clone())), pos.clone())), op, Box::new(value), pos.clone()),
+                pos.clone(),
+            )),
+        ]
+    })
+}
+
 fn lower_statement(statement: Statement) -> Statement {
     match statement {
         Statement::Assignment(assignment) => {
-            match assignment.typ {
-                AssignmentType::Assign => Statement::Assignment(assignment),
-                AssignmentType::Increase | AssignmentType::Decrease => {
-                    let pos = assignment.pos;
-                    let var_name = "tmp".to_string();
-                    let op = match assignment.typ {
-                        AssignmentType::Increase => Operator::Plus,
-                        AssignmentType::Decrease => Operator::Minus,
-                        _ => unreachable!(),
-                    };
-                    let block = Statement::Block(Block {
-                        children: vec![
-                            Statement::Assignment(Assignment {
-                                assign_to: Expression::Variable(var_name.clone(), pos.clone()),
-                                value: Expression::Reference(Box::new(assignment.assign_to), pos.clone()),
-                                typ: AssignmentType::Assign,
-                                pos: pos.clone(),
-                            }),
-                            Statement::Assignment(Assignment {
-                                assign_to: Expression::Dereference(Box::new(Expression::Variable(var_name.clone(), pos.clone())), pos.clone()),
-                                value: Expression::BinaryOperation(Box::new(Expression::Variable(var_name.clone(), pos.clone())), op, Box::new(assignment.value), pos.clone()),
-                                typ: AssignmentType::Assign,
-                                pos: pos.clone(),
-                            }),
-                        ]
-                    });
+            match assignment {
+                Assignment::Assign(..) => Statement::Assignment(assignment),
+                Assignment::Increase(assign_to, expr, pos) => {
+                    let block = gen_op_block(pos, Operator::Plus, assign_to, expr);
                     lower_statement(block)
                 }
-                AssignmentType::Increment => lower_statement(Statement::Assignment(Assignment {
-                    assign_to: assignment.assign_to,
-                    value: Expression::Integer(1),
-                    typ: AssignmentType::Increase,
-                    pos: assignment.pos,
-                })),
-                AssignmentType::Decrement => lower_statement(Statement::Assignment(Assignment {
-                    assign_to: assignment.assign_to,
-                    value: Expression::Integer(1),
-                    typ: AssignmentType::Decrease,
-                    pos: assignment.pos,
-                })),
+                Assignment::Decrease(assign_to, expr, pos) => {
+                    let block = gen_op_block(pos, Operator::Minus, assign_to, expr);
+                    lower_statement(block)
+                }
+                Assignment::Increment(assign_to, pos) =>
+                    lower_statement(Statement::Assignment(Assignment::Increase(assign_to, Expression::Integer(1), pos))),
+                Assignment::Decrement(assign_to, pos) =>
+                    lower_statement(Statement::Assignment(Assignment::Decrease(assign_to, Expression::Integer(1), pos))),
             }
         }
         Statement::Block(mut block) => {
