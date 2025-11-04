@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::compiler::error::CompilerResult;
-use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRTypeLabel, IRVariableLabel, IR};
+use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::{resolve_types, IRTypeHint};
 use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::assignment::Assignment;
@@ -40,7 +40,7 @@ pub struct NormalizerState {
     curr_func_ret_type: IRTypeLabel,
     has_ret_statement: bool,
     depth: i32,
-    structs_name_map: HashMap<String, StructDeclaration>,
+    structs_name_map: HashMap<String, IRStructLabel>,
 }
 
 impl NormalizerState {
@@ -73,7 +73,7 @@ impl NormalizerState {
 }
 
 pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
-    let mut res = IR {
+    let mut ir = IR {
         structs: Vec::new(),
         functions: Vec::new(),
         types: Vec::new(),
@@ -96,13 +96,16 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         structs_name_map: HashMap::new(),
     };
 
-
     for (sig, block) in ast.functions {
         state.functions_name_map.insert(sig.name.clone(), (sig, block));
     }
 
     for structure in ast.structs {
-        state.structs_name_map.insert(structure.name.clone(), structure);
+        let name = structure.name.clone();
+        let ir_struct = normalize_struct(&mut state, structure);
+        let label = ir.structs.len() as IRStructLabel;
+        state.structs_name_map.insert(name, label);
+        ir.structs.push(ir_struct);
     }
 
     if let Some((sig, block)) = state.functions_name_map.get("main").cloned() {
@@ -110,14 +113,35 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
             panic!();
         }
 
-        res.main_function = normalize_function(&mut state, &mut res, sig, block, Vec::new());
+        ir.main_function = normalize_function(&mut state, &mut ir, sig, block, Vec::new());
     } else {
         panic!();
     }
 
-    resolve_types(&mut res, state.curr_type_label, state.type_hints);
+    resolve_types(&mut ir, state.curr_type_label, state.type_hints);
 
-    Ok(res)
+    Ok(ir)
+}
+
+fn normalize_struct(state: &mut NormalizerState, structure: StructDeclaration) -> IRStruct{
+    let mut ir_struct = IRStruct {
+        fields: Vec::new(),
+    };
+
+    for name in structure.fields {
+        let label =
+            if let Some(label) = state.fields_name_map.get(&name) {
+                *label
+            } else {
+                let label = state.new_field(&name);
+                state.fields_name_map.insert(name, label);
+                label
+            };
+        ir_struct.fields.push(label);
+    }
+
+    ir_struct
+
 }
 
 fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Expression) -> (IRExpression, IRTypeLabel) {
@@ -173,14 +197,28 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
             IRExpression::FunctionCall(func_label, ir_args)
         }
         Expression::StructInitialization(name, args) => {
-            todo!()
+            let struct_label = state.structs_name_map[&name].clone();
+
+            let mut args_exprs = Vec::new();
+            let mut args_types = Vec::new();
+            for arg in args {
+                let (expr, typ) = normalize_expression(state, ir, arg);
+                args_exprs.push(expr);
+                args_types.push(typ);
+            }
+
+            let struct_expr = IRExpression::StructInitialization(struct_label, args_exprs);
+            state.type_hints.push(IRTypeHint::Struct(type_label, struct_label, args_types));
+
+            struct_expr
         }
         Expression::FieldAccess(expr, field, _pos) => {
             let (expr, _type_label) = normalize_expression(state, ir, *expr);
             IRExpression::FieldAccess(Box::new(expr), state.fields_name_map[&field])
         }
         Expression::MethodCall(expr, _pos, name, args) => {
-            todo!()
+            // should be eliminated by lowerer
+            unreachable!()
         }
         Expression::BinaryOperation(expr1, op, expr2, _pos) => {
             let (expr1, type_label1) = normalize_expression(state, ir, *expr1);
@@ -280,7 +318,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: FunctionSi
     let prev_has_ret_statement = state.has_ret_statement;
 
     // avoid infinite recursion
-    if state.depth == 100 {
+    if state.depth == 50 {
         panic!("Recursion too deep");
     }
 

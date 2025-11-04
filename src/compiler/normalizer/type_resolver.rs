@@ -1,5 +1,5 @@
 use std::collections::{HashMap, VecDeque};
-use crate::compiler::normalizer::ir::{IROperator, IRPrimitiveType, IRType, IRTypeLabel, IR};
+use crate::compiler::normalizer::ir::{IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
 
 pub enum IRTypeHint {
     Is(IRTypeLabel, IRPrimitiveType),
@@ -8,6 +8,8 @@ pub enum IRTypeHint {
     Operator(IRTypeLabel, IRTypeLabel, IROperator, IRTypeLabel),
     // arg0 = &arg1
     IsRef(IRTypeLabel, IRTypeLabel),
+    // arg0 = arg1 { arg2[0], ..., arg2[n] } 
+    Struct(IRTypeLabel, IRStructLabel, Vec<IRTypeLabel>),
 }
 
 enum Conn {
@@ -76,6 +78,9 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                 // typ1 = &typ2
                 nodes[typ2].push(Conn::IsRef(typ1));
                 nodes[typ1].push(Conn::IsDeref(typ2));
+            }
+            IRTypeHint::Struct(..) => {
+                todo!()
             }
         }
     }

@@ -94,7 +94,7 @@ pub struct IRFunction {
 
 #[derive(Debug)]
 pub struct IRStruct {
-    pub fields: Vec<(IRFieldLabel, IRTypeLabel)>,
+    pub fields: Vec<IRFieldLabel>,
 }
 
 impl Debug for IRBlock {
