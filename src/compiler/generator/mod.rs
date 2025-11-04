@@ -85,7 +85,7 @@ fn gen_type(typ: IRType) -> String {
         IRType::Enum(_) => {
             todo!()
         }
-        IRType::Struct(_) => {
+        IRType::Struct(_, _) => {
             todo!()
         }
     }
@@ -115,7 +115,7 @@ fn type_to_printf_format(typ: &IRType) -> &'static str {
         IRType::Reference(typ) => type_to_printf_format(typ),
         IRType::Tuple(_) => todo!(),
         IRType::Enum(_) => todo!(),
-        IRType::Struct(_) => todo!(),
+        IRType::Struct(_, _) => todo!(),
     }
 }
 

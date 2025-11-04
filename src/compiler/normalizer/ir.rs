@@ -32,7 +32,7 @@ pub enum IRType {
     Reference(Box<IRType>),
     Tuple(Vec<IRType>),
     Enum(Vec<IRType>),
-    Struct(Vec<(String, IRType)>),
+    Struct(IRStructLabel, Vec<IRType>),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]

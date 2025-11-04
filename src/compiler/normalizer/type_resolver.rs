@@ -8,7 +8,7 @@ pub enum IRTypeHint {
     Operator(IRTypeLabel, IRTypeLabel, IROperator, IRTypeLabel),
     // arg0 = &arg1
     IsRef(IRTypeLabel, IRTypeLabel),
-    // arg0 = arg1 { arg2[0], ..., arg2[n] } 
+    // arg0 = arg1 { arg2[0], ..., arg2[n] }
     Struct(IRTypeLabel, IRStructLabel, Vec<IRTypeLabel>),
 }
 
@@ -24,6 +24,9 @@ enum Conn {
 
     // node + arg1 = arg3 (+ is arg2)
     Operator(IRTypeLabel, IROperator, IRTypeLabel),
+
+    // arg0 = arg1 { arg2[0], ..., arg2[n] }
+    Struct(IRTypeLabel, IRStructLabel, Vec<IRTypeLabel>),
 }
 
 fn setup_operator_map() -> HashMap<(IRType, IROperator, IRType), IRType> {
@@ -79,8 +82,10 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                 nodes[typ2].push(Conn::IsRef(typ1));
                 nodes[typ1].push(Conn::IsDeref(typ2));
             }
-            IRTypeHint::Struct(..) => {
-                todo!()
+            IRTypeHint::Struct(typ, structure, types) => {
+                for arg_type in &types {
+                    nodes[*arg_type].push(Conn::Struct(typ, structure, types.clone()));
+                }
             }
         }
     }
@@ -109,7 +114,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
             };
         let node_type = known_types[node].as_ref().unwrap().clone();
 
-        for ne in &nodes[node] {
+        'outer_for: for ne in &nodes[node] {
             match ne {
                 Conn::Is(ne) => {
                     try_set(*ne, node_type.clone(), &mut known_types, &mut queue);
@@ -129,6 +134,20 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                         let res_type = operator_map[&(node_type.clone(), *op, node_type2)].clone();
                         try_set(*ne, res_type.clone(), &mut known_types, &mut queue);
                     }
+                }
+                Conn::Struct(typ, structure, args) => {
+                    // only deduce type when all arguments are known
+                    let mut ir_args = Vec::new();
+                    for arg in args {
+                        if let Some(arg) = &known_types[*arg] {
+                            ir_args.push(arg.clone());
+                        } else {
+                            continue 'outer_for;
+                        }
+                    }
+
+                    let ir_type = IRType::Struct(*structure, ir_args);
+                    try_set(*typ, ir_type, &mut known_types, &mut queue);
                 }
             }
         }

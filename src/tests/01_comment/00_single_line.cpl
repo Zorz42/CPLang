@@ -3,7 +3,7 @@
 // Comments can be anywhere
 
 main
-    // or in functions
+    // in functions
 
     out "it works!" // or after statements
 // or in the end of the file
