@@ -1,4 +1,3 @@
-use std::fs::File;
 use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
 use crate::compiler::parser::expression::{parse_expression, Expression};
 use crate::compiler::parser::structure::StructDeclaration;

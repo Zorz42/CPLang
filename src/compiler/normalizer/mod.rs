@@ -7,6 +7,7 @@ use crate::compiler::parser::assignment::Assignment;
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
 use crate::compiler::parser::function::FunctionSignature;
+use crate::compiler::parser::structure::StructDeclaration;
 
 pub mod ir;
 mod type_resolver;
@@ -39,6 +40,7 @@ pub struct NormalizerState {
     curr_func_ret_type: IRTypeLabel,
     has_ret_statement: bool,
     depth: i32,
+    structs_name_map: HashMap<String, StructDeclaration>,
 }
 
 impl NormalizerState {
@@ -91,11 +93,16 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         curr_func_ret_type: 0,
         has_ret_statement: false,
         depth: 0,
+        structs_name_map: HashMap::new(),
     };
 
 
     for (sig, block) in ast.functions {
         state.functions_name_map.insert(sig.name.clone(), (sig, block));
+    }
+
+    for structure in ast.structs {
+        state.structs_name_map.insert(structure.name.clone(), structure);
     }
 
     if let Some((sig, block)) = state.functions_name_map.get("main").cloned() {

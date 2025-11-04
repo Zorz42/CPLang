@@ -21,7 +21,7 @@ pub fn lower_ast(mut ast: AST) -> AST {
 }
  */
 fn gen_op_block(pos: FilePosition, op: Operator, assign_to: Expression, value: Expression) -> Statement {
-    let var_name = "tmp".to_string();
+    let var_name = "$tmp".to_string();
     Statement::Block(Block {
         children: vec![
             Statement::Assignment(Assignment::Assign(
