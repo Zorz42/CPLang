@@ -1,5 +1,5 @@
 use std::collections::{HashMap, VecDeque};
-use crate::compiler::normalizer::ir::{IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
+use crate::compiler::normalizer::ir::{IRFieldLabel, IROperator, IRPrimitiveType, IRStruct, IRStructLabel, IRType, IRTypeLabel, IR};
 
 pub enum IRTypeHint {
     Is(IRTypeLabel, IRPrimitiveType),
@@ -159,10 +159,18 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                 }
                 Conn::IsField(typ, field) => {
                     let (struct_label, struct_args) = match &known_types[node] {
-                        Some(IRType::Struct(label, args)) => (*label, args.clone()),
+                        Some(IRType::Struct(label, args)) => (*label, args),
                         _ => panic!()
                     };
-                    todo!()
+                    let curr_struct = &ir.structs[struct_label];
+                    let mut field_idx = 0;
+                    for (idx, curr_field) in curr_struct.fields.iter().enumerate() {
+                        if curr_field == field {
+                            field_idx = idx;
+                        }
+                    }
+
+                    try_set(*typ, struct_args[field_idx].clone(), &mut known_types, &mut queue);
                 }
             }
         }

@@ -211,7 +211,9 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
 
             format!("{}({})", gen_function_label(func), args_code)
         }
-        IRExpression::FieldAccess(_, _) => { todo!() }
+        IRExpression::FieldAccess(expr, field) => {
+            format!("{}.{}", gen_expression(ctx, *expr), gen_field_name(field))
+        }
         IRExpression::Dereference(expr) => format!("(*{})", gen_expression(ctx, *expr)),
         IRExpression::StructInitialization(label, arg_types, args) => {
             let arg_types = arg_types.into_iter().map(|x| ctx.types[x].clone()).collect::<Vec<_>>();

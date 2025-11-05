@@ -6,5 +6,5 @@ struct T
 main
     a = T x 10
     b = &a.x
-    b = 20
+    :b = 20
     out "{a.x}"
