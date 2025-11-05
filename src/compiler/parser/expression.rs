@@ -42,7 +42,7 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
             let expr = match constant {
                 Constant::Integer(int) => Expression::Integer(*int),
                 Constant::Float(float) => Expression::Float(*float),
-                Constant::String(string) => Expression::String(string.iter().map(|x| x.c).collect::<String>()),
+                Constant::String(string) => Expression::String(string.iter().map(|x| x.c).collect()),
                 Constant::Boolean(boolean) => Expression::Boolean(*boolean),
             };
 

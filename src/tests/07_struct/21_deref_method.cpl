@@ -1,0 +1,16 @@
+//OUT=compile
+
+struct TestStruct
+    x
+
+    fn set_x
+        self.x = "compile"
+
+    fn get_x
+        ret self.x
+
+main
+    a = TestStruct x "no good"
+    b = &a
+    b.set_x()
+    out "{b.get_x()}"

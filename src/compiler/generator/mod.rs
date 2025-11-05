@@ -128,7 +128,7 @@ fn gen_type(ctx: &mut GeneratorContext, typ: IRType) -> String {
                     ctx.c_structs.insert((label, args.clone()), gen_label);
 
                     let field_labels = ctx.structs[label].fields.clone();
-                    let fields = args.into_iter().zip(field_labels).collect::<Vec<_>>();
+                    let fields = args.into_iter().zip(field_labels).collect();
 
                     let code = gen_struct_declaration(ctx, fields, gen_label);
                     ctx.struct_declarations += &code;
@@ -216,7 +216,7 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
         }
         IRExpression::Dereference(expr) => format!("(*{})", gen_expression(ctx, *expr)),
         IRExpression::StructInitialization(label, arg_types, args) => {
-            let arg_types = arg_types.into_iter().map(|x| ctx.types[x].clone()).collect::<Vec<_>>();
+            let arg_types = arg_types.into_iter().map(|x| ctx.types[x].clone()).collect();
             let c_label = ctx.c_structs[&(label, arg_types)];
             let mut code = format!("({})", gen_struct_name(c_label));
             code += "{";

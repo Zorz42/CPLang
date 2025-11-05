@@ -9,7 +9,7 @@ use crate::compiler::parser::assignment::Assignment;
 pub fn lower_ast(mut ast: AST) -> AST {
     ast.functions = ast.functions.into_iter().map(|(sign, block)| {
         (sign, lower_block(block))
-    }).collect::<Vec<_>>();
+    }).collect();
 
     ast
 }
@@ -38,11 +38,16 @@ fn gen_op_block(pos: FilePosition, op: Operator, assign_to: Expression, value: E
     })
 }
 
+fn lower_expression(expression: Expression) -> Expression {
+    expression
+}
+
 fn lower_statement(statement: Statement) -> Statement {
     match statement {
         Statement::Assignment(assignment) => {
             match assignment {
-                Assignment::Assign(..) => Statement::Assignment(assignment),
+                Assignment::Assign(assign_to, expr, pos) =>
+                    Statement::Assignment(Assignment::Assign(lower_expression(assign_to), lower_expression(expr), pos)),
                 Assignment::Increase(assign_to, expr, pos) => {
                     let block = gen_op_block(pos, Operator::Plus, assign_to, expr);
                     lower_statement(block)
@@ -58,14 +63,34 @@ fn lower_statement(statement: Statement) -> Statement {
             }
         }
         Statement::Block(mut block) => {
-            block.children = block.children.into_iter().map(|statement| lower_statement(statement)).collect::<Vec<_>>();
+            block.children = block.children.into_iter().map(|statement| lower_statement(statement)).collect();
             Statement::Block(block)
         }
-        _ => statement
+        Statement::If(mut stat) => {
+            stat.block = lower_block(stat.block);
+            stat.else_block = stat.else_block.map(lower_block);
+            stat.condition = lower_expression(stat.condition);
+            Statement::If(stat)
+        }
+        Statement::While(mut stat) => {
+            stat.block = lower_block(stat.block);
+            stat.condition = lower_expression(stat.condition);
+            Statement::While(stat)
+        }
+        Statement::Return(mut expr, pos) => {
+            expr = expr.map(lower_expression);
+            Statement::Return(expr, pos)
+        }
+        Statement::Print(mut expr) => {
+            expr.values = expr.values.into_iter().map(lower_expression).collect();
+            Statement::Print(expr)
+        }
+        Statement::Expression(expr) =>
+            Statement::Expression(lower_expression(expr))
     }
 }
 
 fn lower_block(mut block: Block) -> Block {
-    block.children = block.children.into_iter().map(lower_statement).collect::<Vec<_>>();
+    block.children = block.children.into_iter().map(lower_statement).collect();
     block
 }

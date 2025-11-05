@@ -1,4 +1,8 @@
 //ERR 2 0 2 4
 
-main 10
+func 10
+    ret
+
+main
+    func()
     out "good"

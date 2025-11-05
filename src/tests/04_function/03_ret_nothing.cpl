@@ -7,4 +7,5 @@ func
     ret
 
 main
+    func()
     out "compile"
