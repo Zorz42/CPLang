@@ -18,6 +18,13 @@ pub enum Keyword {
     Struct,
     InlineC,
     Fn,
+    I32,
+    I64,
+    F32,
+    F64,
+    Void,
+    String,
+    Bool,
 }
 
 impl Keyword {
@@ -32,6 +39,13 @@ impl Keyword {
             "struct" => Some(Keyword::Struct),
             "inline_c" => Some(Keyword::InlineC),
             "fn" => Some(Keyword::Fn),
+            "i32" => Some(Keyword::I32),
+            "i64" => Some(Keyword::I64),
+            "f32" => Some(Keyword::F32),
+            "f64" => Some(Keyword::F64),
+            "void" => Some(Keyword::Void),
+            "string" => Some(Keyword::String),
+            "bool" => Some(Keyword::Bool),
             _ => None,
         }
     }
@@ -57,6 +71,7 @@ pub enum Symbol {
     Increment,
     Decrement,
     Colon,
+    QuestionMark,
 }
 
 impl Symbol {
@@ -72,6 +87,7 @@ impl Symbol {
             '&' => Some(Symbol::Reference),
             '.' => Some(Symbol::Dot),
             ':' => Some(Symbol::Colon),
+            '?' => Some(Symbol::QuestionMark),
             _ => None,
         }
     }

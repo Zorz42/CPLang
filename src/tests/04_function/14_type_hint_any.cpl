@@ -1,0 +1,8 @@
+//OUT=60
+
+test a: ? b c
+    ret a + b + c
+
+main
+    res = test(10 20 30)
+    out "{res}"

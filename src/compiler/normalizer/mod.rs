@@ -8,6 +8,7 @@ use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
 use crate::compiler::parser::function::FunctionSignature;
 use crate::compiler::parser::structure::StructDeclaration;
+use crate::compiler::parser::typed::{PrimitiveType, Type};
 
 pub mod ir;
 mod type_resolver;
@@ -237,6 +238,35 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
     (expr, type_label)
 }
 
+fn primitive_type_to_ir_type(typ: PrimitiveType) -> IRPrimitiveType {
+    match typ {
+        PrimitiveType::I32 => IRPrimitiveType::I32,
+        PrimitiveType::I64 => IRPrimitiveType::I64,
+        PrimitiveType::F32 => IRPrimitiveType::F32,
+        PrimitiveType::F64 => IRPrimitiveType::F64,
+        PrimitiveType::Bool => IRPrimitiveType::Bool,
+        PrimitiveType::String => IRPrimitiveType::String,
+        PrimitiveType::Void => IRPrimitiveType::Void,
+    }
+}
+
+fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: Type) -> IRTypeLabel {
+    let type_label = state.new_type_label();
+    match typ {
+        Type::Any => {}
+        Type::Primitive(typ) => {
+            let typ = primitive_type_to_ir_type(typ);
+            state.type_hints.push(IRTypeHint::Is(type_label, typ));
+        }
+        Type::Struct(name) => todo!(),
+        Type::Reference(typ) => {
+            let type_label2 = normalize_type(state, ir, *typ);
+            state.type_hints.push(IRTypeHint::IsRef(type_label, type_label2));
+        }
+    }
+    type_label
+}
+
 fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IRBlock {
     let mut res = IRBlock {
         statements: Vec::new(),
@@ -331,10 +361,12 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: FunctionSi
     state.has_ret_statement = false;
 
     let mut arguments = Vec::new();
-    for (arg, arg_type) in sign.args.iter().zip(arg_types) {
+    for ((arg, type_hint), arg_type) in sign.args.into_iter().zip(arg_types) {
+        let hint_label = normalize_type(state, ir, type_hint);
         let label = state.new_var(&arg);
         arguments.push(label);
         ir.variable_types.push(arg_type);
+        state.type_hints.push(IRTypeHint::Equal(hint_label, arg_type));
     }
     let block = normalize_block(state, ir, block);
     let label = state.curr_func_label;
