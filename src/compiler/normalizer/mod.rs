@@ -207,7 +207,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
                 args_types.push(typ);
             }
 
-            let struct_expr = IRExpression::StructInitialization(struct_label, args_exprs);
+            let struct_expr = IRExpression::StructInitialization(struct_label, args_types.clone(), args_exprs);
             state.type_hints.push(IRTypeHint::Struct(type_label, struct_label, args_types));
 
             struct_expr

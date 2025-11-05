@@ -64,7 +64,7 @@ pub enum IRExpression {
     FunctionCall(IRFunctionLabel, Vec<IRExpression>),
     FieldAccess(Box<IRExpression>, IRFieldLabel),
     Dereference(Box<IRExpression>),
-    StructInitialization(IRStructLabel, Vec<IRExpression>),
+    StructInitialization(IRStructLabel, Vec<IRTypeLabel>, Vec<IRExpression>),
     Reference(Box<IRExpression>),
     Variable(IRVariableLabel),
 }
@@ -92,7 +92,7 @@ pub struct IRFunction {
     pub label: IRFunctionLabel,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IRStruct {
     pub fields: Vec<IRFieldLabel>,
 }

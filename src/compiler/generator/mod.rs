@@ -1,9 +1,8 @@
 use std::collections::HashMap;
-use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR};
+use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR};
 
 /*
 Generator converts IR into raw C code. Could be easily replaced with any other language.
-
  */
 
 struct GeneratorContext {
@@ -13,6 +12,7 @@ struct GeneratorContext {
     structs: Vec<IRStruct>,
     c_structs: HashMap<(IRStructLabel, Vec<IRType>), usize>,
     curr_struct_label: usize,
+    struct_declarations: String,
 }
 
 fn init_default_operators() -> HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>> {
@@ -43,7 +43,8 @@ fn init_default_operators() -> HashMap<(IRType, IROperator, IRType), Box<dyn Fn(
 }
 
 pub fn generate_code(ir: IR) -> String {
-    let mut code = "#include<stdio.h>\n#include<stdlib.h>\n\n".to_owned();
+    let mut code = String::new();
+    let imports = "#include<stdio.h>\n#include<stdlib.h>\n\n".to_owned();
 
     let mut ctx = GeneratorContext {
         types: ir.types,
@@ -52,6 +53,7 @@ pub fn generate_code(ir: IR) -> String {
         structs: ir.structs,
         c_structs: HashMap::new(),
         curr_struct_label: 0,
+        struct_declarations: String::new(),
     };
 
     for func in ir.functions {
@@ -64,9 +66,11 @@ int main(){
     return 0;
 }
     "#;
-    code += &main_code.replace("$main$", &gen_function_label(ir.main_function));
+    let main_code = main_code.replace("$main$", &gen_function_label(ir.main_function));
 
-    code
+
+
+    format!("{}\n{}\n{}\n{}", imports, ctx.struct_declarations, code, main_code)
 }
 
 fn gen_primitive_type(typ: IRPrimitiveType) -> String {
@@ -83,6 +87,25 @@ fn gen_primitive_type(typ: IRPrimitiveType) -> String {
 
 fn gen_struct_name(label: usize) -> String {
     format!("S{label}")
+}
+
+
+fn gen_field_name(label: IRFieldLabel) -> String {
+    format!("F{label}")
+}
+
+fn gen_struct_declaration(ctx: &mut GeneratorContext, fields: Vec<(IRType, IRFieldLabel)>, c_label: usize) -> String {
+    let mut code = String::new();
+
+    let c_name = gen_struct_name(c_label);
+    code += &format!("typedef struct {} {{\n", c_name);
+
+    for (field_type, field_label) in fields {
+        code += &format!("    {} {};\n", gen_type(ctx, field_type), gen_field_name(field_label));
+    }
+
+    code += &format!("}} {};\n", c_name);
+    code
 }
 
 fn gen_type(ctx: &mut GeneratorContext, typ: IRType) -> String {
@@ -103,6 +126,13 @@ fn gen_type(ctx: &mut GeneratorContext, typ: IRType) -> String {
                     let gen_label = ctx.curr_struct_label;
                     ctx.curr_struct_label += 1;
                     ctx.c_structs.insert((label, args.clone()), gen_label);
+
+                    let field_labels = ctx.structs[label].fields.clone();
+                    let fields = args.into_iter().zip(field_labels).collect::<Vec<_>>();
+
+                    let code = gen_struct_declaration(ctx, fields, gen_label);
+                    ctx.struct_declarations += &code;
+
                     gen_label
                 };
             gen_struct_name(gen_label)
@@ -183,8 +213,20 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
         }
         IRExpression::FieldAccess(_, _) => { todo!() }
         IRExpression::Dereference(expr) => format!("(*{})", gen_expression(ctx, *expr)),
-        IRExpression::StructInitialization(label, args) => {
-            todo!()
+        IRExpression::StructInitialization(label, arg_types, args) => {
+            let arg_types = arg_types.into_iter().map(|x| ctx.types[x].clone()).collect::<Vec<_>>();
+            let c_label = ctx.c_structs[&(label, arg_types)];
+            let mut code = format!("({})", gen_struct_name(c_label));
+            code += "{";
+            for arg in args {
+                code += &gen_expression(ctx, arg);
+                code += ",";
+            }
+            if code.ends_with(",") {
+                code.pop();
+            }
+            code += "}";
+            code
         }
         IRExpression::Reference(expr) => format!("(&{})", gen_expression(ctx, *expr)),
         IRExpression::Variable(var) => {
