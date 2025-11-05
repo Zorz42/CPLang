@@ -11,6 +11,7 @@ use crate::compiler::parser::structure::StructDeclaration;
 
 pub mod ir;
 mod type_resolver;
+mod ir_debug;
 
 fn operator_to_ir_operator(operator: Operator) -> IROperator {
     match operator {
@@ -213,10 +214,12 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
             struct_expr
         }
         Expression::FieldAccess(expr, field, _pos) => {
-            let (expr, _type_label) = normalize_expression(state, ir, *expr);
-            IRExpression::FieldAccess(Box::new(expr), state.fields_name_map[&field])
+            let (expr, type_label2) = normalize_expression(state, ir, *expr);
+            let field_label = state.fields_name_map[&field];
+            state.type_hints.push(IRTypeHint::IsField(type_label, type_label2, field_label));
+            IRExpression::FieldAccess(Box::new(expr), field_label)
         }
-        Expression::MethodCall(expr, _pos, name, args) => {
+        Expression::MethodCall(..) => {
             // should be eliminated by lowerer
             unreachable!()
         }
