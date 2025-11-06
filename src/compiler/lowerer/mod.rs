@@ -39,7 +39,45 @@ fn gen_op_block(pos: FilePosition, op: Operator, assign_to: Expression, value: E
 }
 
 fn lower_expression(expression: Expression) -> Expression {
-    expression
+    match expression {
+        Expression::Integer(_) |
+        Expression::Float(_) |
+        Expression::String(_) |
+        Expression::Boolean(_) |
+        Expression::Variable(_, _) => expression,
+        Expression::Reference(mut expr, pos) => {
+            *expr = lower_expression(*expr);
+            Expression::Reference(expr, pos)
+        }
+        Expression::FunctionCall(name, args) => {
+            let args = args.into_iter().map(lower_expression).collect();
+            Expression::FunctionCall(name, args)
+        }
+        Expression::StructInitialization(name, args) => {
+            let args = args.into_iter().map(lower_expression).collect();
+            Expression::StructInitialization(name, args)
+        }
+        Expression::FieldAccess(mut expr, field, pos) => {
+            // auto deref struct so that you can easily access fields of a reference
+            *expr = Expression::AutoRef(Box::new(lower_expression(*expr)));
+            Expression::FieldAccess(expr, field, pos)
+        }
+        Expression::MethodCall(_, _, _, _) =>
+            todo!(),
+        Expression::Dereference(mut expr, pos) => {
+            *expr = lower_expression(*expr);
+            Expression::Dereference(expr, pos)
+        }
+        Expression::BinaryOperation(mut expr1, op, mut expr2, pos) => {
+            *expr1 = lower_expression(*expr1);
+            *expr2 = lower_expression(*expr2);
+            Expression::BinaryOperation(expr1, op, expr2, pos)
+        }
+        Expression::AutoRef(mut expr) => {
+            *expr = lower_expression(*expr);
+            Expression::AutoRef(expr)
+        }
+    }
 }
 
 fn lower_statement(statement: Statement) -> Statement {

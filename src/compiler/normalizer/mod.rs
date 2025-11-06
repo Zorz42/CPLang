@@ -233,6 +233,9 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
             ));
             IRExpression::BinaryOperation(op, Box::new((expr1, type_label1, expr2, type_label2)))
         }
+        Expression::AutoRef(expr) => {
+            todo!()
+        }
     };
 
     (expr, type_label)

@@ -66,6 +66,7 @@ pub enum IRExpression {
     StructInitialization(IRStructLabel, Vec<IRTypeLabel>, Vec<IRExpression>),
     Reference(Box<IRExpression>),
     Variable(IRVariableLabel),
+    AutoRef(Box<IRExpression>),
 }
 
 pub struct IRBlock {

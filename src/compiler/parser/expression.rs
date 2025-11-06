@@ -31,6 +31,7 @@ pub enum Expression {
     MethodCall(Box<Expression>, FilePosition, String, Vec<Expression>),
     Dereference(Box<Expression>, FilePosition),
     BinaryOperation(Box<Expression>, Operator, Box<Expression>, FilePosition),
+    AutoRef(Box<Expression>),
 }
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
