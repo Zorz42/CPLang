@@ -234,7 +234,7 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
         IRExpression::Variable(var) => {
             gen_variable_label(var)
         }
-        IRExpression::AutoRef(expr) => {
+        IRExpression::AutoRef(label, expr) => {
             todo!()
         }
     }

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::compiler::error::CompilerResult;
-use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRTypeLabel, IRVariableLabel, IR};
+use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::{resolve_types, IRTypeHint};
 use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::assignment::Assignment;
@@ -81,6 +81,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         types: Vec::new(),
         variable_types: Vec::new(),
         main_function: 0,
+        autorefs: Vec::new(),
     };
     let mut state = NormalizerState {
         variables_name_map: HashMap::new(),
@@ -234,7 +235,12 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: Ex
             IRExpression::BinaryOperation(op, Box::new((expr1, type_label1, expr2, type_label2)))
         }
         Expression::AutoRef(expr) => {
-            todo!()
+            let (expr, type_label1) = normalize_expression(state, ir, *expr);
+            let autoref_label = ir.autorefs.len() as IRAutoRefLabel;
+            ir.autorefs.push(0);
+            
+            state.type_hints.push(IRTypeHint::AutoRef(autoref_label, type_label, type_label1));
+            IRExpression::AutoRef(autoref_label, Box::new(expr))
         }
     };
 

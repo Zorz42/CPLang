@@ -5,12 +5,14 @@ pub type IRVariableLabel = usize;
 pub type IRTypeLabel = usize;
 pub type IRStructLabel = usize;
 pub type IRFieldLabel = usize;
+pub type IRAutoRefLabel = usize;
 
 pub struct IR {
     pub structs: Vec<IRStruct>,
     pub functions: Vec<IRFunction>,
     pub types: Vec<IRType>,
     pub variable_types: Vec<IRTypeLabel>,
+    pub autorefs: Vec<i32>,
     pub main_function: IRFunctionLabel,
 }
 
@@ -66,7 +68,7 @@ pub enum IRExpression {
     StructInitialization(IRStructLabel, Vec<IRTypeLabel>, Vec<IRExpression>),
     Reference(Box<IRExpression>),
     Variable(IRVariableLabel),
-    AutoRef(Box<IRExpression>),
+    AutoRef(IRAutoRefLabel, Box<IRExpression>),
 }
 
 pub struct IRBlock {
