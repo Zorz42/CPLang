@@ -1,49 +1,31 @@
 use crate::compiler::error::CompilerResult;
+use crate::compiler::parser::ast::{ASTPrimitiveType, ASTType};
 use crate::compiler::tokenizer::{Keyword, Symbol, Token, TokenBlock};
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq)]
-pub enum PrimitiveType {
-    I32,
-    I64,
-    F32,
-    F64,
-    Bool,
-    String,
-    Void,
-}
-
-#[derive(Debug, Clone, PartialEq, Hash, Eq)]
-pub enum Type {
-    Any,
-    Primitive(PrimitiveType),
-    Reference(Box<Type>),
-    Struct(String),
-}
-
-pub fn parse_type(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Type> {
+pub fn parse_type(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<ASTType> {
     match block.children.get(*curr_idx) {
         Some((Token::Symbol(Symbol::QuestionMark), _)) => {
             *curr_idx += 1;
-            Ok(Type::Any)
+            Ok(ASTType::Any)
         }
         Some((Token::Symbol(Symbol::Reference), _)) => {
             *curr_idx += 1;
             let typ = parse_type(block, curr_idx)?;
-            Ok(Type::Reference(Box::new(typ)))
+            Ok(ASTType::Reference(Box::new(typ)))
         }
         Some((Token::Keyword(keyword), _)) => {
             *curr_idx += 1;
             let prim = match keyword {
-                Keyword::I32 => PrimitiveType::I32,
-                Keyword::I64 => PrimitiveType::I64,
-                Keyword::F32 => PrimitiveType::F32,
-                Keyword::F64 => PrimitiveType::F64,
-                Keyword::Bool => PrimitiveType::Bool,
-                Keyword::String => PrimitiveType::String,
-                Keyword::Void => PrimitiveType::Void,
+                Keyword::I32 => ASTPrimitiveType::I32,
+                Keyword::I64 => ASTPrimitiveType::I64,
+                Keyword::F32 => ASTPrimitiveType::F32,
+                Keyword::F64 => ASTPrimitiveType::F64,
+                Keyword::Bool => ASTPrimitiveType::Bool,
+                Keyword::String => ASTPrimitiveType::String,
+                Keyword::Void => ASTPrimitiveType::Void,
                 _ => panic!()
             };
-            Ok(Type::Primitive(prim))
+            Ok(ASTType::Primitive(prim))
         }
         _ => panic!()
     }

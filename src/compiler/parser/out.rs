@@ -1,15 +1,10 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
-use crate::compiler::parser::expression::{parse_expression, Expression};
-use crate::compiler::parser::structure::StructDeclaration;
+use crate::compiler::parser::ast::{ASTExpression, PrintStatement, StructDeclaration};
+use crate::compiler::parser::expression::{parse_expression};
 use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
 use crate::compiler::tokenizer::{tokenize_fragments, Constant, Keyword, Token, TokenBlock};
 
-#[derive(Debug, Clone)]
-pub struct PrintStatement {
-    pub values: Vec<Expression>,
-}
-
-fn parse_format_string(structs: &Vec<StructDeclaration>, string: &[PosChar], pos: &FilePosition) -> CompilerResult<Vec<Expression>> {
+fn parse_format_string(structs: &Vec<StructDeclaration>, string: &[PosChar], pos: &FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
     let mut curr = String::new();
     let mut in_format = false;
@@ -52,7 +47,7 @@ fn parse_format_string(structs: &Vec<StructDeclaration>, string: &[PosChar], pos
         } else if pc.c == '{' {
             in_format = true;
             if !curr.is_empty() {
-                res.push(Expression::String(curr));
+                res.push(ASTExpression::String(curr));
             }
             curr = String::new();
             format_pos = pc.pos.clone();
@@ -72,7 +67,7 @@ fn parse_format_string(structs: &Vec<StructDeclaration>, string: &[PosChar], pos
     }
 
     if !curr.is_empty() {
-        res.push(Expression::String(curr));
+        res.push(ASTExpression::String(curr));
     }
     Ok(res)
 }

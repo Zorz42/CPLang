@@ -1,16 +1,7 @@
-use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
-use crate::compiler::parser::expression::{parse_expression, Expression};
-use crate::compiler::parser::structure::StructDeclaration;
+use crate::compiler::error::{merge_file_positions, CompilerResult};
+use crate::compiler::parser::ast::{Assignment, StructDeclaration};
+use crate::compiler::parser::expression::{parse_expression};
 use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
-
-#[derive(Debug, Clone)]
-pub enum Assignment {
-    Assign(Expression, Expression, FilePosition),
-    Increase(Expression, Expression, FilePosition),
-    Decrease(Expression, Expression, FilePosition),
-    Increment(Expression, FilePosition),
-    Decrement(Expression, FilePosition),
-}
 
 
 pub fn parse_assignment(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<Assignment>> {

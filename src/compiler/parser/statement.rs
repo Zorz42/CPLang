@@ -1,15 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::parser::block::{parse_block, Block};
-use crate::compiler::parser::expression::{parse_expression, Expression};
-use crate::compiler::parser::structure::StructDeclaration;
+use crate::compiler::parser::ast::{IfStatement, StructDeclaration, WhileStatement};
+use crate::compiler::parser::block::parse_block;
+use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::tokenizer::{Keyword, Token, TokenBlock};
-
-#[derive(Clone, Debug)]
-pub struct IfStatement {
-    pub condition: Expression,
-    pub block: Block,
-    pub else_block: Option<Block>,
-}
 
 pub fn parse_if_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<IfStatement>> {
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::If) {
@@ -48,12 +41,6 @@ pub fn parse_if_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, 
         block: res_block,
         else_block,
     }))
-}
-
-#[derive(Clone, Debug)]
-pub struct WhileStatement {
-    pub condition: Expression,
-    pub block: Block,
 }
 
 pub fn parse_while_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<WhileStatement>> {

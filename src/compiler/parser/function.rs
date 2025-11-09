@@ -1,18 +1,11 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
+use crate::compiler::parser::ast::{ASTFunctionSignature, ASTStatement, StructDeclaration, ASTType};
 use crate::compiler::parser::expression::parse_expression;
-use crate::compiler::parser::Statement;
-use crate::compiler::parser::structure::StructDeclaration;
-use crate::compiler::parser::typed::{parse_type, Type};
+use crate::compiler::parser::typed::parse_type;
 use crate::compiler::tokenizer::{TokenBlock, Token, Keyword, Symbol};
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq)]
-pub struct FunctionSignature {
-    pub name: String,
-    pub args: Vec<(String, Type)>,
-}
-
-pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(FunctionSignature, TokenBlock)> {
-    let mut res_signature = FunctionSignature {
+pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTFunctionSignature, TokenBlock)> {
+    let mut res_signature = ASTFunctionSignature {
         name: String::new(),
         args: Vec::new(),
     };
@@ -56,7 +49,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
                 *curr_idx += 1;
                 parse_type(block, curr_idx)?
             }
-            _ => Type::Any,
+            _ => ASTType::Any,
         };
 
         res_signature.args.push((arg, type_hint));
@@ -65,16 +58,16 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
     Ok((res_signature, res_block))
 }
 
-pub fn parse_return_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<Statement>> {
+pub fn parse_return_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::Return) {
         return Ok(None);
     }
     let pos1 = block.children[*curr_idx].1.clone();
     *curr_idx += 1;
     if block.children.len() == *curr_idx {
-        return Ok(Some(Statement::Return(None, pos1)))
+        return Ok(Some(ASTStatement::Return(None, pos1)))
     }
 
     let (expression, pos2) = parse_expression(structs, block, curr_idx)?;
-    Ok(Some(Statement::Return(Some(expression), merge_file_positions(&pos1, &pos2))))
+    Ok(Some(ASTStatement::Return(Some(expression), merge_file_positions(&pos1, &pos2))))
 }

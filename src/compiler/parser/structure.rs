@@ -1,14 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::parser::block::{parse_block, Block};
-use crate::compiler::parser::function::{parse_function_declaration, FunctionSignature};
+use crate::compiler::parser::ast::StructDeclaration;
+use crate::compiler::parser::block::parse_block;
+use crate::compiler::parser::function::parse_function_declaration;
 use crate::compiler::tokenizer::{Keyword, Token, TokenBlock};
-
-#[derive(Debug, Clone)]
-pub struct StructDeclaration {
-    pub name: String,
-    pub fields: Vec<String>,
-    pub methods: Vec<(FunctionSignature, Block)>,
-}
 
 pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<StructDeclaration>> {
     if Some(Token::Keyword(Keyword::Struct)) != block.children.get(*curr_idx).map(|x| x.0.clone()) {

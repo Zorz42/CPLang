@@ -1,50 +1,19 @@
 use std::collections::HashMap;
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
-use crate::compiler::parser::structure::StructDeclaration;
+use crate::compiler::parser::ast::{ASTExpression, ASTOperator, StructDeclaration};
 use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
-pub enum Operator {
-    Plus,
-    Mul,
-    Div,
-    Equals,
-    NotEquals,
-    Greater,
-    Less,
-    GreaterEquals,
-    LessEquals,
-    Minus,
-}
-
-#[derive(Debug, Clone)]
-pub enum Expression {
-    Integer(i32),
-    Float(f32),
-    String(String),
-    Boolean(bool),
-    Variable(String, FilePosition),
-    Reference(Box<Expression>, FilePosition),
-    FunctionCall(String, Vec<Expression>),
-    StructInitialization(String, Vec<Expression>),
-    FieldAccess(Box<Expression>, String, FilePosition),
-    MethodCall(Box<Expression>, FilePosition, String, Vec<Expression>),
-    Dereference(Box<Expression>, FilePosition),
-    BinaryOperation(Box<Expression>, Operator, Box<Expression>, FilePosition),
-    AutoRef(Box<Expression>),
-}
-
 // only looks for a single value (if parentheses are used, it will parse whole expression)
-fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
+fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
     let mut pos = block.children[*curr_idx].1.clone();
     let mut res = match &block.children[*curr_idx].0 {
         Token::Constant(constant) => {
             *curr_idx += 1;
             let expr = match constant {
-                Constant::Integer(int) => Expression::Integer(*int),
-                Constant::Float(float) => Expression::Float(*float),
-                Constant::String(string) => Expression::String(string.iter().map(|x| x.c).collect()),
-                Constant::Boolean(boolean) => Expression::Boolean(*boolean),
+                Constant::Integer(int) => ASTExpression::Integer(*int),
+                Constant::Float(float) => ASTExpression::Float(*float),
+                Constant::String(string) => ASTExpression::String(string.iter().map(|x| x.c).collect()),
+                Constant::Boolean(boolean) => ASTExpression::Boolean(*boolean),
             };
 
             (expr, pos)
@@ -62,7 +31,7 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
                     args.push(expr);
                     pos = merge_file_positions(&pos, &expr_pos);
                 }
-                (Expression::FunctionCall(identifier.clone(), args), pos)
+                (ASTExpression::FunctionCall(identifier.clone(), args), pos)
             } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 let mut fields = HashMap::new();
                 let mut fields_left = struct_declaration.fields.len();
@@ -99,22 +68,22 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
                     fields_res.push(fields[field].clone());
                 }
 
-                (Expression::StructInitialization(identifier.clone(), fields_res), pos)
+                (ASTExpression::StructInitialization(identifier.clone(), fields_res), pos)
             } else {
-                (Expression::Variable(identifier.clone(), pos.clone()), pos)
+                (ASTExpression::Variable(identifier.clone(), pos.clone()), pos)
             }
         },
         Token::Symbol(Symbol::Reference) => {
             *curr_idx += 1;
             let (res, pos) = parse_value(structs, block, curr_idx)?;
 
-            (Expression::Reference(Box::new(res), pos.clone()), pos)
+            (ASTExpression::Reference(Box::new(res), pos.clone()), pos)
         }
         Token::Symbol(Symbol::Colon) => {
             *curr_idx += 1;
             let (res, pos) = parse_value(structs, block, curr_idx)?;
 
-            (Expression::Dereference(Box::new(res), pos.clone()), pos)
+            (ASTExpression::Dereference(Box::new(res), pos.clone()), pos)
         }
         Token::ParenthesisBlock(block) => {
             *curr_idx += 1;
@@ -142,9 +111,9 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
                         let (expr, _) = parse_expression(structs, call_block, &mut block_idx)?;
                         args.push(expr);
                     }
-                    res.0 = Expression::MethodCall(Box::new(res.0), pos.clone(), s.clone(), args);
+                    res.0 = ASTExpression::MethodCall(Box::new(res.0), pos.clone(), s.clone(), args);
                 } else {
-                    res.0 = Expression::FieldAccess(Box::new(res.0), s.clone(), pos.clone());
+                    res.0 = ASTExpression::FieldAccess(Box::new(res.0), s.clone(), pos.clone());
                 }
             }
             _ => {
@@ -159,24 +128,24 @@ fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &
     Ok(res)
 }
 
-fn symbol_to_operator(symbol: &Symbol) -> Option<Operator> {
+fn symbol_to_operator(symbol: &Symbol) -> Option<ASTOperator> {
     match symbol {
-        Symbol::Plus => Some(Operator::Plus),
-        Symbol::Star => Some(Operator::Mul),
-        Symbol::Slash => Some(Operator::Div),
-        Symbol::Equals => Some(Operator::Equals),
-        Symbol::GreaterThan => Some(Operator::Greater),
-        Symbol::LessThan => Some(Operator::Less),
-        Symbol::GreaterThanOrEqual => Some(Operator::GreaterEquals),
-        Symbol::LessThanOrEqual => Some(Operator::LessEquals),
-        Symbol::Minus => Some(Operator::Minus),
-        Symbol::NotEquals => Some(Operator::NotEquals),
+        Symbol::Plus => Some(ASTOperator::Plus),
+        Symbol::Star => Some(ASTOperator::Mul),
+        Symbol::Slash => Some(ASTOperator::Div),
+        Symbol::Equals => Some(ASTOperator::Equals),
+        Symbol::GreaterThan => Some(ASTOperator::Greater),
+        Symbol::LessThan => Some(ASTOperator::Less),
+        Symbol::GreaterThanOrEqual => Some(ASTOperator::GreaterEquals),
+        Symbol::LessThanOrEqual => Some(ASTOperator::LessEquals),
+        Symbol::Minus => Some(ASTOperator::Minus),
+        Symbol::NotEquals => Some(ASTOperator::NotEquals),
         _ => None,
     }
 }
 
 // looks for operators and values
-pub fn parse_expression(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(Expression, FilePosition)> {
+pub fn parse_expression(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
     let (first_val, first_pos) = parse_value(structs, block, curr_idx)?;
@@ -198,9 +167,9 @@ pub fn parse_expression(structs: &Vec<StructDeclaration>, block: &TokenBlock, cu
     }
 
     let operator_precedence = vec![
-        vec![Operator::Mul, Operator::Div],
-        vec![Operator::Plus, Operator::Minus],
-        vec![Operator::Equals, Operator::Greater, Operator::Less, Operator::GreaterEquals, Operator::LessEquals, Operator::NotEquals],
+        vec![ASTOperator::Mul, ASTOperator::Div],
+        vec![ASTOperator::Plus, ASTOperator::Minus],
+        vec![ASTOperator::Equals, ASTOperator::Greater, ASTOperator::Less, ASTOperator::GreaterEquals, ASTOperator::LessEquals, ASTOperator::NotEquals],
     ];
 
     for operators in operator_precedence {
@@ -219,7 +188,7 @@ pub fn parse_expression(structs: &Vec<StructDeclaration>, block: &TokenBlock, cu
                 let (right, right_pos) = vals.remove(i);
                 let op = ops.remove(i);
                 let pos = merge_file_positions(&left_pos, &right_pos);
-                vals.insert(i, (Expression::BinaryOperation(Box::new(left), op, Box::new(right), pos.clone()), pos));
+                vals.insert(i, (ASTExpression::BinaryOperation(Box::new(left), op, Box::new(right), pos.clone()), pos));
             } else {
                 break;
             }
