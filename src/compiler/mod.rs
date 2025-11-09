@@ -25,7 +25,6 @@ less different types of nodes and explicit types and indexes instead of string/n
  */
 
 pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
-    // read input file into a string
     let input = std::fs::read_to_string(input_file).unwrap();
 
     let fragment_block = preprocess(&input)?;
@@ -43,7 +42,6 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
     println!("{code}");
 
-    // write code to output file
     std::fs::write(output_file, code).unwrap();
 
     Ok(())

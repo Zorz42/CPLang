@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::compiler::error::CompilerResult;
+use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::{resolve_types, IRTypeHint};
 use crate::compiler::parser::{Statement, AST};
@@ -111,7 +112,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         ir.structs.push(ir_struct);
     }
 
-    if let Some((sig, block)) = state.functions_name_map.get("main").cloned() {
+    if let Some((sig, block)) = state.functions_name_map.get(&transform_function_name("main".to_string())).cloned() {
         if !sig.args.is_empty() {
             panic!();
         }
@@ -267,7 +268,9 @@ fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: Type) -> IRType
             let typ = primitive_type_to_ir_type(typ);
             state.type_hints.push(IRTypeHint::Is(type_label, typ));
         }
-        Type::Struct(name) => todo!(),
+        Type::Struct(_name) => {
+            // TODO: hint that the type is actually this struct
+        }
         Type::Reference(typ) => {
             let type_label2 = normalize_type(state, ir, *typ);
             state.type_hints.push(IRTypeHint::IsRef(type_label, type_label2));
@@ -285,7 +288,7 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: Block) -> IR
     for statement in block.children {
         match statement {
             Statement::Assignment(declaration) => {
-                let (assign_to, value, pos) = match declaration {
+                let (assign_to, value, _pos) = match declaration {
                     Assignment::Assign(assign_to, value, pos) => (assign_to, value, pos),
                     _ => unreachable!(), // lowerer took care of that
                 };

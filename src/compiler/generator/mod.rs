@@ -114,12 +114,6 @@ fn gen_type(ctx: &mut GeneratorContext, typ: IRType) -> String {
     match typ {
         IRType::Primitive(typ) => gen_primitive_type(typ),
         IRType::Reference(typ) => format!("{}*", gen_type(ctx, *typ)),
-        IRType::Tuple(_) => {
-            todo!()
-        }
-        IRType::Enum(_) => {
-            todo!()
-        }
         IRType::Struct(label, args) => {
             let gen_label =
                 if let Some(gen_label) = ctx.c_structs.get(&(label, args.clone())) {
@@ -164,8 +158,6 @@ fn type_to_printf_format(typ: &IRType) -> &'static str {
             }
         }
         IRType::Reference(typ) => type_to_printf_format(typ),
-        IRType::Tuple(_) => todo!(),
-        IRType::Enum(_) => todo!(),
         IRType::Struct(_, _) => todo!(),
     }
 }

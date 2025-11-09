@@ -31,8 +31,8 @@ pub enum IRPrimitiveType {
 pub enum IRType {
     Primitive(IRPrimitiveType),
     Reference(Box<IRType>),
-    Tuple(Vec<IRType>),
-    Enum(Vec<IRType>),
+    //Tuple(Vec<IRType>),
+    //Enum(Vec<IRType>),
     Struct(IRStructLabel, Vec<IRType>),
 }
 

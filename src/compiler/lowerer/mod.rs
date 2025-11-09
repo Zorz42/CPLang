@@ -3,15 +3,39 @@ use crate::compiler::parser::{Statement, AST};
 use crate::compiler::parser::block::Block;
 use crate::compiler::parser::expression::{Expression, Operator};
 use crate::compiler::parser::assignment::Assignment;
-
-// Lowerer simply transforms AST into a more simple version that doesn't contain any syntax sugar.
+use crate::compiler::parser::typed::Type;
+// Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
 pub fn lower_ast(mut ast: AST) -> AST {
-    ast.functions = ast.functions.into_iter().map(|(sign, block)| {
-        (sign, lower_block(block))
+    ast.functions = ast.functions.into_iter().map(|(mut sign, block)| {
+        sign.name = transform_function_name(sign.name);
+        let block = lower_block(block);
+        (sign, block)
     }).collect();
 
+    for structure in &ast.structs {
+        for (sign, block) in &structure.methods {
+            let mut sign = sign.clone();
+            let block = block.clone();
+
+            sign.name = transform_method_name(sign.name);
+            let typ = Type::Reference(Box::new(Type::Struct(structure.name.clone())));
+            sign.args.insert(0, ("self".to_string(), typ));
+            let block = lower_block(block);
+
+            ast.functions.push((sign, block));
+        }
+    }
+
     ast
+}
+
+pub fn transform_function_name(name: String) -> String {
+    format!("f{name}")
+}
+
+pub fn transform_method_name(name: String) -> String {
+    format!("m{name}")
 }
 
 /* transform a += b into
@@ -51,6 +75,7 @@ fn lower_expression(expression: Expression) -> Expression {
         }
         Expression::FunctionCall(name, args) => {
             let args = args.into_iter().map(lower_expression).collect();
+            let name = transform_function_name(name);
             Expression::FunctionCall(name, args)
         }
         Expression::StructInitialization(name, args) => {
@@ -62,8 +87,14 @@ fn lower_expression(expression: Expression) -> Expression {
             *expr = Expression::AutoRef(Box::new(lower_expression(*expr)));
             Expression::FieldAccess(expr, field, pos)
         }
-        Expression::MethodCall(_, _, _, _) =>
-            todo!(),
+        Expression::MethodCall(expr, _pos, name, args) => {
+            let mut args: Vec<Expression> = args.into_iter().map(lower_expression).collect();
+            let expr = Expression::AutoRef(Box::new(lower_expression(*expr)));
+            args.insert(0, expr);
+            let name = transform_method_name(name);
+
+            Expression::FunctionCall(name, args)
+        }
         Expression::Dereference(mut expr, pos) => {
             *expr = lower_expression(*expr);
             Expression::Dereference(expr, pos)
