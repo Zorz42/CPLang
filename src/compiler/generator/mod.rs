@@ -13,6 +13,7 @@ struct GeneratorContext {
     c_structs: HashMap<(IRStructLabel, Vec<IRType>), usize>,
     curr_struct_label: usize,
     struct_declarations: String,
+    autorefs: Vec<i32>,
 }
 
 fn init_default_operators() -> HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>> {
@@ -54,6 +55,7 @@ pub fn generate_code(ir: IR) -> String {
         c_structs: HashMap::new(),
         curr_struct_label: 0,
         struct_declarations: String::new(),
+        autorefs: ir.autorefs,
     };
 
     for func in ir.functions {
@@ -235,7 +237,20 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
             gen_variable_label(var)
         }
         IRExpression::AutoRef(label, expr) => {
-            todo!()
+            let mut prefix = String::new();
+
+            let ref_depth = ctx.autorefs[label];
+            if ref_depth > 0 {
+                for _ in 0..ref_depth {
+                    prefix.push('&');
+                }
+            } else {
+                for _ in 0..-ref_depth {
+                    prefix.push('*');
+                }
+            }
+
+            format!("({}{})", prefix, gen_expression(ctx, *expr))
         }
     }
 }

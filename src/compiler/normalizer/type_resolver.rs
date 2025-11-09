@@ -12,8 +12,8 @@ pub enum IRTypeHint {
     Struct(IRTypeLabel, IRStructLabel, Vec<IRTypeLabel>),
     // arg1 = arg2.arg3
     IsField(IRTypeLabel, IRTypeLabel, IRFieldLabel),
-    // &&...&&&arg1 = &&...&&&arg2
-    // automatically reference/dereference arg1 to arg0
+    // &&...&&&2 = &&...&&&arg3
+    // automatically reference/dereference arg3 to arg2
     AutoRef(IRAutoRefLabel, IRTypeLabel, IRTypeLabel),
 }
 
@@ -73,6 +73,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
     let mut known_types = vec![None; num_types];
     let mut known_refs = vec![None; num_types];
     let mut type_nodes = Vec::new();
+    let mut auto_ref_pairs = vec![(0, 0); ir.autorefs.len()];
     for _ in 0..num_types {
         type_nodes.push(Vec::new());
     }
@@ -156,7 +157,8 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
             IRTypeHint::AutoRef(label, typ1, typ2) => {
                 type_nodes[typ1].push(Conn::Is(typ2));
                 type_nodes[typ2].push(Conn::Is(typ1));
-                // no ref hints, since we know nothing about references
+
+                auto_ref_pairs[label] = (typ1, typ2);
             }
         }
     }
@@ -227,6 +229,10 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                 try_set_ref(*ne, node_ref + *delta, &mut known_refs, &mut queue);
             }
         }
+    }
+
+    for (i, (type1, type2)) in auto_ref_pairs.into_iter().enumerate() {
+        ir.autorefs[i] = known_refs[type1].unwrap() - known_refs[type2].unwrap();
     }
 
     println!("{:?}", known_types);
