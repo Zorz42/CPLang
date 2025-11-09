@@ -270,6 +270,7 @@ fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: Type) -> IRType
         }
         Type::Struct(_name) => {
             // TODO: hint that the type is actually this struct
+            state.type_hints.push(IRTypeHint::IsPhys(type_label));
         }
         Type::Reference(typ) => {
             let type_label2 = normalize_type(state, ir, *typ);

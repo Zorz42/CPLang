@@ -15,6 +15,8 @@ pub enum IRTypeHint {
     // &&...&&&2 = &&...&&&arg3
     // automatically reference/dereference arg3 to arg2
     AutoRef(IRAutoRefLabel, IRTypeLabel, IRTypeLabel),
+    // arg1 is physical (not a reference)
+    IsPhys(IRTypeLabel),
 }
 
 enum Conn {
@@ -159,6 +161,9 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                 type_nodes[typ2].push(Conn::Is(typ1));
 
                 auto_ref_pairs[label] = (typ1, typ2);
+            }
+            IRTypeHint::IsPhys(label) => {
+                try_set_ref(label, 0, &mut known_refs, &mut queue);
             }
         }
     }
