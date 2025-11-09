@@ -1,5 +1,5 @@
 use crate::compiler::error::FilePosition;
-use crate::compiler::parser::ast::{Assignment, ASTBlock, ASTExpression, ASTOperator, ASTStatement, ASTType, AST};
+use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTOperator, ASTStatement, ASTType, AST};
 // Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
 pub fn lower_ast(mut ast: AST) -> AST {
@@ -44,16 +44,16 @@ fn gen_op_block(pos: FilePosition, op: ASTOperator, assign_to: ASTExpression, va
     let var_name = "$tmp".to_string();
     ASTStatement::Block(ASTBlock {
         children: vec![
-            ASTStatement::Assignment(Assignment::Assign(
+            ASTStatement::Assignment(
                 ASTExpression::Variable(var_name.clone(), pos.clone()),
                 ASTExpression::Reference(Box::new(assign_to), pos.clone()),
                 pos.clone(),
-            )),
-            ASTStatement::Assignment(Assignment::Assign(
+            ),
+            ASTStatement::Assignment(
                 ASTExpression::Dereference(Box::new(ASTExpression::Variable(var_name.clone(), pos.clone())), pos.clone()),
                 ASTExpression::BinaryOperation(Box::new(ASTExpression::Dereference(Box::new(ASTExpression::Variable(var_name.clone(), pos.clone())), pos.clone())), op, Box::new(value), pos.clone()),
                 pos.clone(),
-            )),
+            ),
         ]
     })
 }
@@ -109,46 +109,54 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
 
 fn lower_statement(statement: ASTStatement) -> ASTStatement {
     match statement {
-        ASTStatement::Assignment(assignment) => {
-            match assignment {
-                Assignment::Assign(assign_to, expr, pos) =>
-                    ASTStatement::Assignment(Assignment::Assign(lower_expression(assign_to), lower_expression(expr), pos)),
-                Assignment::Increase(assign_to, expr, pos) => {
-                    let block = gen_op_block(pos, ASTOperator::Plus, assign_to, expr);
-                    lower_statement(block)
-                }
-                Assignment::Decrease(assign_to, expr, pos) => {
-                    let block = gen_op_block(pos, ASTOperator::Minus, assign_to, expr);
-                    lower_statement(block)
-                }
-                Assignment::Increment(assign_to, pos) =>
-                    lower_statement(ASTStatement::Assignment(Assignment::Increase(assign_to, ASTExpression::Integer(1), pos))),
-                Assignment::Decrement(assign_to, pos) =>
-                    lower_statement(ASTStatement::Assignment(Assignment::Decrease(assign_to, ASTExpression::Integer(1), pos))),
-            }
+        ASTStatement::Assignment(assign_to, expr, pos) =>
+            ASTStatement::Assignment(lower_expression(assign_to), lower_expression(expr), pos),
+        ASTStatement::AssignmentIncrease(assign_to, expr, pos) => {
+            let block = gen_op_block(pos, ASTOperator::Plus, assign_to, expr);
+            lower_statement(block)
         }
+        ASTStatement::AssignmentDecrease(assign_to, expr, pos) => {
+            let block = gen_op_block(pos, ASTOperator::Minus, assign_to, expr);
+            lower_statement(block)
+        }
+        ASTStatement::AssignmentIncrement(assign_to, pos) =>
+            lower_statement(ASTStatement::AssignmentIncrease(assign_to, ASTExpression::Integer(1), pos)),
+        ASTStatement::AssignmentDecrement(assign_to, pos) =>
+            lower_statement(ASTStatement::AssignmentDecrease(assign_to, ASTExpression::Integer(1), pos)),
         ASTStatement::Block(mut block) => {
             block.children = block.children.into_iter().map(|statement| lower_statement(statement)).collect();
             ASTStatement::Block(block)
         }
-        ASTStatement::If(mut stat) => {
-            stat.block = lower_block(stat.block);
-            stat.else_block = stat.else_block.map(lower_block);
-            stat.condition = lower_expression(stat.condition);
-            ASTStatement::If(stat)
+        ASTStatement::If { mut condition, mut block, mut else_block } => {
+            block = lower_block(block);
+            else_block = else_block.map(lower_block);
+            condition = lower_expression(condition);
+            ASTStatement::If{
+                condition,
+                block,
+                else_block,
+            }
         }
-        ASTStatement::While(mut stat) => {
-            stat.block = lower_block(stat.block);
-            stat.condition = lower_expression(stat.condition);
-            ASTStatement::While(stat)
+        ASTStatement::While { mut block, mut condition } => {
+            block = lower_block(block);
+            condition = lower_expression(condition);
+            ASTStatement::While {
+                block,
+                condition,
+            }
         }
-        ASTStatement::Return(mut expr, pos) => {
-            expr = expr.map(lower_expression);
-            ASTStatement::Return(expr, pos)
+        ASTStatement::Return { mut return_value, pos } => {
+            return_value = return_value.map(lower_expression);
+            ASTStatement::Return { 
+                return_value,
+                pos 
+            }
         }
-        ASTStatement::Print(mut expr) => {
-            expr.values = expr.values.into_iter().map(lower_expression).collect();
-            ASTStatement::Print(expr)
+        ASTStatement::Print { mut values } => {
+            values = values.into_iter().map(lower_expression).collect();
+            ASTStatement::Print {
+                values
+            }
         }
         ASTStatement::Expression(expr) =>
             ASTStatement::Expression(lower_expression(expr))

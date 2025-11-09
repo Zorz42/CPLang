@@ -3,18 +3,34 @@ use crate::compiler::error::FilePosition;
 #[derive(Debug)]
 pub struct AST {
     pub functions: Vec<(ASTFunctionSignature, ASTBlock)>,
-    pub structs: Vec<StructDeclaration>,
+    pub structs: Vec<ASTStructDeclaration>,
 }
 
 #[derive(Debug, Clone)]
 pub enum ASTStatement {
-    Assignment(Assignment),
     Block(ASTBlock),
     Expression(ASTExpression),
-    Print(PrintStatement),
-    Return(Option<ASTExpression>, FilePosition),
-    If(IfStatement),
-    While(WhileStatement),
+    Assignment(ASTExpression, ASTExpression, FilePosition),
+    AssignmentIncrease(ASTExpression, ASTExpression, FilePosition),
+    AssignmentDecrease(ASTExpression, ASTExpression, FilePosition),
+    AssignmentIncrement(ASTExpression, FilePosition),
+    AssignmentDecrement(ASTExpression, FilePosition),
+    Print {
+        values: Vec<ASTExpression>
+    },
+    Return {
+        return_value: Option<ASTExpression>,
+        pos: FilePosition,
+    },
+    If {
+        condition: ASTExpression,
+        block: ASTBlock,
+        else_block: Option<ASTBlock>,
+    },
+    While {
+        condition: ASTExpression,
+        block: ASTBlock,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -60,36 +76,10 @@ pub struct ASTFunctionSignature {
 }
 
 #[derive(Debug, Clone)]
-pub struct PrintStatement {
-    pub values: Vec<ASTExpression>,
-}
-#[derive(Clone, Debug)]
-pub struct IfStatement {
-    pub condition: ASTExpression,
-    pub block: ASTBlock,
-    pub else_block: Option<ASTBlock>,
-}
-
-#[derive(Clone, Debug)]
-pub struct WhileStatement {
-    pub condition: ASTExpression,
-    pub block: ASTBlock,
-}
-
-#[derive(Debug, Clone)]
-pub struct StructDeclaration {
+pub struct ASTStructDeclaration {
     pub name: String,
     pub fields: Vec<String>,
     pub methods: Vec<(ASTFunctionSignature, ASTBlock)>,
-}
-
-#[derive(Debug, Clone)]
-pub enum Assignment {
-    Assign(ASTExpression, ASTExpression, FilePosition),
-    Increase(ASTExpression, ASTExpression, FilePosition),
-    Decrease(ASTExpression, ASTExpression, FilePosition),
-    Increment(ASTExpression, FilePosition),
-    Decrement(ASTExpression, FilePosition),
 }
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]

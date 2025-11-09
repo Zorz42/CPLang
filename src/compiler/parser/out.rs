@@ -1,10 +1,10 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
-use crate::compiler::parser::ast::{ASTExpression, PrintStatement, StructDeclaration};
+use crate::compiler::parser::ast::{ASTExpression, ASTStructDeclaration, ASTStatement};
 use crate::compiler::parser::expression::{parse_expression};
 use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
 use crate::compiler::tokenizer::{tokenize_fragments, Constant, Keyword, Token, TokenBlock};
 
-fn parse_format_string(structs: &Vec<StructDeclaration>, string: &[PosChar], pos: &FilePosition) -> CompilerResult<Vec<ASTExpression>> {
+fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], pos: &FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
     let mut curr = String::new();
     let mut in_format = false;
@@ -72,7 +72,7 @@ fn parse_format_string(structs: &Vec<StructDeclaration>, string: &[PosChar], pos
     Ok(res)
 }
 
-pub fn parse_out_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<PrintStatement>> {
+pub fn parse_out_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
     let print_pos = &block.children[*curr_idx].1;
     if block.children[*curr_idx].0 == Token::Keyword(Keyword::Out) {
         *curr_idx += 1;
@@ -80,7 +80,7 @@ pub fn parse_out_statement(structs: &Vec<StructDeclaration>, block: &TokenBlock,
         match &block.children[*curr_idx].0 {
             Token::Constant(Constant::String(string)) => {
                 *curr_idx += 1;
-                Ok(Some(PrintStatement {
+                Ok(Some(ASTStatement::Print {
                     values: parse_format_string(structs, string, pos)?,
                 }))
             },

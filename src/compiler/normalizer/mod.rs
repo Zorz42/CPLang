@@ -3,7 +3,7 @@ use crate::compiler::error::CompilerResult;
 use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::{resolve_types, IRTypeHint};
-use crate::compiler::parser::ast::{Assignment, ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, StructDeclaration, ASTType, AST};
+use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, AST};
 
 pub mod ir;
 mod type_resolver;
@@ -121,7 +121,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
     Ok(ir)
 }
 
-fn normalize_struct(state: &mut NormalizerState, structure: StructDeclaration) -> IRStruct{
+fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration) -> IRStruct{
     let mut ir_struct = IRStruct {
         fields: Vec::new(),
     };
@@ -283,12 +283,7 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
 
     for statement in block.children {
         match statement {
-            ASTStatement::Assignment(declaration) => {
-                let (assign_to, value, _pos) = match declaration {
-                    Assignment::Assign(assign_to, value, pos) => (assign_to, value, pos),
-                    _ => unreachable!(), // lowerer took care of that
-                };
-
+            ASTStatement::Assignment(assign_to, value, _pos) => {
                 // if an unknown variable is assigned, create it
                 if let ASTExpression::Variable(name, _) = &assign_to && !state.variables_name_map.contains_key(name) {
                     let label = state.new_var(name);
@@ -302,6 +297,11 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
 
                 res.statements.push(IRStatement::Assignment(assign_to, value));
             }
+            ASTStatement::AssignmentIncrease(..) => unreachable!(), // lowerer took care of that
+            ASTStatement::AssignmentDecrease(..) => unreachable!(),
+            ASTStatement::AssignmentIncrement(..) => unreachable!(),
+            ASTStatement::AssignmentDecrement(..) => unreachable!(),
+
             ASTStatement::Block(block) => {
                 let block = normalize_block(state, ir, block);
                 res.statements.push(IRStatement::Block(block));
@@ -309,17 +309,17 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
             ASTStatement::Expression(expr) => {
                 res.statements.push(IRStatement::Expression(normalize_expression(state, ir, expr).0));
             }
-            ASTStatement::Print(statement) => {
-                let mut vals = statement.values;
+            ASTStatement::Print { values } => {
+                let mut vals = values;
                 vals.push(ASTExpression::String("\n".to_string()));
                 for val in vals {
                     let (expr, type_label) = normalize_expression(state, ir, val);
                     res.statements.push(IRStatement::Print(expr, type_label));
                 }
             }
-            ASTStatement::Return(expr, _pos) => {
+            ASTStatement::Return { return_value, pos: _ } => {
                 state.has_ret_statement = true;
-                let st = if let Some(expr) = expr {
+                let st = if let Some(expr) = return_value {
                     let (expr, type_label) = normalize_expression(state, ir, expr);
                     state.type_hints.push(IRTypeHint::Equal(state.curr_func_ret_type, type_label));
                     IRStatement::Return(Some(expr))
@@ -329,17 +329,17 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
                 };
                 res.statements.push(st);
             }
-            ASTStatement::If(statement) => {
-                let (cond, type_label) = normalize_expression(state, ir, statement.condition);
+            ASTStatement::If { condition, block, else_block } => {
+                let (cond, type_label) = normalize_expression(state, ir, condition);
                 state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
-                let block = normalize_block(state, ir, statement.block);
-                let else_block = statement.else_block.map(|block| normalize_block(state, ir, block));
+                let block = normalize_block(state, ir, block);
+                let else_block = else_block.map(|block| normalize_block(state, ir, block));
                 res.statements.push(IRStatement::If(cond, block, else_block));
             }
-            ASTStatement::While(statement) => {
-                let (cond, type_label) = normalize_expression(state, ir, statement.condition);
+            ASTStatement::While { condition, block } => {
+                let (cond, type_label) = normalize_expression(state, ir, condition);
                 state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
-                let block = normalize_block(state, ir, statement.block);
+                let block = normalize_block(state, ir, block);
                 res.statements.push(IRStatement::While(cond, block));
             }
         }

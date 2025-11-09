@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
-use crate::compiler::parser::ast::{ASTExpression, ASTOperator, StructDeclaration};
+use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStructDeclaration};
 use crate::compiler::tokenizer::{TokenBlock, Constant, Token, Symbol};
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
-fn parse_value(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
+fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
     let mut pos = block.children[*curr_idx].1.clone();
     let mut res = match &block.children[*curr_idx].0 {
         Token::Constant(constant) => {
@@ -145,7 +145,7 @@ fn symbol_to_operator(symbol: &Symbol) -> Option<ASTOperator> {
 }
 
 // looks for operators and values
-pub fn parse_expression(structs: &Vec<StructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
+pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
     let (first_val, first_pos) = parse_value(structs, block, curr_idx)?;
