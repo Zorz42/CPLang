@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
+use crate::compiler::error::{CompilerResult, FilePosition, merge_file_positions};
 use crate::compiler::preprocessor::{Fragment, PosChar};
 
 /*
@@ -160,19 +160,22 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
     let mut curr_token = String::new();
     let mut token_pos = FilePosition::unknown();
 
-    let new_token = |tokens: &mut Vec<(Token, FilePosition)>, curr_token: &mut String, token_pos: &mut FilePosition| {
+    let new_token = |tokens: &mut Vec<(Token, FilePosition)>,
+                     curr_token: &mut String,
+                     token_pos: &mut FilePosition| {
         tokens.push((string_to_token(curr_token), token_pos.clone()));
         curr_token.clear();
     };
 
-    let add_to_token = |curr_token: &mut String, token_pos: &mut FilePosition, c: char, pos: &FilePosition| {
-        if curr_token.is_empty() {
-            *token_pos = pos.clone();
-        } else {
-            *token_pos = merge_file_positions(token_pos, pos);
-        }
-        curr_token.push(c);
-    };
+    let add_to_token =
+        |curr_token: &mut String, token_pos: &mut FilePosition, c: char, pos: &FilePosition| {
+            if curr_token.is_empty() {
+                *token_pos = pos.clone();
+            } else {
+                *token_pos = merge_file_positions(token_pos, pos);
+            }
+            curr_token.push(c);
+        };
 
     let mut iter = string.iter().peekable();
     while let Some(frag) = iter.next() {
@@ -182,14 +185,17 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 }
                 tokens.push((Token::Constant(Constant::String(s.clone())), pos.clone()));
-            },
+            }
             Fragment::Char(pos_char) => {
                 let c = pos_char.c;
                 let pos = &pos_char.pos;
-                let next_char = iter.peek().map(|x| match x {
-                    Fragment::Char(pc) => pc.c,
-                    _ => '\0',
-                }).unwrap_or('\0');
+                let next_char = iter
+                    .peek()
+                    .map(|x| match x {
+                        Fragment::Char(pc) => pc.c,
+                        _ => '\0',
+                    })
+                    .unwrap_or('\0');
 
                 if c == '.' && curr_token.parse::<i32>().is_ok() {
                     // decimal point in a float

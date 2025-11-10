@@ -1,6 +1,6 @@
+use crate::compiler::normalizer::ir::{IR, IRBlock, IRFunction};
 use std::fmt::Write;
 use std::fmt::{Debug, Formatter};
-use crate::compiler::normalizer::ir::{IRBlock, IRFunction, IR};
 
 impl Debug for IRBlock {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

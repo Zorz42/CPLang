@@ -31,8 +31,6 @@ pub enum IRPrimitiveType {
 pub enum IRType {
     Primitive(IRPrimitiveType),
     Reference(Box<IRType>),
-    //Tuple(Vec<IRType>),
-    //Enum(Vec<IRType>),
     Struct(IRStructLabel, Vec<IRType>),
 }
 
@@ -60,15 +58,42 @@ pub enum IRConstant {
 
 #[derive(Debug)]
 pub enum IRExpression {
-    BinaryOperation(IROperator, Box<(IRExpression, IRTypeLabel, IRExpression, IRTypeLabel)>),
-    Constant(IRConstant),
-    FunctionCall(IRFunctionLabel, Vec<IRExpression>),
-    FieldAccess(Box<IRExpression>, IRFieldLabel),
-    Dereference(Box<IRExpression>),
-    StructInitialization(IRStructLabel, Vec<IRTypeLabel>, Vec<IRExpression>),
-    Reference(Box<IRExpression>),
-    Variable(IRVariableLabel),
-    AutoRef(IRAutoRefLabel, Box<IRExpression>),
+    BinaryOperation {
+        operator: IROperator,
+        expr1: Box<IRExpression>,
+        type1_label: IRTypeLabel,
+        expr2: Box<IRExpression>,
+        type2_label: IRTypeLabel,
+    },
+    Constant {
+        constant: IRConstant,
+    },
+    FunctionCall {
+        function_label: IRFunctionLabel,
+        arguments: Vec<IRExpression>,
+    },
+    FieldAccess {
+        expr: Box<IRExpression>,
+        field_label: IRFieldLabel,
+    },
+    Dereference {
+        expr: Box<IRExpression>,
+    },
+    StructInitialization {
+        struct_label: IRStructLabel,
+        fields_type_labels: Vec<IRTypeLabel>,
+        field_values: Vec<IRExpression>,
+    },
+    Reference {
+        expr: Box<IRExpression>,
+    },
+    Variable {
+        variable_label: IRVariableLabel,
+    },
+    AutoRef {
+        autoref_label: IRAutoRefLabel,
+        expr: Box<IRExpression>,
+    },
 }
 
 pub struct IRBlock {
@@ -77,13 +102,32 @@ pub struct IRBlock {
 
 #[derive(Debug)]
 pub enum IRStatement {
-    Block(IRBlock),
-    If(IRExpression, IRBlock, Option<IRBlock>),
-    While(IRExpression, IRBlock),
-    Expression(IRExpression),
-    Print(IRExpression, IRTypeLabel),
-    Return(Option<IRExpression>),
-    Assignment(IRExpression, IRExpression),
+    Block {
+        block: IRBlock,
+    },
+    If {
+        condition: IRExpression,
+        block: IRBlock,
+        else_block: Option<IRBlock>,
+    },
+    While {
+        condition: IRExpression,
+        block: IRBlock,
+    },
+    Expression {
+        expr: IRExpression,
+    },
+    Print {
+        expr: IRExpression,
+        type_label: IRTypeLabel,
+    },
+    Return {
+        return_value: Option<IRExpression>,
+    },
+    Assignment {
+        assign_to: IRExpression,
+        value: IRExpression,
+    },
 }
 
 pub struct IRFunction {

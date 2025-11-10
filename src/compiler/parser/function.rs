@@ -1,10 +1,15 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
-use crate::compiler::parser::ast::{ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType};
+use crate::compiler::error::{CompilerError, CompilerResult, merge_file_positions};
+use crate::compiler::parser::ast::{
+    ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType,
+};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::typed::parse_type;
-use crate::compiler::tokenizer::{TokenBlock, Token, Keyword, Symbol};
+use crate::compiler::tokenizer::{Keyword, Symbol, Token, TokenBlock};
 
-pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTFunctionSignature, TokenBlock)> {
+pub fn parse_function_declaration(
+    block: &TokenBlock,
+    curr_idx: &mut usize,
+) -> CompilerResult<(ASTFunctionSignature, TokenBlock)> {
     let mut res_signature = ASTFunctionSignature {
         name: String::new(),
         args: Vec::new(),
@@ -14,13 +19,13 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
     match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
         Some(Token::Identifier(name)) => {
             res_signature.name = name.clone();
-        },
-        _ => return Err(CompilerError {
-            message: "Unexpected token".to_string(),
-            position: Some(
-                block.children[*curr_idx].1.clone()
-            ),
-        }),
+        }
+        _ => {
+            return Err(CompilerError {
+                message: "Unexpected token".to_string(),
+                position: Some(block.children[*curr_idx].1.clone()),
+            });
+        }
     }
     *curr_idx += 1;
 
@@ -31,15 +36,14 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
                 *curr_idx += 1;
                 break;
             }
-            Some(Token::Identifier(arg)) => {
-                arg.clone()
+            Some(Token::Identifier(arg)) => arg.clone(),
+            _ => {
+                return Err(CompilerError {
+                    message: "Expected block or argument identifier after function signature"
+                        .to_string(),
+                    position: Some(block.children[*curr_idx - 1].1.clone()),
+                });
             }
-            _ => return Err(CompilerError {
-                message: "Expected block or argument identifier after function signature".to_string(),
-                position: Some(
-                    block.children[*curr_idx - 1].1.clone()
-                ),
-            }),
         };
         *curr_idx += 1;
 
@@ -58,22 +62,26 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
     Ok((res_signature, res_block))
 }
 
-pub fn parse_return_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
+pub fn parse_return_statement(
+    structs: &Vec<ASTStructDeclaration>,
+    block: &TokenBlock,
+    curr_idx: &mut usize,
+) -> CompilerResult<Option<ASTStatement>> {
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::Return) {
         return Ok(None);
     }
     let pos1 = block.children[*curr_idx].1.clone();
     *curr_idx += 1;
     if block.children.len() == *curr_idx {
-        return Ok(Some(ASTStatement::Return{
+        return Ok(Some(ASTStatement::Return {
             return_value: None,
             pos: pos1,
-        }))
+        }));
     }
 
     let (expression, pos2) = parse_expression(structs, block, curr_idx)?;
-    Ok(Some(ASTStatement::Return{
+    Ok(Some(ASTStatement::Return {
         return_value: Some(expression),
-        pos: merge_file_positions(&pos1, &pos2)
+        pos: merge_file_positions(&pos1, &pos2),
     }))
 }

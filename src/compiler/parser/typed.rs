@@ -23,10 +23,10 @@ pub fn parse_type(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<AS
                 Keyword::Bool => ASTPrimitiveType::Bool,
                 Keyword::String => ASTPrimitiveType::String,
                 Keyword::Void => ASTPrimitiveType::Void,
-                _ => panic!()
+                _ => panic!(),
             };
             Ok(ASTType::Primitive(prim))
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }

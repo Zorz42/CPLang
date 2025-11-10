@@ -6,13 +6,13 @@ use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
 use crate::compiler::tokenizer::tokenize_fragments;
 
-mod tokenizer;
-mod parser;
-mod generator;
-mod preprocessor;
 pub mod error;
-mod normalizer;
+mod generator;
 mod lowerer;
+mod normalizer;
+mod parser;
+mod preprocessor;
+mod tokenizer;
 /*
 The compiler works in the following steps:
 1. Preprocessing: The input source code is preprocessed to parse strings, comments, indentation and parses bracket/brace/parenthesis structure.

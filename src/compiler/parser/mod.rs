@@ -5,15 +5,15 @@ use crate::compiler::parser::function::parse_function_declaration;
 use crate::compiler::parser::structure::parse_struct_declaration;
 use crate::compiler::tokenizer::TokenBlock;
 
-pub mod function;
+pub mod assignment;
+pub mod ast;
 pub mod block;
 pub mod expression;
-pub mod assignment;
+pub mod function;
 pub mod out;
 pub mod statement;
 pub mod structure;
 pub mod typed;
-pub mod ast;
 /*
 Parser converts tokens into AST (Abstract Syntax Tree). Here is where all the syntax structure parsing happens.
 Parser still does not know enough about the program to resolve variable/struct/function names or types or anything else.
@@ -49,7 +49,10 @@ pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<AST> {
     }
 
     if !found_main {
-        return Err(CompilerError { message: "No main function found".to_string(), position: None });
+        return Err(CompilerError {
+            message: "No main function found".to_string(),
+            position: None,
+        });
     }
 
     Ok(res)

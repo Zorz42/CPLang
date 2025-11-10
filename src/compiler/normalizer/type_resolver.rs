@@ -1,5 +1,8 @@
+use crate::compiler::normalizer::ir::{
+    IR, IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType,
+    IRTypeLabel,
+};
 use std::collections::HashMap;
-use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
 
 pub enum IRTypeHint {
     Is(IRTypeLabel, IRPrimitiveType),
@@ -36,17 +39,87 @@ enum Conn {
 fn setup_operator_map() -> HashMap<(IRType, IROperator, IRType), IRType> {
     let mut operator_map = HashMap::new();
 
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Plus, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Minus, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Mul, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Div, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::I32));
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Plus,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::I32),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Minus,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::I32),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Mul,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::I32),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Div,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::I32),
+    );
 
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Equals, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::NotEquals, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Greater, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::GreaterOrEq, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::Lesser, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
-    operator_map.insert((IRType::Primitive(IRPrimitiveType::I32), IROperator::LesserOrEq, IRType::Primitive(IRPrimitiveType::I32)), IRType::Primitive(IRPrimitiveType::Bool));
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Equals,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::NotEquals,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Greater,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::GreaterOrEq,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Lesser,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::LesserOrEq,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
 
     operator_map
 }
@@ -86,12 +159,10 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
 
     let operator_map = setup_operator_map();
 
-    let try_set_type = |
-        label: IRTypeLabel,
-        typ: IRType,
-        known_types: &mut Vec<Option<IRType>>,
-        queue: &mut Vec<IRTypeLabel>
-    | {
+    let try_set_type = |label: IRTypeLabel,
+                        typ: IRType,
+                        known_types: &mut Vec<Option<IRType>>,
+                        queue: &mut Vec<IRTypeLabel>| {
         if known_types[label].is_some() && known_types[label].as_ref() != Some(&typ) {
             panic!();
         }
@@ -101,12 +172,10 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
         }
     };
 
-    let try_set_ref = |
-        label: IRTypeLabel,
-        ref_val: i32,
-        known_refs: &mut Vec<Option<i32>>,
-        queue: &mut Vec<IRTypeLabel>
-    | {
+    let try_set_ref = |label: IRTypeLabel,
+                       ref_val: i32,
+                       known_refs: &mut Vec<Option<i32>>,
+                       queue: &mut Vec<IRTypeLabel>| {
         if known_refs[label].is_some() && known_refs[label] != Some(ref_val) {
             panic!();
         }
@@ -169,12 +238,11 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
     }
 
     loop {
-        let node =
-            if let Some(node) = queue.pop() {
-                node
-            } else {
-                break;
-            };
+        let node = if let Some(node) = queue.pop() {
+            node
+        } else {
+            break;
+        };
 
         // loop for type deduction
         if let Some(node_type) = known_types[node].clone() {
@@ -185,7 +253,8 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                     }
                     Conn::Operator(ne, op, typ2) => {
                         if let Some(node_type2) = known_types[*typ2].clone() {
-                            let ir_type = operator_map[&(node_type.clone(), *op, node_type2)].clone();
+                            let ir_type =
+                                operator_map[&(node_type.clone(), *op, node_type2)].clone();
                             let (ir_type, ref_depth) = deref_type(ir_type);
                             try_set_type(*ne, ir_type, &mut known_types, &mut queue);
                             try_set_ref(*ne, ref_depth, &mut known_refs, &mut queue);
@@ -195,7 +264,9 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                         // only deduce type when all arguments are known
                         let mut ir_args = Vec::new();
                         for arg in args {
-                            if let Some(arg_type) = &known_types[*arg] && let Some(ref_depth) = known_refs[*arg] {
+                            if let Some(arg_type) = &known_types[*arg]
+                                && let Some(ref_depth) = known_refs[*arg]
+                            {
                                 ir_args.push(ref_type(arg_type.clone(), ref_depth));
                             } else {
                                 continue 'neighbour_loop;
@@ -208,7 +279,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                     Conn::IsField(typ, field) => {
                         let (struct_label, struct_args) = match &known_types[node] {
                             Some(IRType::Struct(label, args)) => (*label, args),
-                            _ => panic!()
+                            _ => panic!(),
                         };
                         let curr_struct = &ir.structs[struct_label];
                         let mut field_idx = 0;

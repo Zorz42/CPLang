@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use test_derive::generate_tests;
     use crate::compiler::compile;
     use crate::compiler::error::FilePosition;
     use std::hash::Hasher;
+    use test_derive::generate_tests;
 
     fn compile_gcc(c_file: &str) -> String {
         let cache_dir = "./.test_cache";
@@ -14,7 +14,7 @@ mod tests {
         hasher.write(contents.as_bytes());
         let hash = hasher.finish();
         let exec_file = format!("{}/test_exec_{}", cache_dir, hash);
-        
+
         if std::path::Path::new(&exec_file).exists() {
             println!("Using cached executable");
             return exec_file;
@@ -52,10 +52,13 @@ mod tests {
 
             if let Err(e) = res {
                 if let Some(pos) = e.position {
-                    assert_eq!(pos, FilePosition {
-                        first_pos: (line_start as usize, column_start as usize),
-                        last_pos: (line_end as usize, column_end as usize),
-                    });
+                    assert_eq!(
+                        pos,
+                        FilePosition {
+                            first_pos: (line_start as usize, column_start as usize),
+                            last_pos: (line_end as usize, column_end as usize),
+                        }
+                    );
                 } else {
                     if line_start != -1 {
                         panic!("Expected error position, but got None");

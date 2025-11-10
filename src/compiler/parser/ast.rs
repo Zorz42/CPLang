@@ -8,15 +8,34 @@ pub struct AST {
 
 #[derive(Debug, Clone)]
 pub enum ASTStatement {
-    Block(ASTBlock),
-    Expression(ASTExpression),
-    Assignment(ASTExpression, ASTExpression, FilePosition),
-    AssignmentIncrease(ASTExpression, ASTExpression, FilePosition),
-    AssignmentDecrease(ASTExpression, ASTExpression, FilePosition),
-    AssignmentIncrement(ASTExpression, FilePosition),
-    AssignmentDecrement(ASTExpression, FilePosition),
+    Block {
+        block: ASTBlock,
+    },
+    Expression {
+        expr: ASTExpression,
+    },
+    Assignment {
+        assign_to: ASTExpression,
+        value: ASTExpression,
+        pos: FilePosition,
+    },
+    // just like a += b but for any operator
+    AssignmentOperator {
+        assign_to: ASTExpression,
+        value: ASTExpression,
+        operator: ASTOperator,
+        pos: FilePosition,
+    },
+    AssignmentIncrement {
+        assign_to: ASTExpression,
+        pos: FilePosition,
+    },
+    AssignmentDecrement {
+        assign_to: ASTExpression,
+        pos: FilePosition,
+    },
     Print {
-        values: Vec<ASTExpression>
+        values: Vec<ASTExpression>,
     },
     Return {
         return_value: Option<ASTExpression>,
@@ -59,14 +78,42 @@ pub enum ASTExpression {
     String(String),
     Boolean(bool),
     Variable(String, FilePosition),
-    Reference(Box<ASTExpression>, FilePosition),
-    FunctionCall(String, Vec<ASTExpression>),
-    StructInitialization(String, Vec<ASTExpression>),
-    FieldAccess(Box<ASTExpression>, String, FilePosition),
-    MethodCall(Box<ASTExpression>, FilePosition, String, Vec<ASTExpression>),
-    Dereference(Box<ASTExpression>, FilePosition),
-    BinaryOperation(Box<ASTExpression>, ASTOperator, Box<ASTExpression>, FilePosition),
-    AutoRef(Box<ASTExpression>),
+    Reference {
+        expr: Box<ASTExpression>,
+        pos: FilePosition,
+    },
+    FunctionCall {
+        name: String,
+        arguments: Vec<ASTExpression>,
+    },
+    StructInitialization {
+        name: String,
+        fields: Vec<ASTExpression>,
+    },
+    FieldAccess {
+        expr: Box<ASTExpression>,
+        field_name: String,
+        pos: FilePosition,
+    },
+    MethodCall {
+        expr: Box<ASTExpression>,
+        pos: FilePosition,
+        method_name: String,
+        arguments: Vec<ASTExpression>,
+    },
+    Dereference {
+        expr: Box<ASTExpression>,
+        pos: FilePosition,
+    },
+    BinaryOperation {
+        expr1: Box<ASTExpression>,
+        operator: ASTOperator,
+        expr2: Box<ASTExpression>,
+        pos: FilePosition,
+    },
+    AutoRef {
+        expr: Box<ASTExpression>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
