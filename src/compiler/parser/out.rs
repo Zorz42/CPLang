@@ -4,11 +4,7 @@ use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::preprocessor::{Fragment, PosChar, parse_blocks};
 use crate::compiler::tokenizer::{Constant, Keyword, Token, TokenBlock, tokenize_fragments};
 
-fn parse_format_string(
-    structs: &Vec<ASTStructDeclaration>,
-    string: &[PosChar],
-    pos: &FilePosition,
-) -> CompilerResult<Vec<ASTExpression>> {
+fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], pos: &FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
     let mut curr = String::new();
     let mut in_format = false;
@@ -79,11 +75,7 @@ fn parse_format_string(
     Ok(res)
 }
 
-pub fn parse_out_statement(
-    structs: &Vec<ASTStructDeclaration>,
-    block: &TokenBlock,
-    curr_idx: &mut usize,
-) -> CompilerResult<Option<ASTStatement>> {
+pub fn parse_out_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
     let print_pos = &block.children[*curr_idx].1;
     if block.children[*curr_idx].0 == Token::Keyword(Keyword::Out) {
         *curr_idx += 1;

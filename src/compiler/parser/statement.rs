@@ -4,11 +4,7 @@ use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::tokenizer::{Keyword, Token, TokenBlock};
 
-pub fn parse_if_statement(
-    structs: &Vec<ASTStructDeclaration>,
-    block: &TokenBlock,
-    curr_idx: &mut usize,
-) -> CompilerResult<Option<ASTStatement>> {
+pub fn parse_if_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::If) {
         return Ok(None);
     }
@@ -47,11 +43,7 @@ pub fn parse_if_statement(
     }))
 }
 
-pub fn parse_while_statement(
-    structs: &Vec<ASTStructDeclaration>,
-    block: &TokenBlock,
-    curr_idx: &mut usize,
-) -> CompilerResult<Option<ASTStatement>> {
+pub fn parse_while_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
     if block.children[*curr_idx].0 != Token::Keyword(Keyword::While) {
         return Ok(None);
     }
@@ -70,8 +62,5 @@ pub fn parse_while_statement(
         });
     }
 
-    Ok(Some(ASTStatement::While {
-        condition,
-        block: res_block,
-    }))
+    Ok(Some(ASTStatement::While { condition, block: res_block }))
 }

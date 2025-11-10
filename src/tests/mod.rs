@@ -75,9 +75,7 @@ mod tests {
             compile(&test_file, &c_file).unwrap();
             let exec_file = compile_gcc(&c_file);
 
-            let output = std::process::Command::new(format!("./{exec_file}"))
-                .output()
-                .expect("failed to run test");
+            let output = std::process::Command::new(format!("./{exec_file}")).output().expect("failed to run test");
 
             std::fs::remove_file(&c_file).unwrap();
 

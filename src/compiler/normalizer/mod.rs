@@ -1,14 +1,12 @@
 use crate::compiler::error::CompilerResult;
 use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{
-    IR, IRAutoRefLabel, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction,
-    IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
-    IRTypeLabel, IRVariableLabel,
+    IR, IRAutoRefLabel, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct,
+    IRStructLabel, IRTypeLabel, IRVariableLabel,
 };
 use crate::compiler::normalizer::type_resolver::{IRTypeHint, resolve_types};
 use crate::compiler::parser::ast::{
-    AST, ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType,
-    ASTStatement, ASTStructDeclaration, ASTType,
+    AST, ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType,
 };
 use std::collections::HashMap;
 
@@ -113,9 +111,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         ir.structs.push(ir_struct);
     }
 
-    if let Some((sig, block)) =
-        state.functions_name_map.get(&transform_function_name("main".to_string())).cloned()
-    {
+    if let Some((sig, block)) = state.functions_name_map.get(&transform_function_name("main".to_string())).cloned() {
         if !sig.args.is_empty() {
             panic!();
         }
@@ -131,9 +127,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
 }
 
 fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration) -> IRStruct {
-    let mut ir_struct = IRStruct {
-        fields: Vec::new(),
-    };
+    let mut ir_struct = IRStruct { fields: Vec::new() };
 
     for name in structure.fields {
         let label = if let Some(label) = state.fields_name_map.get(&name) {
@@ -149,11 +143,7 @@ fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration
     ir_struct
 }
 
-fn normalize_expression(
-    state: &mut NormalizerState,
-    ir: &mut IR,
-    expression: ASTExpression,
-) -> (IRExpression, IRTypeLabel) {
+fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: ASTExpression) -> (IRExpression, IRTypeLabel) {
     let type_label = state.new_type_label();
 
     let expr = match expression {
@@ -177,131 +167,111 @@ fn normalize_expression(
         }
         ASTExpression::Boolean(x) => {
             state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
-            IRExpression::Constant {
-                constant: IRConstant::Bool(x),
-            }
+            IRExpression::Constant { constant: IRConstant::Bool(x) }
         }
         ASTExpression::Variable(name, _pos) => {
             let label = state.variables_name_map[&name];
             let var_type_label = ir.variable_types[label];
             state.type_hints.push(IRTypeHint::Equal(type_label, var_type_label));
-            IRExpression::Variable {
-                variable_label: label,
-            }
+            IRExpression::Variable { variable_label: label }
         }
-        ASTExpression::Reference {
-            expr,
-            pos: _,
-        } => {
-            let (expr, type_label2) = normalize_expression(state, ir, *expr);
+        ASTExpression::Reference { expression, pos: _ } => {
+            let (expression, type_label2) = normalize_expression(state, ir, *expression);
             state.type_hints.push(IRTypeHint::IsRef(type_label, type_label2));
             IRExpression::Reference {
-                expr: Box::new(expr),
+                expression: Box::new(expression),
             }
         }
-        ASTExpression::Dereference {
-            expr,
-            pos: _,
-        } => {
-            let (expr, type_label2) = normalize_expression(state, ir, *expr);
+        ASTExpression::Dereference { expression, pos: _ } => {
+            let (expression, type_label2) = normalize_expression(state, ir, *expression);
             state.type_hints.push(IRTypeHint::IsRef(type_label2, type_label));
             IRExpression::Dereference {
-                expr: Box::new(expr),
+                expression: Box::new(expression),
             }
         }
-        ASTExpression::FunctionCall {
-            name,
-            arguments,
-        } => {
+        ASTExpression::FunctionCall { name, arguments } => {
             let mut expr_types = Vec::new();
-            let mut ir_args = Vec::new();
+            let mut function_arguments = Vec::new();
             for expr in arguments {
                 let (expr, type_label) = normalize_expression(state, ir, expr);
                 expr_types.push(type_label);
-                ir_args.push(expr);
+                function_arguments.push(expr);
             }
 
             let (sig, block) = state.functions_name_map.get(&name).cloned().unwrap();
-            let func_label = normalize_function(state, ir, sig, block, expr_types);
-            let ret_type = ir.functions[func_label].ret_type;
+            let function_label = normalize_function(state, ir, sig, block, expr_types);
+            let ret_type = ir.functions[function_label].ret_type;
             state.type_hints.push(IRTypeHint::Equal(ret_type, type_label));
 
             IRExpression::FunctionCall {
-                function_label: func_label,
-                arguments: ir_args,
+                function_label,
+                function_arguments,
             }
         }
-        ASTExpression::StructInitialization {
-            name,
-            fields,
-        } => {
+        ASTExpression::StructInitialization { name, fields } => {
             let struct_label = state.structs_name_map[&name].clone();
 
-            let mut args_exprs = Vec::new();
-            let mut args_types = Vec::new();
+            let mut field_values = Vec::new();
+            let mut fields_type_labels = Vec::new();
             for arg in fields {
                 let (expr, typ) = normalize_expression(state, ir, arg);
-                args_exprs.push(expr);
-                args_types.push(typ);
+                field_values.push(expr);
+                fields_type_labels.push(typ);
             }
 
             let struct_expr = IRExpression::StructInitialization {
                 struct_label,
-                fields_type_labels: args_types.clone(),
-                field_values: args_exprs,
+                fields_type_labels: fields_type_labels.clone(),
+                field_values,
             };
-            state.type_hints.push(IRTypeHint::Struct(type_label, struct_label, args_types));
+            state.type_hints.push(IRTypeHint::Struct(type_label, struct_label, fields_type_labels));
 
             struct_expr
         }
         ASTExpression::FieldAccess {
-            expr,
+            expression,
             field_name,
             pos: _,
         } => {
-            let (expr, type_label2) = normalize_expression(state, ir, *expr);
+            let (expression, type_label2) = normalize_expression(state, ir, *expression);
             let field_label = state.fields_name_map[&field_name];
             state.type_hints.push(IRTypeHint::IsField(type_label, type_label2, field_label));
             IRExpression::FieldAccess {
-                expr: Box::new(expr),
+                expression: Box::new(expression),
                 field_label,
             }
         }
-        ASTExpression::MethodCall {
-            ..
-        } => {
+        ASTExpression::MethodCall { .. } => {
             // should be eliminated by lowerer
             unreachable!()
         }
         ASTExpression::BinaryOperation {
-            expr1,
+            expression1,
             operator,
-            expr2,
+            expression2,
             pos: _,
         } => {
-            let (expr1, type_label1) = normalize_expression(state, ir, *expr1);
-            let (expr2, type_label2) = normalize_expression(state, ir, *expr2);
-            let op = operator_to_ir_operator(operator);
-            state.type_hints.push(IRTypeHint::Operator(type_label, type_label1, op, type_label2));
+            let (expression1, type1_label) = normalize_expression(state, ir, *expression1);
+            let (expression2, type2_label) = normalize_expression(state, ir, *expression2);
+            let operator = operator_to_ir_operator(operator);
+            state.type_hints.push(IRTypeHint::Operator(type_label, type1_label, operator, type2_label));
             IRExpression::BinaryOperation {
-                operator: op,
-                expr1: Box::new(expr1),
-                expr2: Box::new(expr2),
-                type1_label: type_label1,
-                type2_label: type_label2,
+                operator,
+                expression1: Box::new(expression1),
+                expression2: Box::new(expression2),
+                type1_label,
+                type2_label,
             }
         }
-        ASTExpression::AutoRef {
-            expr,
-        } => {
-            let (expr, type_label1) = normalize_expression(state, ir, *expr);
+        ASTExpression::AutoRef { expression } => {
+            let (expression, type_label1) = normalize_expression(state, ir, *expression);
             let autoref_label = ir.autorefs.len() as IRAutoRefLabel;
             ir.autorefs.push(0);
 
             state.type_hints.push(IRTypeHint::AutoRef(autoref_label, type_label, type_label1));
             IRExpression::AutoRef {
                 autoref_label,
-                expr: Box::new(expr),
+                expression: Box::new(expression),
             }
         }
     };
@@ -343,18 +313,12 @@ fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: ASTType) -> IRT
 }
 
 fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) -> IRBlock {
-    let mut res = IRBlock {
-        statements: Vec::new(),
-    };
+    let mut res = IRBlock { statements: Vec::new() };
     let prev_vars = state.variables_name_map.clone();
 
     for statement in block.children {
         match statement {
-            ASTStatement::Assignment {
-                assign_to,
-                value,
-                pos: _,
-            } => {
+            ASTStatement::Assignment { assign_to, value, pos: _ } => {
                 // if an unknown variable is assigned, create it
                 if let ASTExpression::Variable(name, _) = &assign_to
                     && !state.variables_name_map.contains_key(name)
@@ -368,96 +332,53 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
                 let (value, type_label2) = normalize_expression(state, ir, value);
                 state.type_hints.push(IRTypeHint::Equal(type_label1, type_label2));
 
-                res.statements.push(IRStatement::Assignment {
-                    assign_to,
-                    value,
-                });
+                res.statements.push(IRStatement::Assignment { assign_to, value });
             }
-            ASTStatement::AssignmentOperator {
-                ..
-            } => unreachable!(), // lowerer took care of that
-            ASTStatement::AssignmentIncrement {
-                ..
-            } => unreachable!(),
-            ASTStatement::AssignmentDecrement {
-                ..
-            } => unreachable!(),
+            ASTStatement::AssignmentOperator { .. } => unreachable!(), // lowerer took care of that
+            ASTStatement::AssignmentIncrement { .. } => unreachable!(),
+            ASTStatement::AssignmentDecrement { .. } => unreachable!(),
 
-            ASTStatement::Block {
-                block,
-            } => {
+            ASTStatement::Block { block } => {
                 let block = normalize_block(state, ir, block);
-                res.statements.push(IRStatement::Block {
-                    block,
-                });
+                res.statements.push(IRStatement::Block { block });
             }
-            ASTStatement::Expression {
-                expr,
-            } => {
+            ASTStatement::Expression { expression } => {
                 res.statements.push(IRStatement::Expression {
-                    expr: normalize_expression(state, ir, expr).0,
+                    expr: normalize_expression(state, ir, expression).0,
                 });
             }
-            ASTStatement::Print {
-                values,
-            } => {
+            ASTStatement::Print { values } => {
                 let mut vals = values;
                 vals.push(ASTExpression::String("\n".to_string()));
                 for val in vals {
                     let (expr, type_label) = normalize_expression(state, ir, val);
-                    res.statements.push(IRStatement::Print {
-                        expr,
-                        type_label,
-                    });
+                    res.statements.push(IRStatement::Print { expr, type_label });
                 }
             }
-            ASTStatement::Return {
-                return_value,
-                pos: _,
-            } => {
+            ASTStatement::Return { return_value, pos: _ } => {
                 state.has_ret_statement = true;
                 let st = if let Some(expr) = return_value {
                     let (expr, type_label) = normalize_expression(state, ir, expr);
                     state.type_hints.push(IRTypeHint::Equal(state.curr_func_ret_type, type_label));
-                    IRStatement::Return {
-                        return_value: Some(expr),
-                    }
+                    IRStatement::Return { return_value: Some(expr) }
                 } else {
-                    state
-                        .type_hints
-                        .push(IRTypeHint::Is(state.curr_func_ret_type, IRPrimitiveType::Void));
-                    IRStatement::Return {
-                        return_value: None,
-                    }
+                    state.type_hints.push(IRTypeHint::Is(state.curr_func_ret_type, IRPrimitiveType::Void));
+                    IRStatement::Return { return_value: None }
                 };
                 res.statements.push(st);
             }
-            ASTStatement::If {
-                condition,
-                block,
-                else_block,
-            } => {
-                let (cond, type_label) = normalize_expression(state, ir, condition);
+            ASTStatement::If { condition, block, else_block } => {
+                let (condition, type_label) = normalize_expression(state, ir, condition);
                 state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
                 let block = normalize_block(state, ir, block);
                 let else_block = else_block.map(|block| normalize_block(state, ir, block));
-                res.statements.push(IRStatement::If {
-                    condition: cond,
-                    block,
-                    else_block,
-                });
+                res.statements.push(IRStatement::If { condition, block, else_block });
             }
-            ASTStatement::While {
-                condition,
-                block,
-            } => {
-                let (cond, type_label) = normalize_expression(state, ir, condition);
+            ASTStatement::While { condition, block } => {
+                let (condition, type_label) = normalize_expression(state, ir, condition);
                 state.type_hints.push(IRTypeHint::Is(type_label, IRPrimitiveType::Bool));
                 let block = normalize_block(state, ir, block);
-                res.statements.push(IRStatement::While {
-                    condition: cond,
-                    block,
-                });
+                res.statements.push(IRStatement::While { condition, block });
             }
         }
     }
@@ -467,13 +388,7 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
     res
 }
 
-fn normalize_function(
-    state: &mut NormalizerState,
-    ir: &mut IR,
-    sign: ASTFunctionSignature,
-    block: ASTBlock,
-    arg_types: Vec<IRTypeLabel>,
-) -> IRFunctionLabel {
+fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctionSignature, block: ASTBlock, arg_types: Vec<IRTypeLabel>) -> IRFunctionLabel {
     assert_eq!(arg_types.len(), sign.args.len());
 
     let prev_vars = state.variables_name_map.clone();

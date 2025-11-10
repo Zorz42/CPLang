@@ -1,8 +1,11 @@
+use crate::compiler::generator::default_operators::init_default_operators;
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator,
-    IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
+    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
+    IRType, IRTypeLabel, IRVariableLabel,
 };
 use std::collections::HashMap;
+
+mod default_operators;
 
 /*
 Generator converts IR into raw C code. Could be easily replaced with any other language.
@@ -17,105 +20,6 @@ struct GeneratorContext {
     curr_struct_label: usize,
     struct_declarations: String,
     autorefs: Vec<i32>,
-}
-
-fn init_default_operators()
--> HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>> {
-    let mut res: HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>> =
-        HashMap::new();
-
-    let c_plus = |a, b| format!("{a} + {b}");
-    let c_minus = |a, b| format!("{a} - {b}");
-    let c_mul = |a, b| format!("{a} * {b}");
-    let c_div = |a, b| format!("{a} / {b}");
-    let c_equal = |a, b| format!("{a} == {b}");
-    let c_not_equal = |a, b| format!("{a} != {b}");
-    let c_greater = |a, b| format!("{a} > {b}");
-    let c_greater_or_eq = |a, b| format!("{a} >= {b}");
-    let c_lesser = |a, b| format!("{a} < {b}");
-    let c_lesser_or_eq = |a, b| format!("{a} <= {b}");
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Plus,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_plus),
-    );
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Minus,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_minus),
-    );
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Mul,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_mul),
-    );
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Div,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_div),
-    );
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Equals,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_equal),
-    );
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::NotEquals,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_not_equal),
-    );
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Greater,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_greater),
-    );
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::GreaterOrEq,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_greater_or_eq),
-    );
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Lesser,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_lesser),
-    );
-    res.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::LesserOrEq,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        Box::new(c_lesser_or_eq),
-    );
-
-    res
 }
 
 pub fn generate_code(ir: IR) -> String {
@@ -169,11 +73,7 @@ fn gen_field_name(label: IRFieldLabel) -> String {
     format!("F{label}")
 }
 
-fn gen_struct_declaration(
-    ctx: &mut GeneratorContext,
-    fields: Vec<(IRType, IRFieldLabel)>,
-    c_label: usize,
-) -> String {
+fn gen_struct_declaration(ctx: &mut GeneratorContext, fields: Vec<(IRType, IRFieldLabel)>, c_label: usize) -> String {
     let mut code = String::new();
 
     let c_name = gen_struct_name(c_label);
@@ -240,20 +140,18 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
     match expression {
         IRExpression::BinaryOperation {
             operator,
-            expr1,
+            expression1,
             type1_label,
-            expr2,
+            expression2,
             type2_label,
         } => {
-            let code1 = gen_expression(ctx, *expr1);
-            let code2 = gen_expression(ctx, *expr2);
+            let code1 = gen_expression(ctx, *expression1);
+            let code2 = gen_expression(ctx, *expression2);
             let typ1 = ctx.types[type1_label].clone();
             let typ2 = ctx.types[type2_label].clone();
             format!("({})", ctx.operators[&(typ1, operator, typ2)](code1, code2))
         }
-        IRExpression::Constant {
-            constant,
-        } => match constant {
+        IRExpression::Constant { constant } => match constant {
             IRConstant::String(x) => {
                 let mut escaped = String::new();
                 for c in x.chars() {
@@ -270,20 +168,15 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
             }
             IRConstant::Int(x) => format!("{x}"),
             IRConstant::Float(x) => format!("{x}"),
-            IRConstant::Bool(x) => (if x {
-                "1"
-            } else {
-                "0"
-            })
-            .to_string(),
+            IRConstant::Bool(x) => (if x { "1" } else { "0" }).to_string(),
         },
         IRExpression::FunctionCall {
             function_label,
-            arguments,
+            function_arguments,
         } => {
             let mut args_code = String::new();
 
-            for arg in arguments {
+            for arg in function_arguments {
                 args_code += &gen_expression(ctx, arg);
                 args_code += ",";
             }
@@ -292,22 +185,16 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
 
             format!("{}({})", gen_function_label(function_label), args_code)
         }
-        IRExpression::FieldAccess {
-            expr,
-            field_label,
-        } => {
-            format!("{}.{}", gen_expression(ctx, *expr), gen_field_name(field_label))
+        IRExpression::FieldAccess { expression, field_label } => {
+            format!("{}.{}", gen_expression(ctx, *expression), gen_field_name(field_label))
         }
-        IRExpression::Dereference {
-            expr,
-        } => format!("(*{})", gen_expression(ctx, *expr)),
+        IRExpression::Dereference { expression } => format!("(*{})", gen_expression(ctx, *expression)),
         IRExpression::StructInitialization {
             struct_label,
             fields_type_labels,
             field_values,
         } => {
-            let fields_type_labels =
-                fields_type_labels.into_iter().map(|x| ctx.types[x].clone()).collect();
+            let fields_type_labels = fields_type_labels.into_iter().map(|x| ctx.types[x].clone()).collect();
             let c_label = ctx.c_structs[&(struct_label, fields_type_labels)];
             let mut code = format!("({})", gen_struct_name(c_label));
             code += "{";
@@ -321,16 +208,9 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
             code += "}";
             code
         }
-        IRExpression::Reference {
-            expr,
-        } => format!("(&{})", gen_expression(ctx, *expr)),
-        IRExpression::Variable {
-            variable_label,
-        } => gen_variable_label(variable_label),
-        IRExpression::AutoRef {
-            autoref_label,
-            expr,
-        } => {
+        IRExpression::Reference { expression } => format!("(&{})", gen_expression(ctx, *expression)),
+        IRExpression::Variable { variable_label } => gen_variable_label(variable_label),
+        IRExpression::AutoRef { autoref_label, expression } => {
             let mut prefix = String::new();
 
             let ref_depth = ctx.autorefs[autoref_label];
@@ -344,7 +224,7 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
                 }
             }
 
-            format!("({}{})", prefix, gen_expression(ctx, *expr))
+            format!("({}{})", prefix, gen_expression(ctx, *expression))
         }
     }
 }
@@ -356,65 +236,34 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
 
     for statement in block.statements {
         let s_code = match statement {
-            IRStatement::Block {
-                block,
-            } => gen_block(ctx, block, String::new()),
-            IRStatement::If {
-                condition,
-                block,
-                else_block,
-            } => {
-                let mut code = format!(
-                    "if({}){}",
-                    gen_expression(ctx, condition),
-                    gen_block(ctx, block, String::new())
-                );
+            IRStatement::Block { block } => gen_block(ctx, block, String::new()),
+            IRStatement::If { condition, block, else_block } => {
+                let mut code = format!("if({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new()));
                 if let Some(else_block) = else_block {
                     code += &format!("else {}", gen_block(ctx, else_block, String::new()));
                 }
                 code
             }
-            IRStatement::While {
-                condition,
-                block,
-            } => {
-                format!(
-                    "while({}){}",
-                    gen_expression(ctx, condition),
-                    gen_block(ctx, block, String::new())
-                )
+            IRStatement::While { condition, block } => {
+                format!("while({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new()))
             }
-            IRStatement::Expression {
-                expr,
-            } => format!("{};", gen_expression(ctx, expr)),
-            IRStatement::Print {
-                expr,
-                type_label,
-            } => {
+            IRStatement::Expression { expr } => format!("{};", gen_expression(ctx, expr)),
+            IRStatement::Print { expr, type_label } => {
                 let typ = ctx.types[type_label].clone();
                 if typ == IRType::Primitive(IRPrimitiveType::Void) {
                     String::new()
                 } else {
-                    format!(
-                        "printf(\"%{}\",{});",
-                        type_to_printf_format(&typ),
-                        gen_expression(ctx, expr)
-                    )
+                    format!("printf(\"%{}\",{});", type_to_printf_format(&typ), gen_expression(ctx, expr))
                 }
             }
-            IRStatement::Return {
-                return_value,
-            } => {
+            IRStatement::Return { return_value } => {
                 if let Some(return_value) = return_value {
                     format!("return {};", gen_expression(ctx, return_value))
                 } else {
                     "return;".to_string()
                 }
             }
-            IRStatement::Assignment {
-                assign_to,
-                value,
-            } => {
+            IRStatement::Assignment { assign_to, value } => {
                 format!("{} = {};", gen_expression(ctx, assign_to), gen_expression(ctx, value))
             }
         };

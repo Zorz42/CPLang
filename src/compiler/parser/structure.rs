@@ -4,10 +4,7 @@ use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::function::parse_function_declaration;
 use crate::compiler::tokenizer::{Keyword, Token, TokenBlock};
 
-pub fn parse_struct_declaration(
-    block: &TokenBlock,
-    curr_idx: &mut usize,
-) -> CompilerResult<Option<ASTStructDeclaration>> {
+pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStructDeclaration>> {
     if Some(Token::Keyword(Keyword::Struct)) != block.children.get(*curr_idx).map(|x| x.0.clone()) {
         return Ok(None);
     }
@@ -64,9 +61,5 @@ pub fn parse_struct_declaration(
         }
     }
 
-    Ok(Some(ASTStructDeclaration {
-        name,
-        fields,
-        methods,
-    }))
+    Ok(Some(ASTStructDeclaration { name, fields, methods }))
 }

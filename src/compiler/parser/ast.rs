@@ -6,13 +6,14 @@ pub struct AST {
     pub structs: Vec<ASTStructDeclaration>,
 }
 
+#[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub enum ASTStatement {
     Block {
         block: ASTBlock,
     },
     Expression {
-        expr: ASTExpression,
+        expression: ASTExpression,
     },
     Assignment {
         assign_to: ASTExpression,
@@ -71,6 +72,7 @@ pub enum ASTOperator {
     Minus,
 }
 
+#[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub enum ASTExpression {
     Integer(i32),
@@ -79,7 +81,7 @@ pub enum ASTExpression {
     Boolean(bool),
     Variable(String, FilePosition),
     Reference {
-        expr: Box<ASTExpression>,
+        expression: Box<ASTExpression>,
         pos: FilePosition,
     },
     FunctionCall {
@@ -91,28 +93,28 @@ pub enum ASTExpression {
         fields: Vec<ASTExpression>,
     },
     FieldAccess {
-        expr: Box<ASTExpression>,
+        expression: Box<ASTExpression>,
         field_name: String,
         pos: FilePosition,
     },
     MethodCall {
-        expr: Box<ASTExpression>,
-        pos: FilePosition,
+        expression: Box<ASTExpression>,
         method_name: String,
         arguments: Vec<ASTExpression>,
+        pos: FilePosition,
     },
     Dereference {
-        expr: Box<ASTExpression>,
+        expression: Box<ASTExpression>,
         pos: FilePosition,
     },
     BinaryOperation {
-        expr1: Box<ASTExpression>,
+        expression1: Box<ASTExpression>,
         operator: ASTOperator,
-        expr2: Box<ASTExpression>,
+        expression2: Box<ASTExpression>,
         pos: FilePosition,
     },
     AutoRef {
-        expr: Box<ASTExpression>,
+        expression: Box<ASTExpression>,
     },
 }
 

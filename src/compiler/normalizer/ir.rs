@@ -56,13 +56,14 @@ pub enum IRConstant {
     Bool(bool),
 }
 
+#[rustfmt::skip]
 #[derive(Debug)]
 pub enum IRExpression {
     BinaryOperation {
         operator: IROperator,
-        expr1: Box<IRExpression>,
+        expression1: Box<IRExpression>,
         type1_label: IRTypeLabel,
-        expr2: Box<IRExpression>,
+        expression2: Box<IRExpression>,
         type2_label: IRTypeLabel,
     },
     Constant {
@@ -70,14 +71,14 @@ pub enum IRExpression {
     },
     FunctionCall {
         function_label: IRFunctionLabel,
-        arguments: Vec<IRExpression>,
+        function_arguments: Vec<IRExpression>,
     },
     FieldAccess {
-        expr: Box<IRExpression>,
+        expression: Box<IRExpression>,
         field_label: IRFieldLabel,
     },
     Dereference {
-        expr: Box<IRExpression>,
+        expression: Box<IRExpression>,
     },
     StructInitialization {
         struct_label: IRStructLabel,
@@ -85,14 +86,14 @@ pub enum IRExpression {
         field_values: Vec<IRExpression>,
     },
     Reference {
-        expr: Box<IRExpression>,
+        expression: Box<IRExpression>,
     },
     Variable {
         variable_label: IRVariableLabel,
     },
     AutoRef {
         autoref_label: IRAutoRefLabel,
-        expr: Box<IRExpression>,
+        expression: Box<IRExpression>,
     },
 }
 
@@ -100,6 +101,7 @@ pub struct IRBlock {
     pub statements: Vec<IRStatement>,
 }
 
+#[rustfmt::skip]
 #[derive(Debug)]
 pub enum IRStatement {
     Block {

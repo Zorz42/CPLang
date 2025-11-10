@@ -1,7 +1,4 @@
-use crate::compiler::normalizer::ir::{
-    IR, IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType,
-    IRTypeLabel,
-};
+use crate::compiler::normalizer::ir::{IR, IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel};
 use std::collections::HashMap;
 
 pub enum IRTypeHint {
@@ -159,10 +156,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
 
     let operator_map = setup_operator_map();
 
-    let try_set_type = |label: IRTypeLabel,
-                        typ: IRType,
-                        known_types: &mut Vec<Option<IRType>>,
-                        queue: &mut Vec<IRTypeLabel>| {
+    let try_set_type = |label: IRTypeLabel, typ: IRType, known_types: &mut Vec<Option<IRType>>, queue: &mut Vec<IRTypeLabel>| {
         if known_types[label].is_some() && known_types[label].as_ref() != Some(&typ) {
             panic!();
         }
@@ -172,10 +166,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
         }
     };
 
-    let try_set_ref = |label: IRTypeLabel,
-                       ref_val: i32,
-                       known_refs: &mut Vec<Option<i32>>,
-                       queue: &mut Vec<IRTypeLabel>| {
+    let try_set_ref = |label: IRTypeLabel, ref_val: i32, known_refs: &mut Vec<Option<i32>>, queue: &mut Vec<IRTypeLabel>| {
         if known_refs[label].is_some() && known_refs[label] != Some(ref_val) {
             panic!();
         }
@@ -253,8 +244,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
                     }
                     Conn::Operator(ne, op, typ2) => {
                         if let Some(node_type2) = known_types[*typ2].clone() {
-                            let ir_type =
-                                operator_map[&(node_type.clone(), *op, node_type2)].clone();
+                            let ir_type = operator_map[&(node_type.clone(), *op, node_type2)].clone();
                             let (ir_type, ref_depth) = deref_type(ir_type);
                             try_set_type(*ne, ir_type, &mut known_types, &mut queue);
                             try_set_ref(*ne, ref_depth, &mut known_refs, &mut queue);

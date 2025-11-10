@@ -4,11 +4,7 @@ use crate::compiler::tokenizer::{Constant, Symbol, Token, TokenBlock};
 use std::collections::HashMap;
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
-fn parse_value(
-    structs: &Vec<ASTStructDeclaration>,
-    block: &TokenBlock,
-    curr_idx: &mut usize,
-) -> CompilerResult<(ASTExpression, FilePosition)> {
+fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
     let mut pos = block.children[*curr_idx].1.clone();
     let mut res = match &block.children[*curr_idx].0 {
         Token::Constant(constant) => {
@@ -16,9 +12,7 @@ fn parse_value(
             let expr = match constant {
                 Constant::Integer(int) => ASTExpression::Integer(*int),
                 Constant::Float(float) => ASTExpression::Float(*float),
-                Constant::String(string) => {
-                    ASTExpression::String(string.iter().map(|x| x.c).collect())
-                }
+                Constant::String(string) => ASTExpression::String(string.iter().map(|x| x.c).collect()),
                 Constant::Boolean(boolean) => ASTExpression::Boolean(*boolean),
             };
 
@@ -28,9 +22,7 @@ fn parse_value(
             *curr_idx += 1;
 
             // we need to know if this is a function call, a struct instantiation or a variable
-            if let Some(Token::ParenthesisBlock(call_block)) =
-                block.children.get(*curr_idx).map(|x| x.0.clone())
-            {
+            if let Some(Token::ParenthesisBlock(call_block)) = block.children.get(*curr_idx).map(|x| x.0.clone()) {
                 let mut args = Vec::new();
                 let mut block_idx = 0;
                 *curr_idx += 1;
@@ -46,25 +38,20 @@ fn parse_value(
                     },
                     pos,
                 )
-            } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier)
-            {
+            } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 let mut fields = HashMap::new();
                 let mut fields_left = struct_declaration.fields.len();
 
                 while fields_left > 0 {
-                    let (field_name, field_pos) =
-                        match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
-                            Some(Token::Identifier(ident)) => {
-                                (ident.clone(), block.children[*curr_idx].1.clone())
-                            }
-                            _ => {
-                                return Err(CompilerError {
-                                    message: "Expected struct field identifier after this token"
-                                        .to_owned(),
-                                    position: Some(block.children[*curr_idx - 1].1.clone()),
-                                });
-                            }
-                        };
+                    let (field_name, field_pos) = match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
+                        Some(Token::Identifier(ident)) => (ident.clone(), block.children[*curr_idx].1.clone()),
+                        _ => {
+                            return Err(CompilerError {
+                                message: "Expected struct field identifier after this token".to_owned(),
+                                position: Some(block.children[*curr_idx - 1].1.clone()),
+                            });
+                        }
+                    };
 
                     *curr_idx += 1;
 
@@ -104,7 +91,7 @@ fn parse_value(
 
             (
                 ASTExpression::Reference {
-                    expr: Box::new(res),
+                    expression: Box::new(res),
                     pos: pos.clone(),
                 },
                 pos,
@@ -116,7 +103,7 @@ fn parse_value(
 
             (
                 ASTExpression::Dereference {
-                    expr: Box::new(res),
+                    expression: Box::new(res),
                     pos: pos.clone(),
                 },
                 pos,
@@ -140,9 +127,7 @@ fn parse_value(
         match block.children.get(*curr_idx) {
             Some((Token::Identifier(s), pos)) => {
                 *curr_idx += 1;
-                if let Some(Token::ParenthesisBlock(call_block)) =
-                    block.children.get(*curr_idx).map(|x| &x.0)
-                {
+                if let Some(Token::ParenthesisBlock(call_block)) = block.children.get(*curr_idx).map(|x| &x.0) {
                     let mut args = Vec::new();
                     let mut block_idx = 0;
                     *curr_idx += 1;
@@ -151,14 +136,14 @@ fn parse_value(
                         args.push(expr);
                     }
                     res.0 = ASTExpression::MethodCall {
-                        expr: Box::new(res.0),
+                        expression: Box::new(res.0),
                         pos: pos.clone(),
                         method_name: s.clone(),
                         arguments: args,
                     };
                 } else {
                     res.0 = ASTExpression::FieldAccess {
-                        expr: Box::new(res.0),
+                        expression: Box::new(res.0),
                         field_name: s.clone(),
                         pos: pos.clone(),
                     };
@@ -193,11 +178,7 @@ fn symbol_to_operator(symbol: &Symbol) -> Option<ASTOperator> {
 }
 
 // looks for operators and values
-pub fn parse_expression(
-    structs: &Vec<ASTStructDeclaration>,
-    block: &TokenBlock,
-    curr_idx: &mut usize,
-) -> CompilerResult<(ASTExpression, FilePosition)> {
+pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
     let (first_val, first_pos) = parse_value(structs, block, curr_idx)?;
@@ -243,17 +224,17 @@ pub fn parse_expression(
             }
 
             if let Some(i) = idx {
-                let (left, left_pos) = vals.remove(i);
-                let (right, right_pos) = vals.remove(i);
-                let op = ops.remove(i);
-                let pos = merge_file_positions(&left_pos, &right_pos);
+                let (expression1, expression1_pos) = vals.remove(i);
+                let (expression2, expression2_pos) = vals.remove(i);
+                let operator = ops.remove(i);
+                let pos = merge_file_positions(&expression1_pos, &expression2_pos);
                 vals.insert(
                     i,
                     (
                         ASTExpression::BinaryOperation {
-                            expr1: Box::new(left),
-                            operator: op,
-                            expr2: Box::new(right),
+                            expression1: Box::new(expression1),
+                            operator,
+                            expression2: Box::new(expression2),
                             pos: pos.clone(),
                         },
                         pos,
