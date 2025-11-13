@@ -1,9 +1,6 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::lowerer::transform_function_name;
-use crate::compiler::normalizer::ir::{
-    IRAutoRefLabel, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
-    IRTypeLabel, IRVariableLabel, IR,
-};
+use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::{resolve_types, IRTypeHint};
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, AST,
@@ -121,13 +118,21 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         }
 
         ir.main_function = normalize_function(&mut state, &mut ir, sig, block, Vec::new())?;
-        let main_ret = ir.functions[ir.main_function].ret_type;
-        state.type_hints.push(IRTypeHint::Is { label: main_ret, typ: IRPrimitiveType::Void })
     } else {
         panic!();
     }
 
     resolve_types(&mut ir, state.curr_type_label, state.type_hints);
+
+    let main_ret = ir.functions[ir.main_function].ret_type;
+    let main_ret = ir.types[main_ret].clone();
+
+    if main_ret != IRType::Primitive(IRPrimitiveType::Void) {
+        return Err(CompilerError {
+            message: "Main function should not return any value".to_string(),
+            position: None,
+        });
+    }
 
     Ok(ir)
 }
