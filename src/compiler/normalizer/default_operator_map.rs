@@ -1,0 +1,90 @@
+use crate::compiler::normalizer::ir::{IROperator, IRPrimitiveType, IRType};
+use std::collections::HashMap;
+
+pub fn setup_operator_map() -> HashMap<(IRType, IROperator, IRType), IRType> {
+    let mut operator_map = HashMap::new();
+
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Plus,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::I32),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Minus,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::I32),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Mul,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::I32),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Div,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::I32),
+    );
+
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Equals,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::NotEquals,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Greater,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::GreaterOrEq,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::Lesser,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+    operator_map.insert(
+        (
+            IRType::Primitive(IRPrimitiveType::I32),
+            IROperator::LesserOrEq,
+            IRType::Primitive(IRPrimitiveType::I32),
+        ),
+        IRType::Primitive(IRPrimitiveType::Bool),
+    );
+
+    operator_map
+}

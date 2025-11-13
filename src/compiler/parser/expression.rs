@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerError, CompilerResult, FilePosition, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStructDeclaration};
 use crate::compiler::tokenizer::{Constant, Symbol, Token, TokenBlock};
 use std::collections::HashMap;
@@ -35,6 +35,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                     ASTExpression::FunctionCall {
                         name: identifier.clone(),
                         arguments: args,
+                        pos: pos.clone(),
                     },
                     pos,
                 )

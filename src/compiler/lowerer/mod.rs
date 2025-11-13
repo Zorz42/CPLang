@@ -1,5 +1,5 @@
 use crate::compiler::error::FilePosition;
-use crate::compiler::parser::ast::{AST, ASTBlock, ASTExpression, ASTOperator, ASTStatement, ASTType};
+use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTOperator, ASTStatement, ASTType, AST};
 // Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
 pub fn lower_ast(mut ast: AST) -> AST {
@@ -20,7 +20,7 @@ pub fn lower_ast(mut ast: AST) -> AST {
 
             sign.name = transform_method_name(sign.name);
             let typ = ASTType::Reference(Box::new(ASTType::Struct(structure.name.clone())));
-            sign.args.insert(0, ("self".to_string(), typ));
+            sign.args.insert(0, ("self".to_string(), typ, FilePosition::unknown()));
             let block = lower_block(block);
 
             ast.functions.push((sign, block));
@@ -87,10 +87,10 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
             *expression = lower_expression(*expression);
             ASTExpression::Reference { expression, pos }
         }
-        ASTExpression::FunctionCall { name, arguments } => {
+        ASTExpression::FunctionCall { name, arguments, pos } => {
             let arguments = arguments.into_iter().map(lower_expression).collect();
             let name = transform_function_name(name);
-            ASTExpression::FunctionCall { name, arguments }
+            ASTExpression::FunctionCall { name, arguments, pos }
         }
         ASTExpression::StructInitialization { name, fields } => {
             let fields = fields.into_iter().map(lower_expression).collect();
@@ -109,7 +109,7 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
         }
         ASTExpression::MethodCall {
             expression,
-            pos: _,
+            pos,
             method_name,
             arguments,
         } => {
@@ -120,7 +120,7 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
             arguments.insert(0, expression);
             let name = transform_method_name(method_name);
 
-            ASTExpression::FunctionCall { name, arguments }
+            ASTExpression::FunctionCall { name, arguments, pos }
         }
         ASTExpression::Dereference { mut expression, pos } => {
             *expression = lower_expression(*expression);

@@ -87,6 +87,7 @@ pub enum ASTExpression {
     FunctionCall {
         name: String,
         arguments: Vec<ASTExpression>,
+        pos: FilePosition,
     },
     StructInitialization {
         name: String,
@@ -118,10 +119,10 @@ pub enum ASTExpression {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ASTFunctionSignature {
     pub name: String,
-    pub args: Vec<(String, ASTType)>,
+    pub args: Vec<(String, ASTType, FilePosition)>,
 }
 
 #[derive(Debug, Clone)]

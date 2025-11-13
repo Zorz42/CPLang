@@ -1,20 +1,46 @@
-use crate::compiler::normalizer::ir::{IR, IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel};
-use std::collections::HashMap;
+use crate::compiler::normalizer::default_operator_map::setup_operator_map;
+use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
 
 pub enum IRTypeHint {
-    Is(IRTypeLabel, IRPrimitiveType),
-    Equal(IRTypeLabel, IRTypeLabel),
-    // arg1 = arg2 + arg4, + is arg3
-    Operator(IRTypeLabel, IRTypeLabel, IROperator, IRTypeLabel),
-    // arg1 = &arg2
-    IsRef(IRTypeLabel, IRTypeLabel),
-    // arg1 = arg2 { arg3[0], ..., arg3[n] }
-    Struct(IRTypeLabel, IRStructLabel, Vec<IRTypeLabel>),
-    // arg1 = arg2.arg3
-    IsField(IRTypeLabel, IRTypeLabel, IRFieldLabel),
-    // &&...&&&2 = &&...&&&arg3
-    // automatically reference/dereference arg3 to arg2
-    AutoRef(IRAutoRefLabel, IRTypeLabel, IRTypeLabel),
+    Is {
+        label: IRTypeLabel,
+        typ: IRPrimitiveType,
+    },
+    Equal {
+        label1: IRTypeLabel,
+        label2: IRTypeLabel,
+    },
+    // res = label1 + label2, + is operator
+    Operator {
+        label1: IRTypeLabel,
+        label2: IRTypeLabel,
+        operator: IROperator,
+        res_label: IRTypeLabel,
+    },
+    // ref = &phys
+    IsRef {
+        ref_label: IRTypeLabel,
+        phys_label: IRTypeLabel,
+    },
+    // res = struct { fields[0], ..., fields[n-1] }
+    Struct {
+        res_label: IRTypeLabel,
+        struct_label: IRStructLabel,
+        fields: Vec<IRTypeLabel>,
+    },
+    // res = struct.field
+    IsField {
+        res_label: IRTypeLabel,
+        struct_label: IRTypeLabel,
+        field_label: IRFieldLabel,
+    },
+    // label1 = &&...&&&label2 or ::...:::label2
+    // automatically reference/dereference. both are type typ
+    AutoRef {
+        autoref_label: IRAutoRefLabel,
+        label1: IRTypeLabel,
+        label2: IRTypeLabel,
+    },
     // arg1 is physical (not a reference)
     IsPhys(IRTypeLabel),
 }
@@ -31,94 +57,6 @@ enum Conn {
 
     // arg1 = node.arg2
     IsField(IRTypeLabel, IRFieldLabel),
-}
-
-fn setup_operator_map() -> HashMap<(IRType, IROperator, IRType), IRType> {
-    let mut operator_map = HashMap::new();
-
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Plus,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::I32),
-    );
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Minus,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::I32),
-    );
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Mul,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::I32),
-    );
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Div,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::I32),
-    );
-
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Equals,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::Bool),
-    );
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::NotEquals,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::Bool),
-    );
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Greater,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::Bool),
-    );
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::GreaterOrEq,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::Bool),
-    );
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::Lesser,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::Bool),
-    );
-    operator_map.insert(
-        (
-            IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::LesserOrEq,
-            IRType::Primitive(IRPrimitiveType::I32),
-        ),
-        IRType::Primitive(IRPrimitiveType::Bool),
-    );
-
-    operator_map
 }
 
 fn ref_type(mut typ: IRType, ref_depth: i32) -> IRType {
@@ -179,48 +117,48 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>)
     let mut queue = Vec::new();
     for hint in type_hints {
         match hint {
-            IRTypeHint::Is(label, typ) => {
+            IRTypeHint::Is { label, typ } => {
                 let ir_type = IRType::Primitive(typ);
                 try_set_type(label, ir_type, &mut known_types, &mut queue);
                 try_set_ref(label, 0, &mut known_refs, &mut queue);
             }
-            IRTypeHint::Equal(label1, label2) => {
+            IRTypeHint::Equal { label1, label2 } => {
                 type_nodes[label1].push(Conn::Is(label2));
                 type_nodes[label2].push(Conn::Is(label1));
 
                 ref_nodes[label1].push((label2, 0));
                 ref_nodes[label2].push((label1, 0));
             }
-            IRTypeHint::Operator(typ, typ1, op, typ2) => {
-                type_nodes[typ1].push(Conn::Operator(typ, op, typ2));
-                type_nodes[typ2].push(Conn::Operator(typ, op, typ1));
+            IRTypeHint::Operator { label1, label2, operator, res_label } => {
+                type_nodes[label1].push(Conn::Operator(res_label, operator, label2));
+                type_nodes[label2].push(Conn::Operator(res_label, operator, label1));
 
-                try_set_ref(typ1, 0, &mut known_refs, &mut queue);
-                try_set_ref(typ2, 0, &mut known_refs, &mut queue);
+                try_set_ref(label1, 0, &mut known_refs, &mut queue);
+                try_set_ref(label2, 0, &mut known_refs, &mut queue);
             }
-            IRTypeHint::IsRef(typ1, typ2) => {
-                // typ1 = &typ2
-                type_nodes[typ2].push(Conn::Is(typ1));
-                type_nodes[typ1].push(Conn::Is(typ2));
+            IRTypeHint::IsRef { ref_label, phys_label } => {
+                // ref_label = &phys_label
+                type_nodes[phys_label].push(Conn::Is(ref_label));
+                type_nodes[ref_label].push(Conn::Is(phys_label));
 
-                ref_nodes[typ1].push((typ2, -1));
-                ref_nodes[typ2].push((typ1, 1));
+                ref_nodes[ref_label].push((phys_label, -1));
+                ref_nodes[phys_label].push((ref_label, 1));
             }
-            IRTypeHint::Struct(typ, structure, types) => {
-                for arg_type in &types {
-                    type_nodes[*arg_type].push(Conn::Struct(typ, structure, types.clone()));
+            IRTypeHint::Struct { res_label, struct_label, fields } => {
+                for field_type in &fields {
+                    type_nodes[*field_type].push(Conn::Struct(res_label, struct_label, fields.clone()));
                 }
-                try_set_ref(typ, 0, &mut known_refs, &mut queue);
+                try_set_ref(res_label, 0, &mut known_refs, &mut queue);
             }
-            IRTypeHint::IsField(typ1, typ2, field) => {
-                type_nodes[typ2].push(Conn::IsField(typ1, field));
-                try_set_ref(typ2, 0, &mut known_refs, &mut queue);
+            IRTypeHint::IsField { res_label, struct_label, field_label } => {
+                type_nodes[struct_label].push(Conn::IsField(res_label, field_label));
+                try_set_ref(struct_label, 0, &mut known_refs, &mut queue);
             }
-            IRTypeHint::AutoRef(label, typ1, typ2) => {
-                type_nodes[typ1].push(Conn::Is(typ2));
-                type_nodes[typ2].push(Conn::Is(typ1));
+            IRTypeHint::AutoRef { autoref_label, label1, label2 } => {
+                type_nodes[label1].push(Conn::Is(label2));
+                type_nodes[label2].push(Conn::Is(label1));
 
-                auto_ref_pairs[label] = (typ1, typ2);
+                auto_ref_pairs[autoref_label] = (label1, label2);
             }
             IRTypeHint::IsPhys(label) => {
                 try_set_ref(label, 0, &mut known_refs, &mut queue);
