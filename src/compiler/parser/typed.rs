@@ -1,19 +1,20 @@
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{merge_file_positions, CompilerResult};
 use crate::compiler::parser::ast::{ASTPrimitiveType, ASTType};
 use crate::compiler::tokenizer::{Keyword, Symbol, Token, TokenBlock};
 
 pub fn parse_type(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<ASTType> {
     match block.children.get(*curr_idx) {
-        Some((Token::Symbol(Symbol::QuestionMark), _)) => {
+        Some((Token::Symbol(Symbol::QuestionMark), pos)) => {
             *curr_idx += 1;
-            Ok(ASTType::Any)
+            Ok(ASTType::Any(pos.clone()))
         }
-        Some((Token::Symbol(Symbol::Reference), _)) => {
+        Some((Token::Symbol(Symbol::Reference), pos)) => {
             *curr_idx += 1;
             let typ = parse_type(block, curr_idx)?;
-            Ok(ASTType::Reference(Box::new(typ)))
+            let pos = merge_file_positions(pos, &typ.get_pos());
+            Ok(ASTType::Reference(Box::new(typ), pos))
         }
-        Some((Token::Keyword(keyword), _)) => {
+        Some((Token::Keyword(keyword), pos)) => {
             *curr_idx += 1;
             let prim = match keyword {
                 Keyword::I32 => ASTPrimitiveType::I32,
@@ -25,7 +26,7 @@ pub fn parse_type(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<AS
                 Keyword::Void => ASTPrimitiveType::Void,
                 _ => panic!(),
             };
-            Ok(ASTType::Primitive(prim))
+            Ok(ASTType::Primitive(prim, pos.clone()))
         }
         _ => panic!(),
     }

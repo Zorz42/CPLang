@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerError, CompilerResult};
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::{resolve_types, IRTypeHint};
@@ -41,6 +41,7 @@ pub struct NormalizerState {
     has_ret_statement: bool,
     depth: i32,
     structs_name_map: HashMap<String, IRStructLabel>,
+    type_positions: Vec<FilePosition>,
 }
 
 impl NormalizerState {
@@ -66,8 +67,9 @@ impl NormalizerState {
         label
     }
 
-    pub fn new_type_label(&mut self) -> IRTypeLabel {
+    pub fn new_type_label(&mut self, position: FilePosition) -> IRTypeLabel {
         self.curr_type_label += 1;
+        self.type_positions.push(position);
         self.curr_type_label - 1
     }
 }
@@ -95,6 +97,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         has_ret_statement: false,
         depth: 0,
         structs_name_map: HashMap::new(),
+        type_positions: Vec::new(),
     };
 
     for (sig, block) in ast.functions {
@@ -122,7 +125,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         panic!();
     }
 
-    resolve_types(&mut ir, state.curr_type_label, state.type_hints);
+    resolve_types(&mut ir, state.curr_type_label, state.type_positions, state.type_hints);
 
     let main_ret = ir.functions[ir.main_function].ret_type;
     let main_ret = ir.types[main_ret].clone();
@@ -156,22 +159,22 @@ fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration
 
 // returns (expression, expression type, is expression physical (assignable) value)
 fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: ASTExpression) -> CompilerResult<(IRExpression, IRTypeLabel, bool)> {
-    let type_label = state.new_type_label();
+    let type_label = state.new_type_label(expression.get_pos());
 
     let (expr, is_phys) = match expression {
-        ASTExpression::Integer(x) => {
+        ASTExpression::Integer(x, _) => {
             state.type_hints.push(IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::I32 });
             (IRExpression::Constant { constant: IRConstant::Int(x as i64) }, false)
         }
-        ASTExpression::Float(x) => {
+        ASTExpression::Float(x, _) => {
             state.type_hints.push(IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::F32 });
             (IRExpression::Constant { constant: IRConstant::Float(x as f64) }, false)
         }
-        ASTExpression::String(x) => {
+        ASTExpression::String(x, _) => {
             state.type_hints.push(IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::String });
             (IRExpression::Constant { constant: IRConstant::String(x.clone()) }, false)
         }
-        ASTExpression::Boolean(x) => {
+        ASTExpression::Boolean(x, _) => {
             state.type_hints.push(IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::Bool });
             (IRExpression::Constant { constant: IRConstant::Bool(x) }, false)
         }
@@ -232,7 +235,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
                 function_arguments,
             }, false)
         }
-        ASTExpression::StructInitialization { name, fields } => {
+        ASTExpression::StructInitialization { name, fields, pos: _ } => {
             let struct_label = state.structs_name_map[&name].clone();
 
             let mut field_values = Vec::new();
@@ -323,19 +326,19 @@ fn primitive_type_to_ir_type(typ: ASTPrimitiveType) -> IRPrimitiveType {
 }
 
 fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: ASTType) -> IRTypeLabel {
-    let type_label = state.new_type_label();
+    let type_label = state.new_type_label(typ.get_pos());
     match typ {
-        ASTType::Any => {}
-        ASTType::Primitive(typ) => {
+        ASTType::Any(_) => {}
+        ASTType::Primitive(typ, _) => {
             let typ = primitive_type_to_ir_type(typ);
             state.type_hints.push(IRTypeHint::Is { label: type_label, typ });
         }
-        ASTType::Struct(_name) => {
+        ASTType::Struct(_name, _) => {
             // TODO: hint that the type is actually this struct - will enable stronger type deduction
             // for now it only hints its not a reference
             state.type_hints.push(IRTypeHint::IsPhys(type_label));
         }
-        ASTType::Reference(typ) => {
+        ASTType::Reference(typ, _) => {
             let type_label2 = normalize_type(state, ir, *typ);
             state.type_hints.push(IRTypeHint::IsRef { ref_label: type_label, phys_label: type_label2 });
         }
@@ -351,12 +354,12 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
         match statement {
             ASTStatement::Assignment { assign_to, value, pos } => {
                 // if an unknown variable is assigned, create it
-                if let ASTExpression::Variable(name, _) = &assign_to
+                if let ASTExpression::Variable(name, pos) = &assign_to
                     && !state.variables_name_map.contains_key(name)
                 {
                     let label = state.new_var(name);
                     state.curr_func_vars.push(label);
-                    ir.variable_types.push(state.new_type_label());
+                    ir.variable_types.push(state.new_type_label(pos.clone()));
                 }
 
                 let (assign_to, type_label1, is_phys) = normalize_expression(state, ir, assign_to)?;
@@ -387,7 +390,7 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
             }
             ASTStatement::Print { values } => {
                 let mut vals = values;
-                vals.push(ASTExpression::String("\n".to_string()));
+                vals.push(ASTExpression::String("\n".to_string(), FilePosition::unknown()));
                 for val in vals {
                     let (expr, type_label, _is_phys) = normalize_expression(state, ir, val)?;
                     res.statements.push(IRStatement::Print { expr, type_label });
@@ -445,7 +448,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
 
     state.depth += 1;
     state.curr_func_vars = Vec::new();
-    state.curr_func_ret_type = state.new_type_label();
+    state.curr_func_ret_type = state.new_type_label(FilePosition::unknown());
     state.has_ret_statement = false;
 
     let mut arguments = Vec::new();

@@ -9,7 +9,7 @@ pub fn parse_if_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenBloc
         return Ok(None);
     }
     *curr_idx += 1;
-    let (condition, _) = parse_expression(structs, block, curr_idx)?;
+    let condition = parse_expression(structs, block, curr_idx)?;
 
     let res_block;
     if let Token::BraceBlock(token_block) = &block.children[*curr_idx].0 {
@@ -49,7 +49,7 @@ pub fn parse_while_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenB
     }
 
     *curr_idx += 1;
-    let (condition, _) = parse_expression(structs, block, curr_idx)?;
+    let condition = parse_expression(structs, block, curr_idx)?;
 
     let res_block;
     if let Token::BraceBlock(token_block) = &block.children[*curr_idx].0 {

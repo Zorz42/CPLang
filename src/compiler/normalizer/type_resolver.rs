@@ -1,3 +1,4 @@
+use crate::compiler::error::FilePosition;
 use crate::compiler::normalizer::default_operator_map::setup_operator_map;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
 
@@ -78,7 +79,7 @@ fn deref_type(mut ir_type: IRType) -> (IRType, i32) {
     (ir_type, ref_depth)
 }
 
-pub fn resolve_types(ir: &mut IR, num_types: usize, type_hints: Vec<IRTypeHint>) {
+pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosition>, type_hints: Vec<IRTypeHint>) {
     // known types are without references and known refs are reference depths
     let mut known_types = vec![None; num_types];
     let mut known_refs = vec![None; num_types];

@@ -1,22 +1,22 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
 use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStructDeclaration};
 use crate::compiler::tokenizer::{Constant, Symbol, Token, TokenBlock};
 use std::collections::HashMap;
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
-fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
+fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<ASTExpression> {
     let mut pos = block.children[*curr_idx].1.clone();
     let mut res = match &block.children[*curr_idx].0 {
         Token::Constant(constant) => {
             *curr_idx += 1;
             let expr = match constant {
-                Constant::Integer(int) => ASTExpression::Integer(*int),
-                Constant::Float(float) => ASTExpression::Float(*float),
-                Constant::String(string) => ASTExpression::String(string.iter().map(|x| x.c).collect()),
-                Constant::Boolean(boolean) => ASTExpression::Boolean(*boolean),
+                Constant::Integer(int) => ASTExpression::Integer(*int, pos),
+                Constant::Float(float) => ASTExpression::Float(*float, pos),
+                Constant::String(string) => ASTExpression::String(string.iter().map(|x| x.c).collect(), pos),
+                Constant::Boolean(boolean) => ASTExpression::Boolean(*boolean, pos),
             };
 
-            (expr, pos)
+            expr
         }
         Token::Identifier(identifier) => {
             *curr_idx += 1;
@@ -27,18 +27,16 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                 let mut block_idx = 0;
                 *curr_idx += 1;
                 while block_idx < call_block.children.len() {
-                    let (expr, expr_pos) = parse_expression(structs, &call_block, &mut block_idx)?;
+                    let expr = parse_expression(structs, &call_block, &mut block_idx)?;
+                    let expr_pos = expr.get_pos();
                     args.push(expr);
                     pos = merge_file_positions(&pos, &expr_pos);
                 }
-                (
-                    ASTExpression::FunctionCall {
-                        name: identifier.clone(),
-                        arguments: args,
-                        pos: pos.clone(),
-                    },
-                    pos,
-                )
+                ASTExpression::FunctionCall {
+                    name: identifier.clone(),
+                    arguments: args,
+                    pos: pos.clone(),
+                }
             } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 let mut fields = HashMap::new();
                 let mut fields_left = struct_declaration.fields.len();
@@ -56,7 +54,8 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
 
                     *curr_idx += 1;
 
-                    let (expr, expr_pos) = parse_expression(structs, block, curr_idx)?;
+                    let expr = parse_expression(structs, block, curr_idx)?;
+                    let expr_pos = expr.get_pos();
 
                     if fields.contains_key(&field_name) {
                         return Err(CompilerError {
@@ -75,40 +74,34 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                     fields_res.push(fields[field].clone());
                 }
 
-                (
-                    ASTExpression::StructInitialization {
-                        name: identifier.clone(),
-                        fields: fields_res,
-                    },
+                ASTExpression::StructInitialization {
+                    name: identifier.clone(),
+                    fields: fields_res,
                     pos,
-                )
+                }
             } else {
-                (ASTExpression::Variable(identifier.clone(), pos.clone()), pos)
+                ASTExpression::Variable(identifier.clone(), pos.clone())
             }
         }
         Token::Symbol(Symbol::Reference) => {
             *curr_idx += 1;
-            let (res, pos) = parse_value(structs, block, curr_idx)?;
+            let res = parse_value(structs, block, curr_idx)?;
+            let pos = res.get_pos();
 
-            (
-                ASTExpression::Reference {
-                    expression: Box::new(res),
-                    pos: pos.clone(),
-                },
-                pos,
-            )
+            ASTExpression::Reference {
+                expression: Box::new(res),
+                pos: pos.clone(),
+            }
         }
         Token::Symbol(Symbol::Colon) => {
             *curr_idx += 1;
-            let (res, pos) = parse_value(structs, block, curr_idx)?;
+            let res = parse_value(structs, block, curr_idx)?;
+            let pos = res.get_pos();
 
-            (
-                ASTExpression::Dereference {
-                    expression: Box::new(res),
-                    pos: pos.clone(),
-                },
-                pos,
-            )
+            ASTExpression::Dereference {
+                expression: Box::new(res),
+                pos: pos.clone(),
+            }
         }
         Token::ParenthesisBlock(block) => {
             *curr_idx += 1;
@@ -133,18 +126,18 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                     let mut block_idx = 0;
                     *curr_idx += 1;
                     while block_idx < call_block.children.len() {
-                        let (expr, _) = parse_expression(structs, call_block, &mut block_idx)?;
+                        let expr = parse_expression(structs, call_block, &mut block_idx)?;
                         args.push(expr);
                     }
-                    res.0 = ASTExpression::MethodCall {
-                        expression: Box::new(res.0),
+                    res = ASTExpression::MethodCall {
+                        expression: Box::new(res),
                         pos: pos.clone(),
                         method_name: s.clone(),
                         arguments: args,
                     };
                 } else {
-                    res.0 = ASTExpression::FieldAccess {
-                        expression: Box::new(res.0),
+                    res = ASTExpression::FieldAccess {
+                        expression: Box::new(res),
                         field_name: s.clone(),
                         pos: pos.clone(),
                     };
@@ -179,11 +172,11 @@ fn symbol_to_operator(symbol: &Symbol) -> Option<ASTOperator> {
 }
 
 // looks for operators and values
-pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTExpression, FilePosition)> {
+pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<ASTExpression> {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
-    let (first_val, first_pos) = parse_value(structs, block, curr_idx)?;
-    vals.push((first_val, first_pos));
+    let first_val = parse_value(structs, block, curr_idx)?;
+    vals.push(first_val);
     while *curr_idx < block.children.len() {
         match &block.children[*curr_idx].0 {
             Token::Symbol(symbol) => {
@@ -225,21 +218,18 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock,
             }
 
             if let Some(i) = idx {
-                let (expression1, expression1_pos) = vals.remove(i);
-                let (expression2, expression2_pos) = vals.remove(i);
+                let expression1 = vals.remove(i);
+                let expression2 = vals.remove(i);
                 let operator = ops.remove(i);
-                let pos = merge_file_positions(&expression1_pos, &expression2_pos);
+                let pos = merge_file_positions(&expression1.get_pos(), &expression2.get_pos());
                 vals.insert(
                     i,
-                    (
-                        ASTExpression::BinaryOperation {
-                            expression1: Box::new(expression1),
-                            operator,
-                            expression2: Box::new(expression2),
-                            pos: pos.clone(),
-                        },
+                    ASTExpression::BinaryOperation {
+                        expression1: Box::new(expression1),
+                        operator,
+                        expression2: Box::new(expression2),
                         pos,
-                    ),
+                    },
                 );
             } else {
                 break;

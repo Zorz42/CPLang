@@ -75,10 +75,10 @@ pub enum ASTOperator {
 #[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub enum ASTExpression {
-    Integer(i32),
-    Float(f32),
-    String(String),
-    Boolean(bool),
+    Integer(i32, FilePosition),
+    Float(f32, FilePosition),
+    String(String, FilePosition),
+    Boolean(bool, FilePosition),
     Variable(String, FilePosition),
     Reference {
         expression: Box<ASTExpression>,
@@ -92,6 +92,7 @@ pub enum ASTExpression {
     StructInitialization {
         name: String,
         fields: Vec<ASTExpression>,
+        pos: FilePosition,
     },
     FieldAccess {
         expression: Box<ASTExpression>,
@@ -119,7 +120,27 @@ pub enum ASTExpression {
     },
 }
 
-#[derive(Debug, Clone, PartialEq)]
+impl ASTExpression {
+    pub fn get_pos(&self) -> FilePosition {
+        match self {
+            ASTExpression::Integer(_, pos) |
+            ASTExpression::Float(_, pos) |
+            ASTExpression::String(_, pos) |
+            ASTExpression::Boolean(_, pos) |
+            ASTExpression::Variable(_, pos) |
+            ASTExpression::Reference { pos, .. } |
+            ASTExpression::FunctionCall { pos, .. } |
+            ASTExpression::StructInitialization { pos, .. } |
+            ASTExpression::FieldAccess { pos, .. } |
+            ASTExpression::MethodCall { pos, .. } |
+            ASTExpression::Dereference { pos, .. } |
+            ASTExpression::BinaryOperation { pos, .. } => pos.clone(),
+            ASTExpression::AutoRef { expression } => expression.get_pos(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ASTFunctionSignature {
     pub name: String,
     pub args: Vec<(String, ASTType, FilePosition)>,
@@ -132,7 +153,7 @@ pub struct ASTStructDeclaration {
     pub methods: Vec<(ASTFunctionSignature, ASTBlock)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq)]
+#[derive(Debug, Clone)]
 pub enum ASTPrimitiveType {
     I32,
     I64,
@@ -143,10 +164,21 @@ pub enum ASTPrimitiveType {
     Void,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq)]
+#[derive(Debug, Clone)]
 pub enum ASTType {
-    Any,
-    Primitive(ASTPrimitiveType),
-    Reference(Box<ASTType>),
-    Struct(String),
+    Any(FilePosition),
+    Primitive(ASTPrimitiveType, FilePosition),
+    Reference(Box<ASTType>, FilePosition),
+    Struct(String, FilePosition),
+}
+
+impl ASTType {
+    pub fn get_pos(&self) -> FilePosition {
+        match self {
+            ASTType::Any(pos) |
+            ASTType::Primitive(_, pos) |
+            ASTType::Reference(_, pos) |
+            ASTType::Struct(_, pos) => pos.clone()
+        }
+    }
 }

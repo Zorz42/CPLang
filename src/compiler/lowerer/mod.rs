@@ -19,7 +19,7 @@ pub fn lower_ast(mut ast: AST) -> AST {
             let block = block.clone();
 
             sign.name = transform_method_name(sign.name);
-            let typ = ASTType::Reference(Box::new(ASTType::Struct(structure.name.clone())));
+            let typ = ASTType::Reference(Box::new(ASTType::Struct(structure.name.clone(), FilePosition::unknown())), FilePosition::unknown());
             sign.args.insert(0, ("self".to_string(), typ, FilePosition::unknown()));
             let block = lower_block(block);
 
@@ -80,7 +80,7 @@ fn gen_op_block(pos: FilePosition, operator: ASTOperator, assign_to: ASTExpressi
 
 fn lower_expression(expression: ASTExpression) -> ASTExpression {
     match expression {
-        ASTExpression::Integer(_) | ASTExpression::Float(_) | ASTExpression::String(_) | ASTExpression::Boolean(_) | ASTExpression::Variable(_, _) => {
+        ASTExpression::Integer(_, _) | ASTExpression::Float(_, _) | ASTExpression::String(_, _) | ASTExpression::Boolean(_, _) | ASTExpression::Variable(_, _) => {
             expression
         }
         ASTExpression::Reference { mut expression, pos } => {
@@ -92,9 +92,9 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
             let name = transform_function_name(name);
             ASTExpression::FunctionCall { name, arguments, pos }
         }
-        ASTExpression::StructInitialization { name, fields } => {
+        ASTExpression::StructInitialization { name, fields, pos } => {
             let fields = fields.into_iter().map(lower_expression).collect();
-            ASTExpression::StructInitialization { name, fields }
+            ASTExpression::StructInitialization { name, fields, pos }
         }
         ASTExpression::FieldAccess {
             mut expression,
@@ -166,13 +166,13 @@ fn lower_statement(statement: ASTStatement) -> ASTStatement {
         }
         ASTStatement::AssignmentIncrement { assign_to, pos } => lower_statement(ASTStatement::AssignmentOperator {
             assign_to,
-            value: ASTExpression::Integer(1),
+            value: ASTExpression::Integer(1, pos.clone()),
             operator: ASTOperator::Plus,
             pos,
         }),
         ASTStatement::AssignmentDecrement { assign_to, pos } => lower_statement(ASTStatement::AssignmentOperator {
             assign_to,
-            value: ASTExpression::Integer(1),
+            value: ASTExpression::Integer(1, pos.clone()),
             operator: ASTOperator::Minus,
             pos,
         }),

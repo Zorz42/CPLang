@@ -33,7 +33,7 @@ pub fn parse_block(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock) -> C
                 } else if let Some(statement) = parse_while_statement(structs, block, &mut curr_idx)? {
                     statement
                 } else {
-                    let (expression, _) = parse_expression(structs, block, &mut curr_idx)?;
+                    let expression = parse_expression(structs, block, &mut curr_idx)?;
                     ASTStatement::Expression { expression }
                 }
             }

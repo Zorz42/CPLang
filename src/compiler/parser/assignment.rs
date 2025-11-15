@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerResult, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerResult};
 use crate::compiler::parser::ast::{ASTOperator, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::tokenizer::{Symbol, Token, TokenBlock};
@@ -9,13 +9,14 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock,
         return Ok(None);
     }
 
-    let (assign_to, assign_to_pos) = match parse_expression(structs, block, curr_idx) {
+    let assign_to = match parse_expression(structs, block, curr_idx) {
         Ok(x) => x,
         Err(_) => {
             *curr_idx = old_idx;
             return Ok(None);
         }
     };
+    let assign_to_pos = assign_to.get_pos();
 
     let (symbol, symbol_pos) = if let Some((Token::Symbol(symbol), pos)) = block.children.get(*curr_idx).cloned() {
         match symbol {
@@ -34,7 +35,8 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock,
 
     let res = match symbol.clone() {
         Symbol::Assign | Symbol::Increase | Symbol::Decrease => {
-            let (value, value_pos) = parse_expression(structs, block, curr_idx)?;
+            let value = parse_expression(structs, block, curr_idx)?;
+            let value_pos = value.get_pos();
             let pos = merge_file_positions(&assign_to_pos, &value_pos);
             match symbol {
                 Symbol::Assign => ASTStatement::Assignment { assign_to, value, pos },

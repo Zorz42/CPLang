@@ -1,8 +1,8 @@
-use crate::compiler::error::{CompilerError, CompilerResult, FilePosition, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
-use crate::compiler::preprocessor::{Fragment, PosChar, parse_blocks};
-use crate::compiler::tokenizer::{Constant, Keyword, Token, TokenBlock, tokenize_fragments};
+use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
+use crate::compiler::tokenizer::{tokenize_fragments, Constant, Keyword, Token, TokenBlock};
 
 fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], pos: &FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
@@ -27,7 +27,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], 
                 let fragment_block = parse_blocks(&string, &mut 0)?;
                 let token_block = tokenize_fragments(&fragment_block.fragments)?;
                 let mut idx2 = 0;
-                let (expression, _) = parse_expression(structs, &token_block, &mut idx2)?;
+                let expression = parse_expression(structs, &token_block, &mut idx2)?;
 
                 let end_pos = FilePosition {
                     first_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 2),
@@ -50,7 +50,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], 
         } else if pc.c == '{' {
             in_format = true;
             if !curr.is_empty() {
-                res.push(ASTExpression::String(curr));
+                res.push(ASTExpression::String(curr, FilePosition::unknown()));
             }
             curr = String::new();
             format_pos = pc.pos.clone();
@@ -70,7 +70,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], 
     }
 
     if !curr.is_empty() {
-        res.push(ASTExpression::String(curr));
+        res.push(ASTExpression::String(curr, FilePosition::unknown()));
     }
     Ok(res)
 }

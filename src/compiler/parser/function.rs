@@ -47,7 +47,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
                 *curr_idx += 1;
                 parse_type(block, curr_idx)?
             }
-            _ => ASTType::Any,
+            _ => ASTType::Any(block.children[*curr_idx].1.clone()),
         };
 
         res_signature.args.push((arg, type_hint, arg_pos));
@@ -66,7 +66,8 @@ pub fn parse_return_statement(structs: &Vec<ASTStructDeclaration>, block: &Token
         return Ok(Some(ASTStatement::Return { return_value: None, pos: pos1 }));
     }
 
-    let (expression, pos2) = parse_expression(structs, block, curr_idx)?;
+    let expression = parse_expression(structs, block, curr_idx)?;
+    let pos2 = expression.get_pos();
     Ok(Some(ASTStatement::Return {
         return_value: Some(expression),
         pos: merge_file_positions(&pos1, &pos2),
