@@ -16,7 +16,7 @@ pub struct IR {
     pub main_function: IRFunctionLabel,
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub enum IRPrimitiveType {
     I32,
     I64,
@@ -27,7 +27,7 @@ pub enum IRPrimitiveType {
     Void,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub enum IRType {
     Primitive(IRPrimitiveType),
     Reference(Box<IRType>),

@@ -1,6 +1,7 @@
-use crate::compiler::error::FilePosition;
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::default_operator_map::setup_operator_map;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
+use std::collections::VecDeque;
 
 pub enum IRTypeHint {
     Is {
@@ -79,7 +80,7 @@ fn deref_type(mut ir_type: IRType) -> (IRType, i32) {
     (ir_type, ref_depth)
 }
 
-pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosition>, type_hints: Vec<IRTypeHint>) {
+pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosition>, type_hints: Vec<IRTypeHint>) -> CompilerResult<()> {
     // known types are without references and known refs are reference depths
     let mut known_types = vec![None; num_types];
     let mut known_refs = vec![None; num_types];
@@ -95,33 +96,41 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
 
     let operator_map = setup_operator_map();
 
-    let try_set_type = |label: IRTypeLabel, typ: IRType, known_types: &mut Vec<Option<IRType>>, queue: &mut Vec<IRTypeLabel>| {
+    let try_set_type = |label: IRTypeLabel, typ: IRType, known_types: &mut Vec<Option<IRType>>, queue: &mut VecDeque<IRTypeLabel>| {
         if known_types[label].is_some() && known_types[label].as_ref() != Some(&typ) {
-            panic!();
+            return Err(CompilerError {
+                message: format!("This cannot be of type {:?} and {:?} at the same time", known_types[label].as_ref().unwrap(), typ),
+                position: Some(type_positions[label].clone()),
+            });
         }
         if known_types[label].is_none() {
             known_types[label] = Some(typ);
-            queue.push(label);
+            queue.push_back(label);
         }
+        Ok(())
     };
 
-    let try_set_ref = |label: IRTypeLabel, ref_val: i32, known_refs: &mut Vec<Option<i32>>, queue: &mut Vec<IRTypeLabel>| {
+    let try_set_ref = |label: IRTypeLabel, ref_val: i32, known_refs: &mut Vec<Option<i32>>, queue: &mut VecDeque<IRTypeLabel>| {
         if known_refs[label].is_some() && known_refs[label] != Some(ref_val) {
-            panic!();
+            return Err(CompilerError {
+                message: format!("This cannot be {}-time reference and {}-time reference at the same time", known_refs[label].as_ref().unwrap(), ref_val),
+                position: Some(type_positions[label].clone()),
+            });
         }
         if known_refs[label].is_none() {
             known_refs[label] = Some(ref_val);
-            queue.push(label);
+            queue.push_back(label);
         }
+        Ok(())
     };
 
-    let mut queue = Vec::new();
+    let mut queue = VecDeque::new();
     for hint in type_hints {
         match hint {
             IRTypeHint::Is { label, typ } => {
                 let ir_type = IRType::Primitive(typ);
-                try_set_type(label, ir_type, &mut known_types, &mut queue);
-                try_set_ref(label, 0, &mut known_refs, &mut queue);
+                try_set_type(label, ir_type, &mut known_types, &mut queue)?;
+                try_set_ref(label, 0, &mut known_refs, &mut queue)?;
             }
             IRTypeHint::Equal { label1, label2 } => {
                 type_nodes[label1].push(Conn::Is(label2));
@@ -134,8 +143,8 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
                 type_nodes[label1].push(Conn::Operator(res_label, operator, label2));
                 type_nodes[label2].push(Conn::Operator(res_label, operator, label1));
 
-                try_set_ref(label1, 0, &mut known_refs, &mut queue);
-                try_set_ref(label2, 0, &mut known_refs, &mut queue);
+                try_set_ref(label1, 0, &mut known_refs, &mut queue)?;
+                try_set_ref(label2, 0, &mut known_refs, &mut queue)?;
             }
             IRTypeHint::IsRef { ref_label, phys_label } => {
                 // ref_label = &phys_label
@@ -149,11 +158,11 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
                 for field_type in &fields {
                     type_nodes[*field_type].push(Conn::Struct(res_label, struct_label, fields.clone()));
                 }
-                try_set_ref(res_label, 0, &mut known_refs, &mut queue);
+                try_set_ref(res_label, 0, &mut known_refs, &mut queue)?;
             }
             IRTypeHint::IsField { res_label, struct_label, field_label } => {
                 type_nodes[struct_label].push(Conn::IsField(res_label, field_label));
-                try_set_ref(struct_label, 0, &mut known_refs, &mut queue);
+                try_set_ref(struct_label, 0, &mut known_refs, &mut queue)?;
             }
             IRTypeHint::AutoRef { autoref_label, label1, label2 } => {
                 type_nodes[label1].push(Conn::Is(label2));
@@ -162,13 +171,13 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
                 auto_ref_pairs[autoref_label] = (label1, label2);
             }
             IRTypeHint::IsPhys(label) => {
-                try_set_ref(label, 0, &mut known_refs, &mut queue);
+                try_set_ref(label, 0, &mut known_refs, &mut queue)?;
             }
         }
     }
 
     loop {
-        let node = if let Some(node) = queue.pop() {
+        let node = if let Some(node) = queue.pop_front() {
             node
         } else {
             break;
@@ -179,14 +188,14 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
             'neighbour_loop: for ne in &type_nodes[node] {
                 match ne {
                     Conn::Is(ne) => {
-                        try_set_type(*ne, node_type.clone(), &mut known_types, &mut queue);
+                        try_set_type(*ne, node_type.clone(), &mut known_types, &mut queue)?;
                     }
                     Conn::Operator(ne, op, typ2) => {
                         if let Some(node_type2) = known_types[*typ2].clone() {
                             let ir_type = operator_map[&(node_type.clone(), *op, node_type2)].clone();
                             let (ir_type, ref_depth) = deref_type(ir_type);
-                            try_set_type(*ne, ir_type, &mut known_types, &mut queue);
-                            try_set_ref(*ne, ref_depth, &mut known_refs, &mut queue);
+                            try_set_type(*ne, ir_type, &mut known_types, &mut queue)?;
+                            try_set_ref(*ne, ref_depth, &mut known_refs, &mut queue)?;
                         }
                     }
                     Conn::Struct(typ, structure, args) => {
@@ -203,7 +212,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
                         }
 
                         let ir_type = IRType::Struct(*structure, ir_args);
-                        try_set_type(*typ, ir_type, &mut known_types, &mut queue);
+                        try_set_type(*typ, ir_type, &mut known_types, &mut queue)?;
                     }
                     Conn::IsField(typ, field) => {
                         let (struct_label, struct_args) = match &known_types[node] {
@@ -221,8 +230,8 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
                         let ir_type = struct_args[field_idx].clone();
                         let (ir_type, ref_depth) = deref_type(ir_type);
 
-                        try_set_type(*typ, ir_type, &mut known_types, &mut queue);
-                        try_set_ref(*typ, ref_depth, &mut known_refs, &mut queue);
+                        try_set_type(*typ, ir_type, &mut known_types, &mut queue)?;
+                        try_set_ref(*typ, ref_depth, &mut known_refs, &mut queue)?;
                     }
                 }
             }
@@ -231,7 +240,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
         // loop for ref deduction
         if let Some(node_ref) = known_refs[node] {
             for (ne, delta) in &ref_nodes[node] {
-                try_set_ref(*ne, node_ref + *delta, &mut known_refs, &mut queue);
+                try_set_ref(*ne, node_ref + *delta, &mut known_refs, &mut queue)?;
             }
         }
     }
@@ -245,4 +254,6 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
     for (typ, ref_depth) in known_types.into_iter().zip(known_refs) {
         ir.types.push(ref_type(typ.unwrap(), ref_depth.unwrap()));
     }
+
+    Ok(())
 }

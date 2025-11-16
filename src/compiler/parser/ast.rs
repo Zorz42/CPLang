@@ -144,6 +144,7 @@ impl ASTExpression {
 pub struct ASTFunctionSignature {
     pub name: String,
     pub args: Vec<(String, ASTType, FilePosition)>,
+    pub pos: FilePosition,
 }
 
 #[derive(Debug, Clone)]

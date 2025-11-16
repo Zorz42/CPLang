@@ -125,7 +125,7 @@ pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
         panic!();
     }
 
-    resolve_types(&mut ir, state.curr_type_label, state.type_positions, state.type_hints);
+    resolve_types(&mut ir, state.curr_type_label, state.type_positions, state.type_hints)?;
 
     let main_ret = ir.functions[ir.main_function].ret_type;
     let main_ret = ir.types[main_ret].clone();
@@ -448,7 +448,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
 
     state.depth += 1;
     state.curr_func_vars = Vec::new();
-    state.curr_func_ret_type = state.new_type_label(FilePosition::unknown());
+    state.curr_func_ret_type = state.new_type_label(sign.pos);
     state.has_ret_statement = false;
 
     let mut arguments = Vec::new();

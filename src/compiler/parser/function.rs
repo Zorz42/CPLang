@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::typed::parse_type;
@@ -8,12 +8,14 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
     let mut res_signature = ASTFunctionSignature {
         name: String::new(),
         args: Vec::new(),
+        pos: FilePosition::unknown(),
     };
     let res_block;
 
-    match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
-        Some(Token::Identifier(name)) => {
+    match &block.children.get(*curr_idx).clone() {
+        Some((Token::Identifier(name), pos)) => {
             res_signature.name = name.clone();
+            res_signature.pos = merge_file_positions(&res_signature.pos, pos);
         }
         _ => {
             return Err(CompilerError {
@@ -25,13 +27,16 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
     *curr_idx += 1;
 
     loop {
-        let (arg, arg_pos) = match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
-            Some(Token::BraceBlock(block)) => {
+        let (arg, arg_pos) = match &block.children.get(*curr_idx).clone() {
+            Some((Token::BraceBlock(block), _pos)) => {
                 res_block = block.clone();
                 *curr_idx += 1;
                 break;
             }
-            Some(Token::Identifier(arg)) => (arg.clone(), block.children[*curr_idx].1.clone()),
+            Some((Token::Identifier(arg), pos)) => {
+                res_signature.pos = merge_file_positions(&res_signature.pos, pos);
+                (arg.clone(), block.children[*curr_idx].1.clone())
+            }
             _ => {
                 return Err(CompilerError {
                     message: "Expected block or argument identifier after function signature".to_string(),
@@ -41,10 +46,11 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
         };
         *curr_idx += 1;
 
-        let type_hint = match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
-            Some(Token::Symbol(Symbol::Colon)) => {
+        let type_hint = match &block.children.get(*curr_idx).clone() {
+            Some((Token::Symbol(Symbol::Colon), pos)) => {
                 // type hint
                 *curr_idx += 1;
+                res_signature.pos = merge_file_positions(&res_signature.pos, pos);
                 parse_type(block, curr_idx)?
             }
             _ => ASTType::Any(block.children[*curr_idx].1.clone()),
