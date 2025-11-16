@@ -32,15 +32,15 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let ast = parse_tokens(&program_block)?;
     let ast = lower_ast(ast);
 
-    println!("{:?}", ast);
+    //println!("{:?}", ast);
 
     let ir = normalize_ast(ast)?;
 
-    println!("{:?}", ir);
+    //println!("{:?}", ir);
 
     let code = generate_code(ir);
 
-    println!("{code}");
+    //println!("{code}");
 
     std::fs::write(output_file, code).unwrap();
 

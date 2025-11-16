@@ -62,7 +62,6 @@ enum Conn {
 }
 
 fn ref_type(mut typ: IRType, ref_depth: i32) -> IRType {
-    assert!(ref_depth >= 0);
     for _ in 0..ref_depth {
         typ = IRType::Reference(Box::new(typ));
     }
@@ -217,7 +216,10 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
                     Conn::IsField(typ, field) => {
                         let (struct_label, struct_args) = match &known_types[node] {
                             Some(IRType::Struct(label, args)) => (*label, args),
-                            _ => panic!(),
+                            _ => return Err(CompilerError {
+                                message: format!("Cannot access field since this is not a struct but has type {:?}", known_types[node].as_ref().unwrap()),
+                                position: Some(type_positions[node].clone()),
+                            })
                         };
                         let curr_struct = &ir.structs[struct_label];
                         let mut field_idx = 0;
@@ -249,9 +251,15 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
         ir.autorefs[i] = known_refs[type1].unwrap() - known_refs[type2].unwrap();
     }
 
-    println!("{:?}", known_types);
-    println!("{:?}", known_refs);
-    for (typ, ref_depth) in known_types.into_iter().zip(known_refs) {
+    //println!("{:?}", known_types);
+    //println!("{:?}", known_refs);
+    for ((typ, ref_depth), pos) in known_types.into_iter().zip(known_refs).zip(type_positions) {
+        if ref_depth.unwrap() < 0 {
+            return Err(CompilerError {
+                message: "This has type of a dereferenced non-reference".to_string(),
+                position: Some(pos),
+            });
+        }
         ir.types.push(ref_type(typ.unwrap(), ref_depth.unwrap()));
     }
 
