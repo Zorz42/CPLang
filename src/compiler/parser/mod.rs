@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::parser::ast::AST;
+use crate::compiler::parser::ast::Ast;
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::function::parse_function_declaration;
 use crate::compiler::parser::structure::parse_struct_declaration;
@@ -21,10 +21,10 @@ It just converts tokens into a tree that represents the layout of the program, w
 It does however decide when statements end and operator precedence.
  */
 
-pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<AST> {
+pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Ast> {
     let mut curr_idx = 0;
     let mut function_declarations = Vec::new();
-    let mut res = AST {
+    let mut res = Ast {
         functions: Vec::new(),
         structs: Vec::new(),
     };

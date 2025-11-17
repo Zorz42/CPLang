@@ -1,7 +1,7 @@
 use crate::compiler::error::FilePosition;
 
 #[derive(Debug)]
-pub struct AST {
+pub struct Ast {
     pub functions: Vec<(ASTFunctionSignature, ASTBlock)>,
     pub structs: Vec<ASTStructDeclaration>,
 }

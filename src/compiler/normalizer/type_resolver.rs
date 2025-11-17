@@ -175,13 +175,7 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
         }
     }
 
-    loop {
-        let node = if let Some(node) = queue.pop_front() {
-            node
-        } else {
-            break;
-        };
-
+    while let Some(node) = queue.pop_front() {
         // loop for type deduction
         if let Some(node_type) = known_types[node].clone() {
             'neighbour_loop: for ne in &type_nodes[node] {

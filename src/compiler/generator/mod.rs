@@ -1,7 +1,7 @@
 use crate::compiler::generator::default_operators::init_default_operators;
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
-    IRType, IRTypeLabel, IRVariableLabel,
+    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
+    IRTypeLabel, IRVariableLabel, IR,
 };
 use std::collections::HashMap;
 
@@ -11,6 +11,7 @@ mod default_operators;
 Generator converts IR into raw C code. Could be easily replaced with any other language.
  */
 
+#[allow(clippy::type_complexity)]
 struct GeneratorContext {
     types: Vec<IRType>,
     var_types: Vec<IRTypeLabel>,
@@ -62,7 +63,7 @@ fn gen_primitive_type(typ: IRPrimitiveType) -> String {
         IRPrimitiveType::String => "char*",
         IRPrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {

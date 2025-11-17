@@ -9,14 +9,12 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
     let mut res = match &block.children[*curr_idx].0 {
         Token::Constant(constant) => {
             *curr_idx += 1;
-            let expr = match constant {
+            match constant {
                 Constant::Integer(int) => ASTExpression::Integer(*int, pos),
                 Constant::Float(float) => ASTExpression::Float(*float, pos),
                 Constant::String(string) => ASTExpression::String(string.iter().map(|x| x.c).collect(), pos),
                 Constant::Boolean(boolean) => ASTExpression::Boolean(*boolean, pos),
-            };
-
-            expr
+            }
         }
         Token::Identifier(identifier) => {
             *curr_idx += 1;

@@ -3,7 +3,7 @@ use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::{resolve_types, IRTypeHint};
 use crate::compiler::parser::ast::{
-    ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, AST,
+    ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
 };
 use std::collections::HashMap;
 
@@ -74,7 +74,7 @@ impl NormalizerState {
     }
 }
 
-pub fn normalize_ast(ast: AST) -> CompilerResult<IR> {
+pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     let mut ir = IR {
         structs: Vec::new(),
         functions: Vec::new(),
@@ -222,7 +222,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
                 x
             } else {
                 return Err(CompilerError {
-                    message: format!("Function {} does not exist.", name[1..].to_string()),
+                    message: format!("Function {} does not exist.", &name[1..]),
                     position: Some(pos),
                 });
             };
@@ -236,7 +236,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
             }, false)
         }
         ASTExpression::StructInitialization { name, fields, pos: _ } => {
-            let struct_label = state.structs_name_map[&name].clone();
+            let struct_label = state.structs_name_map[&name];
 
             let mut field_values = Vec::new();
             let mut fields_type_labels = Vec::new();
@@ -325,7 +325,7 @@ fn primitive_type_to_ir_type(typ: ASTPrimitiveType) -> IRPrimitiveType {
     }
 }
 
-fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: ASTType) -> IRTypeLabel {
+fn normalize_type(state: &mut NormalizerState, typ: ASTType) -> IRTypeLabel {
     let type_label = state.new_type_label(typ.get_pos());
     match typ {
         ASTType::Any(_) => {}
@@ -339,7 +339,7 @@ fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: ASTType) -> IRT
             state.type_hints.push(IRTypeHint::IsPhys(type_label));
         }
         ASTType::Reference(typ, _) => {
-            let type_label2 = normalize_type(state, ir, *typ);
+            let type_label2 = normalize_type(state, *typ);
             state.type_hints.push(IRTypeHint::IsRef { ref_label: type_label, phys_label: type_label2 });
         }
     }
@@ -438,7 +438,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
 
     let prev_vars = state.variables_name_map.clone();
     let prev_func_vars = state.curr_func_vars.clone();
-    let prev_func_ret_type = state.curr_func_ret_type.clone();
+    let prev_func_ret_type = state.curr_func_ret_type;
     let prev_has_ret_statement = state.has_ret_statement;
 
     // avoid infinite recursion
@@ -453,7 +453,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
 
     let mut arguments = Vec::new();
     for ((arg, type_hint, _pos), arg_type) in sign.args.into_iter().zip(arg_types) {
-        let hint_label = normalize_type(state, ir, type_hint);
+        let hint_label = normalize_type(state, type_hint);
         let label = state.new_var(&arg);
         arguments.push(label);
         ir.variable_types.push(arg_type);

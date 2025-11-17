@@ -1,6 +1,7 @@
 use crate::compiler::normalizer::ir::{IROperator, IRPrimitiveType, IRType};
 use std::collections::HashMap;
 
+#[allow(clippy::type_complexity)]
 pub fn init_default_operators() -> HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>> {
     let mut res: HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>> = HashMap::new();
 

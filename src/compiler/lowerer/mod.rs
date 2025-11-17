@@ -1,8 +1,8 @@
 use crate::compiler::error::FilePosition;
-use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTOperator, ASTStatement, ASTType, AST};
+use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTOperator, ASTStatement, ASTType, Ast};
 // Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
-pub fn lower_ast(mut ast: AST) -> AST {
+pub fn lower_ast(mut ast: Ast) -> Ast {
     ast.functions = ast
         .functions
         .into_iter()
@@ -177,7 +177,7 @@ fn lower_statement(statement: ASTStatement) -> ASTStatement {
             pos,
         }),
         ASTStatement::Block { mut block } => {
-            block.children = block.children.into_iter().map(|statement| lower_statement(statement)).collect();
+            block.children = block.children.into_iter().map(lower_statement).collect();
             ASTStatement::Block { block }
         }
         ASTStatement::If {
