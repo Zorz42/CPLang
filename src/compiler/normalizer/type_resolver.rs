@@ -191,7 +191,14 @@ pub fn resolve_types(ir: &mut IR, num_types: usize, type_positions: Vec<FilePosi
                     }
                     Conn::Operator(ne, op, typ2) => {
                         if let Some(node_type2) = known_types[*typ2].clone() {
-                            let ir_type = operator_map[&(node_type.clone(), *op, node_type2)].clone();
+                            let ir_type = if let Some(x) = operator_map.get(&(node_type.clone(), *op, node_type2.clone())).cloned() {
+                                x
+                            } else {
+                                return Err(CompilerError {
+                                    message: format!("Operator {:?} is not defined for {:?} and {:?}", op, node_type2, node_type),
+                                    position: Some(type_positions[*ne].clone()),
+                                })
+                            };
                             let (ir_type, ref_depth) = deref_type(ir_type);
                             try_set_type(*ne, ir_type, &mut known_types, &mut queue)?;
                             try_set_ref(*ne, ref_depth, &mut known_refs, &mut queue)?;
