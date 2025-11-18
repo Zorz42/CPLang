@@ -430,8 +430,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
     let prev_func_ret_type = state.curr_func_ret_type;
     let prev_has_ret_statement = state.has_ret_statement;
 
-    // avoid infinite recursion
-    if state.depth == 20 {
+    if state.depth == 100 {
         panic!("Recursion too deep");
     }
 

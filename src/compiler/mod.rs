@@ -24,7 +24,7 @@ less different types of nodes and explicit types and indexes instead of string/n
 6. Code generation: IR is converted to C code.
  */
 
-pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
+fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let input = std::fs::read_to_string(input_file).unwrap();
 
     let fragment_block = preprocess(&input)?;
@@ -45,4 +45,20 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     std::fs::write(output_file, code).unwrap();
 
     Ok(())
+}
+
+pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
+    // Run compilation in a thread with a large stack size to handle deep recursion
+    // 256MB stack size (default is usually 2-8MB) - effectively unlimited for practical purposes
+    const STACK_SIZE: usize = 256 * 1024 * 1024; // 256MB
+    
+    let input_file = input_file.to_string();
+    let output_file = output_file.to_string();
+    
+    std::thread::Builder::new()
+        .stack_size(STACK_SIZE)
+        .spawn(move || compile_internal(&input_file, &output_file))
+        .unwrap()
+        .join()
+        .unwrap()
 }
