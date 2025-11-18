@@ -430,8 +430,14 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
     let prev_func_ret_type = state.curr_func_ret_type;
     let prev_has_ret_statement = state.has_ret_statement;
 
-    if state.depth == 100 {
-        panic!("Recursion too deep");
+    const RECURSION_LIMIT: i32 = 100;
+    if state.depth == RECURSION_LIMIT {
+        return Err(CompilerError {
+            message: format!("This function is in the {RECURSION_LIMIT}-th recursive call \
+            in the normalization phase. Make sure argument types are more \
+            explicit and the function does not generate infinitely many functions recursively."),
+            position: Some(sign.pos),
+        });
     }
 
     state.depth += 1;
