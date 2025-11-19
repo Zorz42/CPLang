@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR};
-use crate::compiler::normalizer::type_resolver::{IRTypeHint, TypeResolver};
+use crate::compiler::normalizer::type_resolver::TypeResolver;
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
 };
@@ -153,19 +153,19 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
 
     let (expr, is_phys) = match expression {
         ASTExpression::Integer(x, _) => {
-            state.type_resolver.hint(ir, IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::I32 })?;
+            state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::I32)?;
             (IRExpression::Constant { constant: IRConstant::Int(x as i64) }, false)
         }
         ASTExpression::Float(x, _) => {
-            state.type_resolver.hint(ir, IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::F32 })?;
+            state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::F32)?;
             (IRExpression::Constant { constant: IRConstant::Float(x as f64) }, false)
         }
         ASTExpression::String(x, _) => {
-            state.type_resolver.hint(ir, IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::String })?;
+            state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::String)?;
             (IRExpression::Constant { constant: IRConstant::String(x.clone()) }, false)
         }
         ASTExpression::Boolean(x, _) => {
-            state.type_resolver.hint(ir, IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::Bool })?;
+            state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::Bool)?;
             (IRExpression::Constant { constant: IRConstant::Bool(x) }, false)
         }
         ASTExpression::Variable(name, pos) => {
@@ -178,7 +178,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
                 });
             };
             let var_type_label = ir.variable_types[label];
-            state.type_resolver.hint(ir, IRTypeHint::Equal { label1: type_label, label2: var_type_label })?;
+            state.type_resolver.hint_equal(ir, type_label, var_type_label)?;
             (IRExpression::Variable { variable_label: label }, true)
         }
         ASTExpression::Reference { expression, pos } => {
@@ -191,12 +191,12 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
                 });
             }
 
-            state.type_resolver.hint(ir, IRTypeHint::IsRef { ref_label: type_label, phys_label: type_label2 })?;
+            state.type_resolver.hint_is_ref(ir, type_label2, type_label)?;
             (IRExpression::Reference { expression: Box::new(expression) }, false)
         }
         ASTExpression::Dereference { expression, pos: _ } => {
             let (expression, type_label2, _is_phys) = normalize_expression(state, ir, *expression)?;
-            state.type_resolver.hint(ir, IRTypeHint::IsRef { ref_label: type_label2, phys_label: type_label })?;
+            state.type_resolver.hint_is_ref(ir, type_label, type_label2)?;
             (IRExpression::Dereference { expression: Box::new(expression) }, true)
         }
         ASTExpression::FunctionCall { name, arguments, pos } => {
@@ -218,7 +218,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
             };
             let function_label = normalize_function(state, ir, sig, block, expr_types)?;
             let ret_type = ir.functions[function_label].ret_type;
-            state.type_resolver.hint(ir, IRTypeHint::Equal { label1: ret_type, label2: type_label })?;
+            state.type_resolver.hint_equal(ir, ret_type, type_label)?;
 
             (IRExpression::FunctionCall {
                 function_label,
@@ -241,7 +241,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
                 fields_type_labels: fields_type_labels.clone(),
                 field_values,
             };
-            state.type_resolver.hint(ir, IRTypeHint::Struct { res_label: type_label, struct_label, fields: fields_type_labels })?;
+            state.type_resolver.hint_struct(ir, type_label, struct_label, fields_type_labels)?;
 
             (struct_expr, false)
         }
@@ -259,7 +259,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
                     position: Some(pos),
                 })
             };
-            state.type_resolver.hint(ir, IRTypeHint::IsField { res_label: type_label, struct_label: type_label2, field_label })?;
+            state.type_resolver.hint_is_field(ir, type_label, type_label2, field_label)?;
             (IRExpression::FieldAccess {
                 expression: Box::new(expression),
                 field_label,
@@ -278,7 +278,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
             let (expression1, type1_label, _is_phys) = normalize_expression(state, ir, *expression1)?;
             let (expression2, type2_label, _is_phys) = normalize_expression(state, ir, *expression2)?;
             let operator = operator_to_ir_operator(operator);
-            state.type_resolver.hint(ir, IRTypeHint::Operator { res_label: type_label, label1: type1_label, operator, label2: type2_label })?;
+            state.type_resolver.hint_operator(ir, type1_label, type2_label, operator, type_label)?;
             (IRExpression::BinaryOperation {
                 operator,
                 expression1: Box::new(expression1),
@@ -291,7 +291,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
             let (expression, type_label1, _is_phys) = normalize_expression(state, ir, *expression)?;
             let autoref_label = state.type_resolver.new_autoref_label(type_label, type_label1);
 
-            state.type_resolver.hint(ir, IRTypeHint::AutoRef { label1: type_label, label2: type_label1 })?;
+            state.type_resolver.hint_autoref(ir, type_label, type_label1)?;
             (IRExpression::AutoRef {
                 autoref_label,
                 expression: Box::new(expression),
@@ -320,16 +320,16 @@ fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: ASTType) -> Com
         ASTType::Any(_) => {}
         ASTType::Primitive(typ, _) => {
             let typ = primitive_type_to_ir_type(typ);
-            state.type_resolver.hint(ir, IRTypeHint::Is { label: type_label, typ })?;
+            state.type_resolver.hint_is(ir, type_label, typ)?;
         }
         ASTType::Struct(_name, _) => {
             // TODO: hint that the type is actually this struct - will enable stronger type deduction
             // for now it only hints its not a reference
-            state.type_resolver.hint(ir, IRTypeHint::IsPhys(type_label))?;
+            state.type_resolver.hint_is_phys(ir, type_label)?;
         }
         ASTType::Reference(typ, _) => {
             let type_label2 = normalize_type(state, ir, *typ)?;
-            state.type_resolver.hint(ir, IRTypeHint::IsRef { ref_label: type_label, phys_label: type_label2 })?;
+            state.type_resolver.hint_is_ref(ir, type_label2, type_label)?;
         }
     }
     Ok(type_label)
@@ -353,7 +353,7 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
 
                 let (assign_to, type_label1, is_phys) = normalize_expression(state, ir, assign_to)?;
                 let (value, type_label2, _is_phys) = normalize_expression(state, ir, value)?;
-                state.type_resolver.hint(ir, IRTypeHint::Equal { label1: type_label1, label2: type_label2 })?;
+                state.type_resolver.hint_equal(ir, type_label1, type_label2)?;
 
                 if !is_phys {
                     return Err(CompilerError {
@@ -389,17 +389,17 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
                 state.has_ret_statement = true;
                 let st = if let Some(expr) = return_value {
                     let (expr, type_label, _is_phys) = normalize_expression(state, ir, expr)?;
-                    state.type_resolver.hint(ir, IRTypeHint::Equal { label1: state.curr_func_ret_type, label2: type_label })?;
+                    state.type_resolver.hint_equal(ir, state.curr_func_ret_type, type_label)?;
                     IRStatement::Return { return_value: Some(expr) }
                 } else {
-                    state.type_resolver.hint(ir, IRTypeHint::Is { label: state.curr_func_ret_type, typ: IRPrimitiveType::Void })?;
+                    state.type_resolver.hint_is(ir, state.curr_func_ret_type, IRPrimitiveType::Void)?;
                     IRStatement::Return { return_value: None }
                 };
                 res.statements.push(st);
             }
             ASTStatement::If { condition, block, else_block } => {
                 let (condition, type_label, _is_phys) = normalize_expression(state, ir, condition)?;
-                state.type_resolver.hint(ir, IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::Bool })?;
+                state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::Bool)?;
                 let block = normalize_block(state, ir, block)?;
                 let else_block = if let Some(else_block) = else_block {
                     Some(normalize_block(state, ir, else_block)?)
@@ -410,7 +410,7 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
             }
             ASTStatement::While { condition, block } => {
                 let (condition, type_label, _is_phys) = normalize_expression(state, ir, condition)?;
-                state.type_resolver.hint(ir, IRTypeHint::Is { label: type_label, typ: IRPrimitiveType::Bool })?;
+                state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::Bool)?;
                 let block = normalize_block(state, ir, block)?;
                 res.statements.push(IRStatement::While { condition, block });
             }
@@ -451,14 +451,14 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
         let label = state.new_var(&arg);
         arguments.push(label);
         ir.variable_types.push(arg_type);
-        state.type_resolver.hint(ir, IRTypeHint::Equal { label1: hint_label, label2: arg_type })?;
+        state.type_resolver.hint_equal(ir, hint_label, arg_type)?;
     }
     let block = normalize_block(state, ir, block)?;
     let label = state.curr_func_label;
     state.curr_func_label += 1;
 
     if !state.has_ret_statement {
-        state.type_resolver.hint(ir, IRTypeHint::Is { label: state.curr_func_ret_type, typ: IRPrimitiveType::Void })?;
+        state.type_resolver.hint_is(ir, state.curr_func_ret_type, IRPrimitiveType::Void)?;
     }
 
     ir.functions.push(IRFunction {

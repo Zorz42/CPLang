@@ -3,49 +3,6 @@ use crate::compiler::normalizer::default_operator_map::setup_operator_map;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
 use std::collections::{HashMap, VecDeque};
 
-pub enum IRTypeHint {
-    Is {
-        label: IRTypeLabel,
-        typ: IRPrimitiveType,
-    },
-    Equal {
-        label1: IRTypeLabel,
-        label2: IRTypeLabel,
-    },
-    // res = label1 + label2, + is operator
-    Operator {
-        label1: IRTypeLabel,
-        label2: IRTypeLabel,
-        operator: IROperator,
-        res_label: IRTypeLabel,
-    },
-    // ref = &phys
-    IsRef {
-        ref_label: IRTypeLabel,
-        phys_label: IRTypeLabel,
-    },
-    // res = struct { fields[0], ..., fields[n-1] }
-    Struct {
-        res_label: IRTypeLabel,
-        struct_label: IRStructLabel,
-        fields: Vec<IRTypeLabel>,
-    },
-    // res = struct.field
-    IsField {
-        res_label: IRTypeLabel,
-        struct_label: IRTypeLabel,
-        field_label: IRFieldLabel,
-    },
-    // label1 = &&...&&&label2 or ::...:::label2
-    // automatically reference/dereference. both are type typ
-    AutoRef {
-        label1: IRTypeLabel,
-        label2: IRTypeLabel,
-    },
-    // arg1 is physical (not a reference)
-    IsPhys(IRTypeLabel),
-}
-
 #[derive(Clone)]
 enum Conn {
     // node = arg1
@@ -82,8 +39,8 @@ fn deref_type(mut ir_type: IRType) -> (IRType, i32) {
 pub struct TypeResolver {
     type_positions: Vec<FilePosition>,
     operator_map: HashMap<(IRType, IROperator, IRType), IRType>,
-    known_types: Vec<Option<IRType>>,
-    known_refs: Vec<Option<i32>>,
+    pub known_types: Vec<Option<IRType>>,
+    pub known_refs: Vec<Option<i32>>,
     type_nodes: Vec<Vec<Conn>>,
     ref_nodes: Vec<Vec<(IRTypeLabel, i32)>>,
     queue: VecDeque<IRTypeLabel>,
@@ -225,70 +182,92 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint(&mut self, ir: &mut IR, hint: IRTypeHint) -> CompilerResult<()> {
-        match hint {
-            IRTypeHint::Is { label, typ } => {
-                let ir_type = IRType::Primitive(typ);
-                self.try_set_type(label, ir_type)?;
-                self.try_set_ref(label, 0)?;
-            }
-            IRTypeHint::Equal { label1, label2 } => {
-                self.type_nodes[label1].push(Conn::Is(label2));
-                self.type_nodes[label2].push(Conn::Is(label1));
-
-                self.ref_nodes[label1].push((label2, 0));
-                self.ref_nodes[label2].push((label1, 0));
-
-                self.queue.push_back(label2);
-                self.queue.push_back(label1);
-            }
-            IRTypeHint::Operator { label1, label2, operator, res_label } => {
-                self.type_nodes[label1].push(Conn::Operator(res_label, operator, label2));
-                self.type_nodes[label2].push(Conn::Operator(res_label, operator, label1));
-
-                self.try_set_ref(label1, 0)?;
-                self.try_set_ref(label2, 0)?;
-
-                self.queue.push_back(label1);
-                self.queue.push_back(label2);
-            }
-            IRTypeHint::IsRef { ref_label, phys_label } => {
-                // ref_label = &phys_label
-                self.type_nodes[phys_label].push(Conn::Is(ref_label));
-                self.type_nodes[ref_label].push(Conn::Is(phys_label));
-
-                self.ref_nodes[ref_label].push((phys_label, -1));
-                self.ref_nodes[phys_label].push((ref_label, 1));
-
-                self.queue.push_back(phys_label);
-                self.queue.push_back(ref_label);
-            }
-            IRTypeHint::Struct { res_label, struct_label, fields } => {
-                for field_type in &fields {
-                    self.type_nodes[*field_type].push(Conn::Struct(res_label, struct_label, fields.clone()));
-                    self.queue.push_back(*field_type);
-                }
-                self.try_set_ref(res_label, 0)?;
-            }
-            IRTypeHint::IsField { res_label, struct_label, field_label } => {
-                self.type_nodes[struct_label].push(Conn::IsField(res_label, field_label));
-                self.try_set_ref(struct_label, 0)?;
-                self.queue.push_back(struct_label);
-            }
-            IRTypeHint::AutoRef { label1, label2 } => {
-                self.type_nodes[label1].push(Conn::Is(label2));
-                self.type_nodes[label2].push(Conn::Is(label1));
-
-                self.queue.push_back(label1);
-                self.queue.push_back(label2);
-            }
-            IRTypeHint::IsPhys(label) => {
-                self.try_set_ref(label, 0)?;
-            }
-        }
+    pub fn hint_is(&mut self, ir: &mut IR, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
+        let ir_type = IRType::Primitive(typ);
+        self.try_set_type(label, ir_type)?;
+        self.try_set_ref(label, 0)?;
 
         self.run_queue(ir)?;
+        Ok(())
+    }
 
+    pub fn hint_equal(&mut self, ir: &mut IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
+        self.type_nodes[label1].push(Conn::Is(label2));
+        self.type_nodes[label2].push(Conn::Is(label1));
+
+        self.ref_nodes[label1].push((label2, 0));
+        self.ref_nodes[label2].push((label1, 0));
+
+        self.queue.push_back(label2);
+        self.queue.push_back(label1);
+
+        self.run_queue(ir)?;
+        Ok(())
+    }
+
+    pub fn hint_operator(&mut self, ir: &mut IR, label1: IRTypeLabel, label2: IRTypeLabel, operator: IROperator, res_label: IRTypeLabel) -> CompilerResult<()> {
+        self.type_nodes[label1].push(Conn::Operator(res_label, operator, label2));
+        self.type_nodes[label2].push(Conn::Operator(res_label, operator, label1));
+
+        self.try_set_ref(label1, 0)?;
+        self.try_set_ref(label2, 0)?;
+
+        self.queue.push_back(label1);
+        self.queue.push_back(label2);
+
+        self.run_queue(ir)?;
+        Ok(())
+    }
+
+    pub fn hint_is_ref(&mut self, ir: &mut IR, phys_label: IRTypeLabel, ref_label: IRTypeLabel) -> CompilerResult<()> {
+        self.type_nodes[phys_label].push(Conn::Is(ref_label));
+        self.type_nodes[ref_label].push(Conn::Is(phys_label));
+
+        self.ref_nodes[ref_label].push((phys_label, -1));
+        self.ref_nodes[phys_label].push((ref_label, 1));
+
+        self.queue.push_back(phys_label);
+        self.queue.push_back(ref_label);
+
+        self.run_queue(ir)?;
+        Ok(())
+    }
+
+    pub fn hint_struct(&mut self, ir: &mut IR, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
+        for field_type in &fields {
+            self.type_nodes[*field_type].push(Conn::Struct(res_label, struct_label, fields.clone()));
+            self.queue.push_back(*field_type);
+        }
+        self.try_set_ref(res_label, 0)?;
+
+        self.run_queue(ir)?;
+        Ok(())
+    }
+
+    pub fn hint_is_field(&mut self, ir: &mut IR, res_label: IRTypeLabel, struct_label: IRTypeLabel, field_label: IRFieldLabel) -> CompilerResult<()> {
+        self.type_nodes[struct_label].push(Conn::IsField(res_label, field_label));
+        self.try_set_ref(struct_label, 0)?;
+        self.queue.push_back(struct_label);
+
+        self.run_queue(ir)?;
+        Ok(())
+    }
+
+    pub fn hint_autoref(&mut self, ir: &mut IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
+        self.type_nodes[label1].push(Conn::Is(label2));
+        self.type_nodes[label2].push(Conn::Is(label1));
+
+        self.queue.push_back(label1);
+        self.queue.push_back(label2);
+
+        self.run_queue(ir)?;
+        Ok(())
+    }
+
+    pub fn hint_is_phys(&mut self, ir: &mut IR, label: IRTypeLabel) -> CompilerResult<()> {
+        self.try_set_ref(label, 0)?;
+
+        self.run_queue(ir)?;
         Ok(())
     }
 
@@ -300,9 +279,6 @@ impl TypeResolver {
             autorefs[i] = self.known_refs[type1].unwrap() - self.known_refs[type2].unwrap();
         }
 
-        println!("{:?}", self.known_types);
-        println!("{:?}", self.known_refs);
-        println!("{:?}", self.type_positions);
         for ((typ, ref_depth), pos) in self.known_types.into_iter().zip(self.known_refs).zip(self.type_positions) {
             if ref_depth.unwrap() < 0 {
                 return Err(CompilerError {
