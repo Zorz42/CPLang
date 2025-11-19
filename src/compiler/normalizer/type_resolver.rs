@@ -1,7 +1,9 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::default_operator_map::setup_operator_map;
+use crate::compiler::normalizer::dsu::Dsu;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
 use std::collections::{HashMap, VecDeque};
+use std::ops::Add;
 
 #[derive(Clone)]
 enum Conn {
@@ -36,15 +38,32 @@ fn deref_type(mut ir_type: IRType) -> (IRType, i32) {
     (ir_type, ref_depth)
 }
 
+#[derive(Default)]
+pub struct Node {
+    neighbours: Vec<Conn>,
+}
+
+impl Add for Node {
+    type Output = Node;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        for i in rhs.neighbours {
+            self.neighbours.push(i);
+        }
+        self
+    }
+}
+
 pub struct TypeResolver {
     type_positions: Vec<FilePosition>,
     operator_map: HashMap<(IRType, IROperator, IRType), IRType>,
-    pub known_types: Vec<Option<IRType>>,
-    pub known_refs: Vec<Option<i32>>,
+    known_types: Vec<Option<IRType>>,
+    known_refs: Vec<Option<i32>>,
     type_nodes: Vec<Vec<Conn>>,
     ref_nodes: Vec<Vec<(IRTypeLabel, i32)>>,
     queue: VecDeque<IRTypeLabel>,
     auto_ref_pairs: Vec<(IRTypeLabel, IRTypeLabel)>,
+    types_dsu: Dsu<Node>,
 }
 
 impl TypeResolver {
@@ -58,6 +77,7 @@ impl TypeResolver {
             ref_nodes: Vec::new(),
             queue: VecDeque::new(),
             auto_ref_pairs: Vec::new(),
+            types_dsu: Dsu::new(),
         }
     }
 

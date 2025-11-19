@@ -1,30 +1,34 @@
 use crate::compiler::normalizer::dsu::NodeType::HasParent;
 use std::mem::swap;
+use std::ops::Add;
 
 enum NodeType {
     HasParent(usize),
     Root(usize),
 }
 
-pub struct Dsu {
+pub struct Dsu<T: Add + Default> {
     parent: Vec<NodeType>,
+    value: Vec<T>,
 }
 
-impl Dsu {
+impl<T: Add<Output=T> + Default> Dsu<T> {
     pub fn new() -> Self {
         Self {
             parent: Vec::new(),
+            value: Vec::new(),
         }
     }
 
     pub fn add(&mut self) {
         self.parent.push(NodeType::Root(1));
+        self.value.push(T::default());
     }
 
-    pub fn get(&mut self, a: usize) -> usize {
+    pub fn get_repr(&mut self, a: usize) -> usize {
         match self.parent[a] {
             HasParent(par) => {
-                let res = self.get(par);
+                let res = self.get_repr(par);
                 self.parent[a] = HasParent(res);
                 res
             }
@@ -32,9 +36,14 @@ impl Dsu {
         }
     }
 
+    pub fn get(&mut self, a: usize) -> &T {
+        let a = self.get_repr(a);
+        &self.value[a]
+    }
+
     pub fn merge(&mut self, a: usize, b: usize) -> bool {
-        let mut a = self.get(a);
-        let mut b = self.get(b);
+        let mut a = self.get_repr(a);
+        let mut b = self.get_repr(b);
         if a == b {
             return false;
         }
@@ -59,6 +68,13 @@ impl Dsu {
         }
 
         self.parent[b] = HasParent(a);
+
+        let mut a_val = T::default();
+        let mut b_val = T::default();
+        swap(&mut self.value[a], &mut a_val);
+        swap(&mut self.value[b], &mut b_val);
+        self.value[a] = a_val + b_val;
+
 
         true
     }
