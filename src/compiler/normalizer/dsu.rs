@@ -20,6 +20,10 @@ impl<T: Add<Output=T> + Default> Dsu<T> {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.parent.len()
+    }
+
     pub fn add(&mut self) {
         self.parent.push(NodeType::Root(1));
         self.value.push(T::default());
@@ -36,9 +40,9 @@ impl<T: Add<Output=T> + Default> Dsu<T> {
         }
     }
 
-    pub fn get(&mut self, a: usize) -> &T {
+    pub fn get(&mut self, a: usize) -> &mut T {
         let a = self.get_repr(a);
-        &self.value[a]
+        &mut self.value[a]
     }
 
     pub fn merge(&mut self, a: usize, b: usize) -> bool {
