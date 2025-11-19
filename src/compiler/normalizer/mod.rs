@@ -11,6 +11,7 @@ pub mod ir;
 mod ir_debug;
 mod type_resolver;
 mod default_operator_map;
+mod dsu;
 
 fn operator_to_ir_operator(operator: ASTOperator) -> IROperator {
     match operator {
