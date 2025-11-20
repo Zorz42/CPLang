@@ -20,13 +20,6 @@ enum Conn {
     IsField(IRTypeLabel, IRFieldLabel),
 }
 
-fn ref_type(mut typ: IRType, ref_depth: i32) -> IRType {
-    for _ in 0..ref_depth {
-        typ = IRType::Reference(Box::new(typ));
-    }
-    typ
-}
-
 fn deref_type(mut ir_type: IRType) -> (IRType, i32) {
     let mut ref_depth = 0;
 
@@ -51,6 +44,7 @@ impl Add for Node {
 
     fn add(mut self, rhs: Self) -> Self::Output {
         assert_eq!(self.typ, rhs.typ);
+        assert_eq!(self.ref_depth, rhs.ref_depth);
 
         for i in rhs.neighbours {
             self.neighbours.push(i);
@@ -216,11 +210,41 @@ impl TypeResolver {
     }
 
     pub fn hint_equal(&mut self, ir: &mut IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
-        self.types_dsu.get(label1).neighbours.push(Conn::Is(label2));
-        self.types_dsu.get(label2).neighbours.push(Conn::Is(label1));
+        let mut typ1 = self.types_dsu.get(label1).typ.clone();
+        let mut typ2 = self.types_dsu.get(label2).typ.clone();
 
-        self.types_dsu.get(label1).ref_neighbours.push((label2, 0));
-        self.types_dsu.get(label2).ref_neighbours.push((label1, 0));
+        if typ1.is_none() {
+            typ1 = typ2.clone();
+        } else if typ2.is_none() {
+            typ2 = typ1.clone();
+        } else if typ1 != typ2 {
+            return Err(CompilerError {
+                message: format!("This expression cannot be {:?} and {:?} at the same time.", typ1.unwrap(), typ2.unwrap()),
+                position: Some(self.type_positions[label1].clone()),
+            })
+        }
+
+        self.types_dsu.get(label1).typ = typ1;
+        self.types_dsu.get(label2).typ = typ2;
+
+        let mut ref1 = self.types_dsu.get(label1).ref_depth.clone();
+        let mut ref2 = self.types_dsu.get(label2).ref_depth.clone();
+
+        if ref1.is_none() {
+            ref1 = ref2.clone();
+        } else if ref2.is_none() {
+            ref2 = ref1.clone();
+        } else if ref1 != ref1 {
+            return Err(CompilerError {
+                message: format!("This expression cannot be {:?}-time and {:?}-time reference at the same time.", ref1.unwrap(), ref1.unwrap()),
+                position: Some(self.type_positions[label1].clone()),
+            })
+        }
+
+        self.types_dsu.get(label1).ref_depth = ref1;
+        self.types_dsu.get(label2).ref_depth = ref2;
+
+        self.types_dsu.merge(label1, label2);
 
         self.queue.push_back(label2);
         self.queue.push_back(label1);
