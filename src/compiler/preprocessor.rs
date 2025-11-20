@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerError, CompilerResult, FilePosition, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 
 /*
 The compiler first breaks the code into fragments.
@@ -282,7 +282,9 @@ pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<Fr
 
                 *idx += 1; // consume opening char
 
-                let fragment_block = parse_blocks(input, idx)?;
+                let mut fragment_block = parse_blocks(input, idx)?;
+
+                fragment_block.position = merge_file_positions(&fragment_block.position, opening_pos);
 
                 // expect closing char
                 if *idx >= input.len() {
@@ -292,7 +294,8 @@ pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<Fr
                     });
                 }
                 match &input[*idx] {
-                    Fragment::Char(PosChar { c, .. }) if *c == closing_char => {
+                    Fragment::Char(PosChar { c, pos: closing_pos }) if *c == closing_char => {
+                        fragment_block.position = merge_file_positions(&fragment_block.position, closing_pos);
                         *idx += 1; // consume closing char
                         let fragment = match opening_char {
                             '(' => Fragment::ParenthesisBlock(fragment_block),

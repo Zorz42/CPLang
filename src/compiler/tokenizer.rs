@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerResult, FilePosition, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
 use crate::compiler::preprocessor::{Fragment, PosChar};
 
 /*
@@ -161,8 +161,10 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
     let mut token_pos = FilePosition::unknown();
 
     let new_token = |tokens: &mut Vec<(Token, FilePosition)>, curr_token: &mut String, token_pos: &mut FilePosition| {
-        tokens.push((string_to_token(curr_token), token_pos.clone()));
-        curr_token.clear();
+        if !curr_token.is_empty() {
+            tokens.push((string_to_token(curr_token), token_pos.clone()));
+            curr_token.clear();
+        }
     };
 
     let add_to_token = |curr_token: &mut String, token_pos: &mut FilePosition, c: char, pos: &FilePosition| {
@@ -178,9 +180,7 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
     while let Some(frag) = iter.next() {
         match frag {
             Fragment::String(s, pos) => {
-                if !curr_token.is_empty() {
-                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                }
+                new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 tokens.push((Token::Constant(Constant::String(s.clone())), pos.clone()));
             }
             Fragment::Char(pos_char) => {
@@ -198,42 +198,30 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
                     // decimal point in a float
                     add_to_token(&mut curr_token, &mut token_pos, c, pos);
                 } else if let Some(symbol) = Symbol::from_two_chars(c, next_char) {
-                    if !curr_token.is_empty() {
-                        new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                    }
+                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
                     tokens.push((Token::Symbol(symbol), pos.clone()));
                     iter.next();
                 } else if let Some(symbol) = Symbol::from_char(c) {
-                    if !curr_token.is_empty() {
-                        new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                    }
+                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
                     tokens.push((Token::Symbol(symbol), pos.clone()));
                 } else if c == ' ' {
-                    if !curr_token.is_empty() {
-                        new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                    }
+                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 } else {
                     add_to_token(&mut curr_token, &mut token_pos, c, pos);
                 }
             }
             Fragment::BraceBlock(block) => {
-                if !curr_token.is_empty() {
-                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                }
+                new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 let token_block = tokenize_fragments(&block.fragments)?;
                 tokens.push((Token::BraceBlock(token_block), block.position.clone()));
             }
             Fragment::BracketBlock(block) => {
-                if !curr_token.is_empty() {
-                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                }
+                new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 let token_block = tokenize_fragments(&block.fragments)?;
                 tokens.push((Token::BracketBlock(token_block), block.position.clone()));
             }
             Fragment::ParenthesisBlock(block) => {
-                if !curr_token.is_empty() {
-                    new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                }
+                new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 let token_block = tokenize_fragments(&block.fragments)?;
                 tokens.push((Token::ParenthesisBlock(token_block), block.position.clone()));
             }

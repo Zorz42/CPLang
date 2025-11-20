@@ -328,6 +328,15 @@ impl TypeResolver {
         }
 
         for i in 0..self.types_dsu.len() {
+            let typ = if let Some(typ) = self.types_dsu.get(i).get_ir_type() {
+                typ
+            } else {
+                return Err(CompilerError {
+                    message: "Could not deduce this expression's type".to_string(),
+                    position: Some(self.type_positions[i].clone()),
+                });
+            };
+
             let ref_depth = self.types_dsu.get(i).ref_depth.unwrap();
 
             if ref_depth < 0 {
@@ -337,9 +346,14 @@ impl TypeResolver {
                     position: Some(pos),
                 });
             }
-            types.push(self.types_dsu.get(i).get_ir_type().unwrap());
+
+            types.push(typ);
         }
 
         Ok((types, autorefs))
+    }
+
+    pub fn are_equal(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> bool {
+        self.types_dsu.get_repr(label1) == self.types_dsu.get_repr(label2)
     }
 }

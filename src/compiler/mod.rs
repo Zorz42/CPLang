@@ -28,7 +28,13 @@ fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let input = std::fs::read_to_string(input_file).unwrap();
 
     let fragment_block = preprocess(&input)?;
+
+    println!("{:?}", fragment_block);
+
     let program_block = tokenize_fragments(&fragment_block.fragments)?;
+
+    println!("{:?}", program_block);
+
     let ast = parse_tokens(&program_block)?;
     let ast = lower_ast(ast);
 
@@ -51,10 +57,10 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     // Run compilation in a thread with a large stack size to handle deep recursion
     // 256MB stack size (default is usually 2-8MB) - effectively unlimited for practical purposes
     const STACK_SIZE: usize = 256 * 1024 * 1024; // 256MB
-    
+
     let input_file = input_file.to_string();
     let output_file = output_file.to_string();
-    
+
     std::thread::Builder::new()
         .stack_size(STACK_SIZE)
         .spawn(move || compile_internal(&input_file, &output_file))

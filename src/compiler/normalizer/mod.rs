@@ -41,6 +41,7 @@ pub struct NormalizerState {
     has_ret_statement: bool,
     depth: i32,
     structs_name_map: HashMap<String, IRStructLabel>,
+    function_cache: HashMap<String, Vec<(Vec<IRTypeLabel>, IRFunctionLabel)>>,
 }
 
 impl NormalizerState {
@@ -89,6 +90,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         has_ret_statement: false,
         depth: 0,
         structs_name_map: HashMap::new(),
+        function_cache: HashMap::new(),
     };
 
     for (sig, block) in ast.functions {
@@ -127,6 +129,10 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
             position: None,
         });
     }
+
+    // so that functions are in right order
+    // if func0 is used inside func1 it should appear above func1 in generated c code
+    ir.functions.reverse();
 
     Ok(ir)
 }
@@ -426,6 +432,26 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
 fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctionSignature, block: ASTBlock, arg_types: Vec<IRTypeLabel>) -> CompilerResult<IRFunctionLabel> {
     assert_eq!(arg_types.len(), sign.args.len());
 
+    if let Some(cache) = state.function_cache.get(&sign.name) {
+        for (types, label) in cache {
+            if types.len() != arg_types.len() {
+                continue;
+            }
+
+            let mut ok = true;
+            for (t1, t2) in types.iter().zip(&arg_types) {
+                if !state.type_resolver.are_equal(*t1, *t2) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            if ok {
+                return Ok(*label);
+            }
+        }
+    }
+
     let prev_vars = state.variables_name_map.clone();
     let prev_func_vars = state.curr_func_vars.clone();
     let prev_func_ret_type = state.curr_func_ret_type;
@@ -446,29 +472,38 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
     state.curr_func_ret_type = state.type_resolver.new_type_label(sign.pos);
     state.has_ret_statement = false;
 
+    let label = state.curr_func_label;
+    state.curr_func_label += 1;
+
     let mut arguments = Vec::new();
-    for ((arg, type_hint, _pos), arg_type) in sign.args.into_iter().zip(arg_types) {
+    for ((arg, type_hint, _pos), arg_type) in sign.args.into_iter().zip(arg_types.clone()) {
         let hint_label = normalize_type(state, ir, type_hint)?;
         let label = state.new_var(&arg);
         arguments.push(label);
         ir.variable_types.push(arg_type);
         state.type_resolver.hint_equal(ir, hint_label, arg_type)?;
     }
-    let block = normalize_block(state, ir, block)?;
-    let label = state.curr_func_label;
-    state.curr_func_label += 1;
+
+    ir.functions.push(IRFunction {
+        arguments,
+        variables: Vec::new(),
+        ret_type: state.curr_func_ret_type,
+        block: IRBlock { statements: Vec::new() },
+        label,
+    });
+
+    if !state.function_cache.contains_key(&sign.name) {
+        state.function_cache.insert(sign.name.clone(), Vec::new());
+    }
+
+    state.function_cache.get_mut(&sign.name).unwrap().push((arg_types, label));
+
+    ir.functions[label].block = normalize_block(state, ir, block)?;
+    ir.functions[label].variables = state.curr_func_vars.clone();
 
     if !state.has_ret_statement {
         state.type_resolver.hint_is(ir, state.curr_func_ret_type, IRPrimitiveType::Void)?;
     }
-
-    ir.functions.push(IRFunction {
-        arguments,
-        variables: state.curr_func_vars.clone(),
-        ret_type: state.curr_func_ret_type,
-        block,
-        label,
-    });
 
     state.variables_name_map = prev_vars;
     state.curr_func_vars = prev_func_vars;

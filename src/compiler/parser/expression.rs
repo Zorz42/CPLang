@@ -26,14 +26,12 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                 *curr_idx += 1;
                 while block_idx < call_block.children.len() {
                     let expr = parse_expression(structs, &call_block, &mut block_idx)?;
-                    let expr_pos = expr.get_pos();
                     args.push(expr);
-                    pos = merge_file_positions(&pos, &expr_pos);
                 }
                 ASTExpression::FunctionCall {
                     name: identifier.clone(),
                     arguments: args,
-                    pos: pos.clone(),
+                    pos: merge_file_positions(&pos, &call_block.pos),
                 }
             } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 let mut fields = HashMap::new();
