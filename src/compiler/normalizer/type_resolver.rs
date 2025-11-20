@@ -57,7 +57,10 @@ impl Node {
     fn get_ir_type(&self) -> Option<IRType> {
         let mut typ = self.typ.clone()?;
         let dep = self.ref_depth?;
-        assert!(dep >= 0);
+        if dep < 0 {
+            return None;
+        }
+
         for _ in 0..dep {
             typ = IRType::Reference(Box::new(typ))
         }

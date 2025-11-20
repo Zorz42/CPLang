@@ -55,7 +55,6 @@ fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
 pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     // Run compilation in a thread with a large stack size to handle deep recursion
-    // 256MB stack size (default is usually 2-8MB) - effectively unlimited for practical purposes
     const STACK_SIZE: usize = 256 * 1024 * 1024; // 256MB
 
     let input_file = input_file.to_string();
