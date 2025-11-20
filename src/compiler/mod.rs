@@ -29,11 +29,11 @@ fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
     let fragment_block = preprocess(&input)?;
 
-    println!("{:?}", fragment_block);
+    //println!("{:?}", fragment_block);
 
     let program_block = tokenize_fragments(&fragment_block.fragments)?;
 
-    println!("{:?}", program_block);
+    //println!("{:?}", program_block);
 
     let ast = parse_tokens(&program_block)?;
     let ast = lower_ast(ast);

@@ -121,7 +121,6 @@ pub enum Constant {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TokenBlock {
     pub(crate) children: Vec<(Token, FilePosition)>,
-    pub pos: FilePosition,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -234,6 +233,5 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
 
     Ok(TokenBlock {
         children: tokens,
-        pos: FilePosition::unknown(),
     })
 }

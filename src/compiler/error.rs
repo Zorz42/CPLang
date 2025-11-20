@@ -55,12 +55,15 @@ pub fn display_error(error: &CompilerError, input: &str) {
 
         let lines: Vec<&str> = input.lines().collect();
 
+        let padded_line_start = line_start.saturating_sub(2);
+        let padded_line_end = (line_end + 2).min(lines.len() - 1);
+
         // this lint only makes things less readable
         #[allow(clippy::needless_range_loop)]
-        for line in line_start.saturating_sub(2)..=(line_end + 2).min(lines.len() - 1) {
+        for line in padded_line_start..=padded_line_end {
             // first, print line number and leave space after that for longer line numbers
-            let spacing = " ".repeat((line_end + 1).to_string().len() - (line + 1).to_string().len());
-            print!("{GREY_TEXT}{}{spacing}|{RESET}", line + 1);
+            let spacing = " ".repeat((padded_line_end + 1).to_string().len() - (line + 1).to_string().len());
+            print!("{GREY_TEXT}{}{spacing}| {RESET}", line + 1);
 
             for (idx, ch) in lines[line].chars().enumerate() {
                 if position.first_pos <= (line, idx) && (line, idx) < position.last_pos {

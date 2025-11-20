@@ -20,7 +20,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
             *curr_idx += 1;
 
             // we need to know if this is a function call, a struct instantiation or a variable
-            if let Some(Token::ParenthesisBlock(call_block)) = block.children.get(*curr_idx).map(|x| x.0.clone()) {
+            if let Some((Token::ParenthesisBlock(call_block), call_block_pos)) = block.children.get(*curr_idx) {
                 let mut args = Vec::new();
                 let mut block_idx = 0;
                 *curr_idx += 1;
@@ -31,7 +31,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                 ASTExpression::FunctionCall {
                     name: identifier.clone(),
                     arguments: args,
-                    pos: merge_file_positions(&pos, &call_block.pos),
+                    pos: merge_file_positions(&pos, call_block_pos),
                 }
             } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 let mut fields = HashMap::new();
