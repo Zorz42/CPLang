@@ -357,6 +357,16 @@ impl TypeResolver {
     }
 
     pub fn are_equal(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> bool {
-        self.types_dsu.get_repr(label1) == self.types_dsu.get_repr(label2)
+        if self.types_dsu.get_repr(label1) == self.types_dsu.get_repr(label2) {
+            return true;
+        }
+
+        if self.types_dsu.get(label1).typ.is_some() && self.types_dsu.get(label2).ref_depth.is_some() &&
+            self.types_dsu.get(label1).typ.clone() == self.types_dsu.get(label2).typ &&
+            self.types_dsu.get(label1).ref_depth.clone() == self.types_dsu.get(label2).ref_depth {
+            return true;
+        }
+
+        false
     }
 }
