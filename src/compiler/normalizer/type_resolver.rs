@@ -242,7 +242,6 @@ impl TypeResolver {
                 for ne in self.types_dsu.get(node).neighbours.clone() {
                     if let Conn::IsField(typ, field) = ne {
                         if let Some(typ2) = fields.get(&field) {
-                            println!("MERGE");
                             self.merge(typ, *typ2)?;
                         } else {
                             fields.insert(field, typ);
@@ -389,10 +388,6 @@ impl TypeResolver {
     pub fn gather_types(mut self) -> CompilerResult<(Vec<IRType>, Vec<i32>)> {
         let mut types = Vec::new();
         let mut autorefs = vec![0; self.auto_ref_pairs.len()];
-
-        for i in 0..self.types_dsu.len() {
-            print!("{:?} ", self.types_dsu.get(i).typ);
-        }
 
         for (i, (type1, type2)) in self.auto_ref_pairs.into_iter().enumerate() {
             autorefs[i] = self.types_dsu.get(type1).ref_depth.unwrap() - self.types_dsu.get(type2).ref_depth.unwrap();
