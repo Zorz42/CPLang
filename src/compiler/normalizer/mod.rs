@@ -329,10 +329,14 @@ fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: ASTType) -> Com
             let typ = primitive_type_to_ir_type(typ);
             state.type_resolver.hint_is(ir, type_label, typ)?;
         }
-        ASTType::Struct(_name, _) => {
-            // TODO: hint that the type is actually this struct - will enable stronger type deduction
-            // for now it only hints its not a reference
-            state.type_resolver.hint_is_phys(ir, type_label)?;
+        ASTType::Struct(name, pos) => {
+            let struct_label = state.structs_name_map[&name];
+            let mut args = Vec::new();
+            for _ in &ir.structs[struct_label].fields {
+                args.push(state.type_resolver.new_type_label(pos.clone()));
+            }
+
+            state.type_resolver.hint_struct(ir, type_label, struct_label, args)?;
         }
         ASTType::Reference(typ, _) => {
             let type_label2 = normalize_type(state, ir, *typ)?;

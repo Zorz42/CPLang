@@ -153,6 +153,24 @@ impl TypeResolver {
                             }
                         }
                         Conn::Struct(typ, structure, args) => {
+                            if typ == node {
+                                let args2 = match node_type.clone() {
+                                    IRType::Struct(_, args) => args,
+                                    _ => return Err(CompilerError {
+                                        message: format!("This cannot be a struct and {node_type:?} at the same time."),
+                                        position: Some(self.type_positions[node].clone()),
+                                    })
+                                };
+
+                                for (typ_label, typ) in args.into_iter().zip(args2) {
+                                    let (typ, ref_depth) = deref_type(typ);
+                                    self.try_set_type(typ_label, typ)?;
+                                    self.try_set_ref(typ_label, ref_depth)?;
+                                }
+
+                                continue 'neighbour_loop;
+                            }
+
                             // only deduce type when all arguments are known
                             let mut ir_args = Vec::new();
                             for arg in args {
@@ -192,6 +210,48 @@ impl TypeResolver {
                 }
             }
 
+
+            if self.types_dsu.get(node).typ.is_none() {
+                // if the type is struct, save its fields (if they exist).
+                let mut struct_fields: Option<(IRStructLabel, Vec<IRTypeLabel>)> = None;
+
+                for ne in self.types_dsu.get(node).neighbours.clone() {
+                    if let Conn::Struct(typ, structure, args) = ne && self.are_equal(typ, node) {
+                        if let Some((curr_structure, curr_args)) = &struct_fields {
+                            if *curr_structure != structure {
+                                panic!();
+                            }
+
+                            for (arg1, arg2) in args.iter().zip(curr_args.clone()) {
+                                self.merge(*arg1, arg2)?;
+                            }
+                        } else {
+                            struct_fields = Some((structure, args.clone()));
+                        }
+                    }
+                }
+
+                let mut fields = HashMap::new();
+
+                if let Some((structure, args)) = struct_fields {
+                    for (arg, field_label) in args.iter().zip(ir.structs[structure].fields.iter()) {
+                        fields.insert(*field_label, *arg);
+                    }
+                }
+
+                for ne in self.types_dsu.get(node).neighbours.clone() {
+                    if let Conn::IsField(typ, field) = ne {
+                        if let Some(typ2) = fields.get(&field) {
+                            println!("MERGE");
+                            self.merge(typ, *typ2)?;
+                        } else {
+                            fields.insert(field, typ);
+                        }
+                    }
+                }
+            }
+
+
             // loop for ref deduction
             if let Some(node_ref) = self.types_dsu.get(node).ref_depth {
                 for (ne, delta) in self.types_dsu.get(node).ref_neighbours.clone() {
@@ -203,16 +263,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_is(&mut self, ir: &mut IR, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
-        let ir_type = IRType::Primitive(typ);
-        self.try_set_type(label, ir_type)?;
-        self.try_set_ref(label, 0)?;
-
-        self.run_queue(ir)?;
-        Ok(())
-    }
-
-    pub fn hint_equal(&mut self, ir: &mut IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
+    fn merge(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
         let mut typ1 = self.types_dsu.get(label1).typ.clone();
         let mut typ2 = self.types_dsu.get(label2).typ.clone();
 
@@ -247,7 +298,24 @@ impl TypeResolver {
         self.types_dsu.get(label1).ref_depth = ref1;
         self.types_dsu.get(label2).ref_depth = ref2;
 
-        self.types_dsu.merge(label1, label2);
+        if self.types_dsu.merge(label1, label2) {
+            self.queue.push_back(label1);
+        }
+
+        Ok(())
+    }
+
+    pub fn hint_is(&mut self, ir: &mut IR, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
+        let ir_type = IRType::Primitive(typ);
+        self.try_set_type(label, ir_type)?;
+        self.try_set_ref(label, 0)?;
+
+        self.run_queue(ir)?;
+        Ok(())
+    }
+
+    pub fn hint_equal(&mut self, ir: &mut IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
+        self.merge(label1, label2)?;
 
         self.queue.push_back(label2);
         self.queue.push_back(label1);
@@ -289,6 +357,8 @@ impl TypeResolver {
             self.types_dsu.get(*field_type).neighbours.push(Conn::Struct(res_label, struct_label, fields.clone()));
             self.queue.push_back(*field_type);
         }
+        self.types_dsu.get(res_label).neighbours.push(Conn::Struct(res_label, struct_label, fields.clone()));
+        self.queue.push_back(res_label);
         self.try_set_ref(res_label, 0)?;
 
         self.run_queue(ir)?;
@@ -299,6 +369,7 @@ impl TypeResolver {
         self.types_dsu.get(struct_label).neighbours.push(Conn::IsField(res_label, field_label));
         self.try_set_ref(struct_label, 0)?;
         self.queue.push_back(struct_label);
+        self.queue.push_back(res_label);
 
         self.run_queue(ir)?;
         Ok(())
@@ -315,16 +386,13 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_is_phys(&mut self, ir: &mut IR, label: IRTypeLabel) -> CompilerResult<()> {
-        self.try_set_ref(label, 0)?;
-
-        self.run_queue(ir)?;
-        Ok(())
-    }
-
     pub fn gather_types(mut self) -> CompilerResult<(Vec<IRType>, Vec<i32>)> {
         let mut types = Vec::new();
         let mut autorefs = vec![0; self.auto_ref_pairs.len()];
+
+        for i in 0..self.types_dsu.len() {
+            print!("{:?} ", self.types_dsu.get(i).typ);
+        }
 
         for (i, (type1, type2)) in self.auto_ref_pairs.into_iter().enumerate() {
             autorefs[i] = self.types_dsu.get(type1).ref_depth.unwrap() - self.types_dsu.get(type2).ref_depth.unwrap();

@@ -19,8 +19,8 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
             let block = block.clone();
 
             sign.name = transform_method_name(sign.name);
-            let typ = ASTType::Reference(Box::new(ASTType::Struct(structure.name.clone(), FilePosition::unknown())), FilePosition::unknown());
-            sign.args.insert(0, ("self".to_string(), typ, FilePosition::unknown()));
+            let typ = ASTType::Reference(Box::new(ASTType::Struct(structure.name.clone(), sign.pos.clone())), sign.pos.clone());
+            sign.args.insert(0, ("self".to_string(), typ, sign.pos.clone()));
             let block = lower_block(block);
 
             ast.functions.push((sign, block));
