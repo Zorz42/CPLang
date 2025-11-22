@@ -95,9 +95,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     };
 
     for (sig, block) in ast.functions {
-        if !state.functions_name_map.contains_key(&(sig.name.clone(), sig.args.len())) {
-            state.functions_name_map.insert((sig.name.clone(), sig.args.len()), Vec::new());
-        }
+        state.functions_name_map.entry((sig.name.clone(), sig.args.len())).or_default();
 
         if let Some(val) = state.functions_name_map.get_mut(&(sig.name.clone(), sig.args.len())) {
             val.push((sig, block));
