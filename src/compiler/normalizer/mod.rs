@@ -175,6 +175,55 @@ fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration
     ir_struct
 }
 
+fn find_matching_function(state: &mut NormalizerState, ir: &mut IR, function_name: String, function_arguments: Vec<IRTypeLabel>, pos: FilePosition) -> CompilerResult<(ASTFunctionSignature, ASTBlock)> {
+    let candidates = if let Some(vec) = state.functions_name_map.get(&(function_name.clone(), function_arguments.len())).cloned() {
+        vec
+    } else {
+        return Err(CompilerError {
+            message: format!("Function {} does not exist.", &function_name[1..]),
+            position: Some(pos),
+        });
+    };
+
+    let mut matching = Vec::new();
+
+    for (sign, block) in candidates {
+        let resolver_backup = state.type_resolver.clone();
+        let mut ok = true;
+
+        for ((_, hint, _), typ) in sign.args.iter().zip(function_arguments.iter()) {
+            let hint_typ = normalize_type(state, ir, hint.clone())?;
+
+            if state.type_resolver.hint_equal(ir, *typ, hint_typ).is_err() {
+                ok = false;
+                continue;
+            }
+        }
+
+        state.type_resolver = resolver_backup;
+
+        if ok {
+            matching.push((sign, block));
+        }
+    }
+
+    if matching.is_empty() {
+        return Err(CompilerError {
+            message: "No candidate found for this function call".to_string(),
+            position: Some(pos),
+        });
+    }
+
+    if matching.len() != 1 {
+        return Err(CompilerError {
+            message: "Multiple candidates found for this function call".to_string(),
+            position: Some(pos),
+        });
+    }
+
+    Ok(matching.pop().unwrap())
+}
+
 // returns (expression, expression type, is expression physical (assignable) value)
 fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: ASTExpression) -> CompilerResult<(IRExpression, IRTypeLabel, bool)> {
     let type_label = state.type_resolver.new_type_label(expression.get_pos());
@@ -236,14 +285,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
                 function_arguments.push(expr);
             }
 
-            let (sig, block) = if let Some(vec) = state.functions_name_map.get(&(name.clone(), function_arguments.len())).cloned() {
-                vec[0].clone()
-            } else {
-                return Err(CompilerError {
-                    message: format!("Function {} does not exist.", &name[1..]),
-                    position: Some(pos),
-                });
-            };
+            let (sig, block) = find_matching_function(state, ir, name, expr_types.clone(), pos)?;
             let function_label = normalize_function(state, ir, sig, block, expr_types)?;
             let ret_type = ir.functions[function_label].ret_type;
             state.type_resolver.hint_equal(ir, ret_type, type_label)?;

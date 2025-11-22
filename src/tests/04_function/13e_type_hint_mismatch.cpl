@@ -1,4 +1,4 @@
-//ERR 2 8 2 14
+//ERR 6 10 6 24
 
 test a: string b c
     ret a + b + c

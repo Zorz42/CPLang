@@ -1,4 +1,4 @@
-//ERR 5 7 5 12
+//ERR 10 12 10 17
 
 struct TestStruct
     x

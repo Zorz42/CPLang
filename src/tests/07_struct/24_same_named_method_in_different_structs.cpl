@@ -9,5 +9,5 @@ struct S2
         ret "method2"
 
 main
-    a = S1
+    a = S2
     out "{a.get()}"
