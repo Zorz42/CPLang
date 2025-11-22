@@ -25,7 +25,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                 let mut block_idx = 0;
                 *curr_idx += 1;
                 while block_idx < call_block.children.len() {
-                    let expr = parse_expression(structs, &call_block, &mut block_idx)?;
+                    let expr = parse_expression(structs, call_block, &mut block_idx)?;
                     args.push(expr);
                 }
                 ASTExpression::FunctionCall {

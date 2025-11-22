@@ -280,14 +280,14 @@ impl TypeResolver {
         self.types_dsu.get(label1).typ = typ1;
         self.types_dsu.get(label2).typ = typ2;
 
-        let mut ref1 = self.types_dsu.get(label1).ref_depth.clone();
-        let mut ref2 = self.types_dsu.get(label2).ref_depth.clone();
+        let mut ref1 = self.types_dsu.get(label1).ref_depth;
+        let mut ref2 = self.types_dsu.get(label2).ref_depth;
 
         if ref1.is_none() {
-            ref1 = ref2.clone();
+            ref1 = ref2;
         } else if ref2.is_none() {
-            ref2 = ref1.clone();
-        } else if ref1 != ref1 {
+            ref2 = ref1;
+        } else if ref1 != ref2 {
             return Err(CompilerError {
                 message: format!("This expression cannot be {:?}-time and {:?}-time reference at the same time.", ref1.unwrap(), ref1.unwrap()),
                 position: Some(self.type_positions[label1].clone()),
@@ -419,6 +419,8 @@ impl TypeResolver {
         Ok((types, autorefs))
     }
 
+    // false positive
+    #[allow(clippy::clone_on_copy)]
     pub fn are_equal(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> bool {
         if self.types_dsu.get_repr(label1) == self.types_dsu.get_repr(label2) {
             return true;
