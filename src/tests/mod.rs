@@ -1,4 +1,5 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod tests {
     use crate::compiler::compile;
     use crate::compiler::error::FilePosition;
@@ -10,7 +11,7 @@ mod tests {
         std::fs::create_dir_all(cache_dir).unwrap();
         // hash contents of c_file to create unique file name (with only digit characters)
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        let contents = std::fs::read_to_string(&c_file).unwrap();
+        let contents = std::fs::read_to_string(c_file).unwrap();
         hasher.write(contents.as_bytes());
         let hash = hasher.finish();
         let exec_file = format!("{}/test_exec_{}", cache_dir, hash);
@@ -20,7 +21,7 @@ mod tests {
             return exec_file;
         }
         let output = std::process::Command::new("gcc")
-            .arg(&c_file)
+            .arg(c_file)
             .arg("-o")
             .arg(&exec_file)
             .output()
@@ -37,7 +38,7 @@ mod tests {
     fn run_test(test_file: &str) {
         let c_file = test_file.replace(".cpl", ".c");
 
-        let binding = std::fs::read_to_string(&test_file).unwrap();
+        let binding = std::fs::read_to_string(test_file).unwrap();
         let first_line = binding.lines().next().unwrap();
         if first_line.starts_with("//ERR") {
             // split the line with space into 5 parts
@@ -48,7 +49,7 @@ mod tests {
             let line_end: i32 = parts[3].parse().unwrap();
             let column_end: i32 = parts[4].parse().unwrap();
 
-            let res = compile(&test_file, &c_file);
+            let res = compile(test_file, &c_file);
 
             if let Err(e) = res {
                 if let Some(pos) = e.position {
@@ -59,20 +60,18 @@ mod tests {
                             last_pos: (line_end as usize, column_end as usize),
                         }
                     );
-                } else {
-                    if line_start != -1 {
-                        panic!("Expected error position, but got None");
-                    }
+                } else if line_start != -1 {
+                    panic!("Expected error position, but got None");
                 }
             } else {
                 std::fs::remove_file(&c_file).unwrap();
                 panic!("Expected error, but got compilation success");
             }
-        } else if first_line.starts_with("//OUT=") {
-            let mut expected_output = first_line[6..].to_string();
+        } else if let Some(stripped) = first_line.strip_prefix("//OUT=") {
+            let mut expected_output = stripped.to_string();
             expected_output.push('\n');
 
-            compile(&test_file, &c_file).unwrap();
+            compile(test_file, &c_file).unwrap();
             let exec_file = compile_gcc(&c_file);
 
             let output = std::process::Command::new(format!("./{exec_file}")).output().expect("failed to run test");
