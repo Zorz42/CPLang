@@ -1,0 +1,13 @@
+//OUT=method2
+
+struct S1
+    fn get
+        ret "method1"
+
+struct S2
+    fn get
+        ret "method2"
+
+main
+    a = S1
+    out "{a.get()}"

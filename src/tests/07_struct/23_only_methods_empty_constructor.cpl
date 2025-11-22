@@ -1,0 +1,9 @@
+//OUT=compile
+
+struct S
+    fn dummy
+        0
+
+main
+    a = S
+    out "compile"

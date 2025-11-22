@@ -233,8 +233,8 @@ impl TypeResolver {
 
                 let mut fields = HashMap::new();
 
-                if let Some((structure, args)) = struct_fields {
-                    for (arg, field_label) in args.iter().zip(ir.structs[structure].fields.iter()) {
+                if let Some((structure, args)) = &struct_fields {
+                    for (arg, field_label) in args.iter().zip(ir.structs[*structure].fields.iter()) {
                         fields.insert(*field_label, *arg);
                     }
                 }
@@ -246,6 +246,23 @@ impl TypeResolver {
                         } else {
                             fields.insert(field, typ);
                         }
+                    }
+                }
+
+                // check if all field types are now known
+                if let Some((structure, args)) = struct_fields {
+                    let mut arg_types = Vec::new();
+
+                    for arg in &args {
+                        if let Some(typ) = &self.types_dsu.get(*arg).typ {
+                            arg_types.push(typ.clone());
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if arg_types.len() == args.len() {
+                        self.types_dsu.get(node).typ = Some(IRType::Struct(structure, arg_types));
                     }
                 }
             }

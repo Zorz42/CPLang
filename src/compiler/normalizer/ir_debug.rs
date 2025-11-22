@@ -59,15 +59,18 @@ impl Debug for IRType {
             }
             IRType::Reference(typ) => write!(f, "&{:?}", *typ)?,
             IRType::Struct(label, types) => {
-                write!(f, "S{label}<")?;
+                write!(f, "S{label}")?;
                 let n = types.len();
-                for (i, typ) in types.iter().enumerate() {
-                    write!(f, "{:?}", typ)?;
-                    if i != n - 1 {
-                        write!(f, ", ")?;
+                if n != 0 {
+                    write!(f, "<")?;
+                    for (i, typ) in types.iter().enumerate() {
+                        write!(f, "{:?}", typ)?;
+                        if i != n - 1 {
+                            write!(f, ", ")?;
+                        }
                     }
+                    write!(f, ">")?;
                 }
-                write!(f, ">")?;
             }
         }
 
