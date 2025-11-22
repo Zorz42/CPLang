@@ -5,3 +5,9 @@ edition = "2024"
 
 [dependencies]
 test_derive = { path = "src/test_derive" }
+
+[profile.release]
+lto = false
+opt-level = "z"
+panic = "abort"
+strip = "symbols"

@@ -31,7 +31,7 @@ fn deref_type(mut ir_type: IRType) -> (IRType, i32) {
     (ir_type, ref_depth)
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Node {
     neighbours: Vec<Conn>,
     ref_neighbours: Vec<(IRTypeLabel, i32)>,
@@ -68,6 +68,7 @@ impl Node {
     }
 }
 
+#[derive(Clone)]
 pub struct TypeResolver {
     type_positions: Vec<FilePosition>,
     operator_map: HashMap<(IRType, IROperator, IRType), IRType>,

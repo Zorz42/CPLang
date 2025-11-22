@@ -32,7 +32,8 @@ pub struct NormalizerState {
     type_resolver: TypeResolver,
     variables_name_map: HashMap<String, IRVariableLabel>,
     curr_var_label: IRVariableLabel,
-    functions_name_map: HashMap<String, (ASTFunctionSignature, ASTBlock)>,
+    // key is (function name, number of arguments)
+    functions_name_map: HashMap<(String, usize), Vec<(ASTFunctionSignature, ASTBlock)>>,
     curr_func_label: IRFunctionLabel,
     fields_name_map: HashMap<String, IRFieldLabel>,
     curr_field_label: IRFieldLabel,
@@ -94,7 +95,13 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     };
 
     for (sig, block) in ast.functions {
-        state.functions_name_map.insert(sig.name.clone(), (sig, block));
+        if !state.functions_name_map.contains_key(&(sig.name.clone(), sig.args.len())) {
+            state.functions_name_map.insert((sig.name.clone(), sig.args.len()), Vec::new());
+        }
+
+        if let Some(val) = state.functions_name_map.get_mut(&(sig.name.clone(), sig.args.len())) {
+            val.push((sig, block));
+        }
     }
 
     for structure in ast.structs {
@@ -105,17 +112,31 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         ir.structs.push(ir_struct);
     }
 
-    if let Some((sig, block)) = state.functions_name_map.get(&transform_function_name("main".to_string())).cloned() {
-        if !sig.args.is_empty() {
+    for (key, val) in &state.functions_name_map {
+        if key.0 == transform_function_name("main".to_string()) && key.1 != 0 {
             return Err(CompilerError {
                 message: "main function cannot have arguments".to_string(),
-                position: Some(sig.args[0].2.clone()),
+                position: Some(val[0].0.args[0].2.clone()),
+            });
+        }
+    }
+
+    if let Some(mut vec) = state.functions_name_map.get(&(transform_function_name("main".to_string()), 0)).cloned() {
+        if vec.len() != 1 {
+            return Err(CompilerError {
+                message: "Multiple main functions found".to_string(),
+                position: None,
             });
         }
 
+        let (sig, block) = vec.pop().unwrap();
+
         ir.main_function = normalize_function(&mut state, &mut ir, sig, block, Vec::new())?;
     } else {
-        panic!();
+        return Err(CompilerError {
+            message: "No main function found".to_string(),
+            position: None,
+        });
     }
 
     (ir.types, ir.autorefs) = state.type_resolver.gather_types()?;
@@ -215,8 +236,8 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
                 function_arguments.push(expr);
             }
 
-            let (sig, block) = if let Some(x) = state.functions_name_map.get(&name).cloned() {
-                x
+            let (sig, block) = if let Some(vec) = state.functions_name_map.get(&(name.clone(), function_arguments.len())).cloned() {
+                vec[0].clone()
             } else {
                 return Err(CompilerError {
                     message: format!("Function {} does not exist.", &name[1..]),

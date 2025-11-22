@@ -2,11 +2,13 @@ use crate::compiler::normalizer::dsu::NodeType::HasParent;
 use std::mem::swap;
 use std::ops::Add;
 
+#[derive(Clone)]
 enum NodeType {
     HasParent(usize),
     Root(usize),
 }
 
+#[derive(Clone)]
 pub struct Dsu<T: Add + Default> {
     parent: Vec<NodeType>,
     value: Vec<T>,

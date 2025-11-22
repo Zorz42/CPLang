@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerError, CompilerResult};
+use crate::compiler::error::CompilerResult;
 use crate::compiler::parser::ast::Ast;
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::function::parse_function_declaration;
@@ -36,23 +36,10 @@ pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Ast> {
             function_declarations.push(declaration);
         }
     }
-
-    let mut found_main = false;
     for (signature, function_block) in function_declarations {
         let parsed_block = parse_block(&res.structs, &function_block)?;
 
-        if signature.name == "main" {
-            found_main = true;
-        }
-
         res.functions.push((signature, parsed_block));
-    }
-
-    if !found_main {
-        return Err(CompilerError {
-            message: "No main function found".to_string(),
-            position: None,
-        });
     }
 
     Ok(res)
