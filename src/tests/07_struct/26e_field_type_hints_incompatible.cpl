@@ -1,0 +1,8 @@
+//ERR -1 -1 -1 -1
+
+struct TestStruct
+    x: i32
+
+main
+    a = TestStruct x "compile"
+    out "ok"

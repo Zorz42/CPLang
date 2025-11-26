@@ -1,0 +1,8 @@
+//OUT=ok
+
+struct TestStruct
+    x: string
+
+main
+    a = TestStruct x "compile"
+    out "ok"
