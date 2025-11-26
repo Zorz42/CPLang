@@ -1,9 +1,10 @@
 name: CI
 
 on:
-  push:
-  pull_request:
-
+   push:
+     branches: [ "main" ]
+   pull_request:
+     branches: [ "main" ]
 jobs:
   build-and-test:
     name: Test on ${{ matrix.os }}
