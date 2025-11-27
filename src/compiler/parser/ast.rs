@@ -150,7 +150,7 @@ pub struct ASTFunctionSignature {
 #[derive(Debug, Clone)]
 pub struct ASTStructDeclaration {
     pub name: String,
-    pub fields: Vec<String>,
+    pub fields: Vec<(String, ASTType)>,
     pub methods: Vec<(ASTFunctionSignature, ASTBlock)>,
 }
 

@@ -1,4 +1,8 @@
+use crate::compiler::parser::ast::ASTType;
 use std::fmt::Debug;
+
+// Function is a generic function. When you call it, it is reduced into
+// instance where all argument types are known
 
 pub type IRFunctionLabel = usize;
 pub type IRVariableLabel = usize;
@@ -142,5 +146,5 @@ pub struct IRFunction {
 
 #[derive(Debug, Clone)]
 pub struct IRStruct {
-    pub fields: Vec<IRFieldLabel>,
+    pub fields: Vec<(IRFieldLabel, ASTType)>,
 }

@@ -159,15 +159,15 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
 fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration) -> IRStruct {
     let mut ir_struct = IRStruct { fields: Vec::new() };
 
-    for name in structure.fields {
-        let label = if let Some(label) = state.fields_name_map.get(&name) {
+    for (field_name, field_type) in structure.fields {
+        let label = if let Some(label) = state.fields_name_map.get(&field_name) {
             *label
         } else {
-            let label = state.new_field(&name);
-            state.fields_name_map.insert(name, label);
+            let label = state.new_field(&field_name);
+            state.fields_name_map.insert(field_name, label);
             label
         };
-        ir_struct.fields.push(label);
+        ir_struct.fields.push((label, field_type));
     }
 
     ir_struct
@@ -295,13 +295,16 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
         }
         ASTExpression::StructInitialization { name, fields, pos: _ } => {
             let struct_label = state.structs_name_map[&name];
+            let ast_struct = ir.structs[struct_label].clone();
 
             let mut field_values = Vec::new();
             let mut fields_type_labels = Vec::new();
-            for arg in fields {
+            for (arg, (_field_label, field_type)) in fields.into_iter().zip(ast_struct.fields) {
                 let (expr, typ, _is_phys) = normalize_expression(state, ir, arg)?;
                 field_values.push(expr);
                 fields_type_labels.push(typ);
+                let type_hint = normalize_type(state, ir, field_type)?;
+                state.type_resolver.hint_equal(ir, typ, type_hint)?;
             }
 
             let struct_expr = IRExpression::StructInitialization {

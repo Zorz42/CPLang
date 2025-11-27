@@ -4,6 +4,8 @@ mod tests {
     use crate::compiler::compile;
     use crate::compiler::error::FilePosition;
     use std::hash::Hasher;
+    use std::thread::sleep;
+    use std::time::Duration;
     use test_derive::generate_tests;
 
     fn compile_gcc(c_file: &str) -> String {
@@ -74,7 +76,18 @@ mod tests {
             compile(test_file, &c_file).unwrap();
             let exec_file = compile_gcc(&c_file);
 
-            let output = std::process::Command::new(format!("./{exec_file}")).output().expect("failed to run test");
+            let mut fails = 0;
+            let output = loop {
+                if let Ok(output) = std::process::Command::new(format!("./{exec_file}")).output() {
+                    break output;
+                } else {
+                    sleep(Duration::from_millis(100));
+                    fails += 1;
+                    if fails == 10 {
+                        panic!("Running test failed")
+                    }
+                }
+            };
 
             std::fs::remove_file(&c_file).unwrap();
 

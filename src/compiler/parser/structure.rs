@@ -1,8 +1,9 @@
-use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::parser::ast::ASTStructDeclaration;
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
+use crate::compiler::parser::ast::{ASTStructDeclaration, ASTType};
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::function::parse_function_declaration;
-use crate::compiler::tokenizer::{Keyword, Token, TokenBlock};
+use crate::compiler::parser::typed::parse_type;
+use crate::compiler::tokenizer::{Keyword, Symbol, Token, TokenBlock};
 
 pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStructDeclaration>> {
     if Some(Token::Keyword(Keyword::Struct)) != block.children.get(*curr_idx).map(|x| x.0.clone()) {
@@ -43,8 +44,16 @@ pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> Com
     while idx < block.children.len() {
         match block.children.get(idx).map(|x| &x.0) {
             Some(Token::Identifier(name)) => {
-                fields.push(name.clone());
                 idx += 1;
+
+                let type_hint = if let Some(Token::Symbol(Symbol::Colon)) = block.children.get(idx).map(|x| &x.0) {
+                    idx += 1;
+                    parse_type(&block, &mut idx)?
+                } else {
+                    ASTType::Any(FilePosition::unknown())
+                };
+
+                fields.push((name.clone(), type_hint));
             }
             Some(Token::Keyword(Keyword::Fn)) => {
                 idx += 1;
@@ -54,7 +63,7 @@ pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> Com
             }
             _ => {
                 return Err(CompilerError {
-                    message: "Expected field name".to_owned(),
+                    message: "Expected field name of fn keyword".to_owned(),
                     position: Some(block.children[idx].1.clone()),
                 });
             }

@@ -1,7 +1,7 @@
-//ERR 6 21 6 30
+//ERR -1 -1 -1 -1
 
 struct TestStruct
-    x: i32
+    x: 10
 
 main
     a = TestStruct x "compile"

@@ -100,7 +100,7 @@ fn gen_type(ctx: &mut GeneratorContext, typ: IRType) -> String {
                 ctx.curr_struct_label += 1;
                 ctx.c_structs.insert((label, args.clone()), gen_label);
 
-                let field_labels = ctx.structs[label].fields.clone();
+                let field_labels: Vec<_> = ctx.structs[label].fields.clone().into_iter().map(|(x, _y)| x).collect();
                 let fields = args.into_iter().zip(field_labels).collect();
 
                 let code = gen_struct_declaration(ctx, fields, gen_label);
