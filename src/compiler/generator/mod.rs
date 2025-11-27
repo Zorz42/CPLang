@@ -1,6 +1,6 @@
 use crate::compiler::generator::default_operators::init_default_operators;
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
+    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
     IRTypeLabel, IRVariableLabel, IR,
 };
 use std::collections::HashMap;
@@ -38,7 +38,7 @@ pub fn generate_code(ir: IR) -> String {
         autorefs: ir.autorefs,
     };
 
-    for func in ir.functions {
+    for func in ir.instances {
         code += &gen_function(&mut ctx, func);
     }
 
@@ -100,7 +100,7 @@ fn gen_type(ctx: &mut GeneratorContext, typ: IRType) -> String {
                 ctx.curr_struct_label += 1;
                 ctx.c_structs.insert((label, args.clone()), gen_label);
 
-                let field_labels: Vec<_> = ctx.structs[label].fields.clone().into_iter().map(|(x, _y)| x).collect();
+                let field_labels = ctx.structs[label].fields.clone();
                 let fields = args.into_iter().zip(field_labels).collect();
 
                 let code = gen_struct_declaration(ctx, fields, gen_label);
@@ -113,7 +113,7 @@ fn gen_type(ctx: &mut GeneratorContext, typ: IRType) -> String {
     }
 }
 
-fn gen_function_label(func: IRFunctionLabel) -> String {
+fn gen_function_label(func: IRInstanceLabel) -> String {
     format!("func{}", func)
 }
 
@@ -171,9 +171,9 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
             IRConstant::Float(x) => format!("{x}"),
             IRConstant::Bool(x) => (if x { "1" } else { "0" }).to_string(),
         },
-        IRExpression::FunctionCall {
-            function_label,
-            function_arguments,
+        IRExpression::InstanceCall {
+            instance_label: function_label,
+            instance_arguments: function_arguments,
         } => {
             let mut args_code = String::new();
 
@@ -280,7 +280,7 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
     code
 }
 
-fn gen_function(ctx: &mut GeneratorContext, func: IRFunction) -> String {
+fn gen_function(ctx: &mut GeneratorContext, func: IRInstance) -> String {
     let mut args = String::new();
     for arg in func.arguments {
         let typ = ctx.types[ctx.var_types[arg]].clone();

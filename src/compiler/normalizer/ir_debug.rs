@@ -1,4 +1,4 @@
-use crate::compiler::normalizer::ir::{IRBlock, IRFunction, IRPrimitiveType, IRType, IR};
+use crate::compiler::normalizer::ir::{IRBlock, IRInstance, IRPrimitiveType, IRType, IR};
 use std::fmt::Write;
 use std::fmt::{Debug, Formatter};
 
@@ -15,7 +15,7 @@ impl Debug for IRBlock {
     }
 }
 
-impl Debug for IRFunction {
+impl Debug for IRInstance {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Arguments: {:?}", self.arguments)?;
         writeln!(f, "Variables: {:?}", self.variables)?;
@@ -34,7 +34,7 @@ impl Debug for IR {
         writeln!(f, "    {}", output.replace("\n", "\n    "))?;
         writeln!(f, "Functions: ")?;
         let mut output = String::new();
-        for statement in &self.functions {
+        for statement in &self.instances {
             writeln!(&mut output, "{:?}", statement)?;
         }
         writeln!(f, "    {}", output.replace("\n", "\n    "))?;

@@ -195,7 +195,7 @@ impl TypeResolver {
                             };
                             let curr_struct = &ir.structs[struct_label];
                             let mut field_idx = 0;
-                            for (idx, (curr_field, _curr_field_type)) in curr_struct.fields.iter().enumerate() {
+                            for (idx, curr_field) in curr_struct.fields.iter().enumerate() {
                                 if *curr_field == field {
                                     field_idx = idx;
                                 }
@@ -235,7 +235,7 @@ impl TypeResolver {
                 let mut fields = HashMap::new();
 
                 if let Some((structure, args)) = &struct_fields {
-                    for (arg, (field_label, _field_type)) in args.iter().zip(ir.structs[*structure].fields.iter()) {
+                    for (arg, field_label) in args.iter().zip(ir.structs[*structure].fields.iter()) {
                         fields.insert(*field_label, *arg);
                     }
                 }

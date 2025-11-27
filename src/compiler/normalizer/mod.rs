@@ -1,6 +1,6 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::lowerer::transform_function_name;
-use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRFunction, IRFunctionLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR};
+use crate::compiler::normalizer::ir::{IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR};
 use crate::compiler::normalizer::type_resolver::TypeResolver;
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
@@ -34,7 +34,7 @@ pub struct NormalizerState {
     curr_var_label: IRVariableLabel,
     // key is (function name, number of arguments)
     functions_name_map: HashMap<(String, usize), Vec<(ASTFunctionSignature, ASTBlock)>>,
-    curr_func_label: IRFunctionLabel,
+    curr_func_label: IRInstanceLabel,
     fields_name_map: HashMap<String, IRFieldLabel>,
     curr_field_label: IRFieldLabel,
     curr_func_vars: Vec<IRVariableLabel>,
@@ -42,7 +42,8 @@ pub struct NormalizerState {
     has_ret_statement: bool,
     depth: i32,
     structs_name_map: HashMap<String, IRStructLabel>,
-    function_cache: HashMap<String, Vec<(Vec<IRTypeLabel>, IRFunctionLabel)>>,
+    structs_type_hints: Vec<Vec<ASTType>>,
+    instance_cache: HashMap<String, Vec<(Vec<IRTypeLabel>, IRInstanceLabel)>>,
 }
 
 impl NormalizerState {
@@ -72,7 +73,7 @@ impl NormalizerState {
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     let mut ir = IR {
         structs: Vec::new(),
-        functions: Vec::new(),
+        instances: Vec::new(),
         types: Vec::new(),
         variable_types: Vec::new(),
         main_function: 0,
@@ -91,7 +92,8 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         has_ret_statement: false,
         depth: 0,
         structs_name_map: HashMap::new(),
-        function_cache: HashMap::new(),
+        instance_cache: HashMap::new(),
+        structs_type_hints: Vec::new(),
     };
 
     for (sig, block) in ast.functions {
@@ -104,8 +106,9 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
 
     for structure in ast.structs {
         let name = structure.name.clone();
-        let ir_struct = normalize_struct(&mut state, structure);
+        let (ir_struct, type_hints) = normalize_struct(&mut state, structure);
         let label = ir.structs.len() as IRStructLabel;
+        state.structs_type_hints.push(type_hints);
         state.structs_name_map.insert(name, label);
         ir.structs.push(ir_struct);
     }
@@ -139,7 +142,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
 
     (ir.types, ir.autorefs) = state.type_resolver.gather_types()?;
 
-    let main_ret = ir.functions[ir.main_function].ret_type;
+    let main_ret = ir.instances[ir.main_function].ret_type;
     let main_ret = ir.types[main_ret].clone();
 
     if main_ret != IRType::Primitive(IRPrimitiveType::Void) {
@@ -151,13 +154,14 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
 
     // so that functions are in right order
     // if func0 is used inside func1 it should appear above func1 in generated c code
-    ir.functions.reverse();
+    ir.instances.reverse();
 
     Ok(ir)
 }
 
-fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration) -> IRStruct {
+fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration) -> (IRStruct, Vec<ASTType>) {
     let mut ir_struct = IRStruct { fields: Vec::new() };
+    let mut type_hints = Vec::new();
 
     for (field_name, field_type) in structure.fields {
         let label = if let Some(label) = state.fields_name_map.get(&field_name) {
@@ -167,10 +171,11 @@ fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration
             state.fields_name_map.insert(field_name, label);
             label
         };
-        ir_struct.fields.push((label, field_type));
+        ir_struct.fields.push(label);
+        type_hints.push(field_type);
     }
 
-    ir_struct
+    (ir_struct, type_hints)
 }
 
 fn find_matching_function(state: &mut NormalizerState, ir: &mut IR, function_name: String, function_arguments: Vec<IRTypeLabel>, pos: FilePosition) -> CompilerResult<(ASTFunctionSignature, ASTBlock)> {
@@ -285,21 +290,21 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
 
             let (sig, block) = find_matching_function(state, ir, name, expr_types.clone(), pos)?;
             let function_label = normalize_function(state, ir, sig, block, expr_types)?;
-            let ret_type = ir.functions[function_label].ret_type;
+            let ret_type = ir.instances[function_label].ret_type;
             state.type_resolver.hint_equal(ir, ret_type, type_label)?;
 
-            (IRExpression::FunctionCall {
-                function_label,
-                function_arguments,
+            (IRExpression::InstanceCall {
+                instance_label: function_label,
+                instance_arguments: function_arguments,
             }, false)
         }
         ASTExpression::StructInitialization { name, fields, pos: _ } => {
             let struct_label = state.structs_name_map[&name];
-            let ast_struct = ir.structs[struct_label].clone();
+            let type_hints = state.structs_type_hints[struct_label].clone();
 
             let mut field_values = Vec::new();
             let mut fields_type_labels = Vec::new();
-            for (arg, (_field_label, field_type)) in fields.into_iter().zip(ast_struct.fields) {
+            for (arg, field_type) in fields.into_iter().zip(type_hints) {
                 let (expr, typ, _is_phys) = normalize_expression(state, ir, arg)?;
                 field_values.push(expr);
                 fields_type_labels.push(typ);
@@ -497,10 +502,10 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
     Ok(res)
 }
 
-fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctionSignature, block: ASTBlock, arg_types: Vec<IRTypeLabel>) -> CompilerResult<IRFunctionLabel> {
+fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctionSignature, block: ASTBlock, arg_types: Vec<IRTypeLabel>) -> CompilerResult<IRInstanceLabel> {
     assert_eq!(arg_types.len(), sign.args.len());
 
-    if let Some(cache) = state.function_cache.get(&sign.name) {
+    if let Some(cache) = state.instance_cache.get(&sign.name) {
         for (types, label) in cache {
             if types.len() != arg_types.len() {
                 continue;
@@ -552,7 +557,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
         state.type_resolver.hint_equal(ir, hint_label, arg_type)?;
     }
 
-    ir.functions.push(IRFunction {
+    ir.instances.push(IRInstance {
         arguments,
         variables: Vec::new(),
         ret_type: state.curr_func_ret_type,
@@ -560,14 +565,14 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
         label,
     });
 
-    if !state.function_cache.contains_key(&sign.name) {
-        state.function_cache.insert(sign.name.clone(), Vec::new());
+    if !state.instance_cache.contains_key(&sign.name) {
+        state.instance_cache.insert(sign.name.clone(), Vec::new());
     }
 
-    state.function_cache.get_mut(&sign.name).unwrap().push((arg_types, label));
+    state.instance_cache.get_mut(&sign.name).unwrap().push((arg_types, label));
 
-    ir.functions[label].block = normalize_block(state, ir, block)?;
-    ir.functions[label].variables = state.curr_func_vars.clone();
+    ir.instances[label].block = normalize_block(state, ir, block)?;
+    ir.instances[label].variables = state.curr_func_vars.clone();
 
     if !state.has_ret_statement {
         state.type_resolver.hint_is(ir, state.curr_func_ret_type, IRPrimitiveType::Void)?;

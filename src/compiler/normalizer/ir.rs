@@ -1,10 +1,9 @@
-use crate::compiler::parser::ast::ASTType;
 use std::fmt::Debug;
 
 // Function is a generic function. When you call it, it is reduced into
 // instance where all argument types are known
 
-pub type IRFunctionLabel = usize;
+pub type IRInstanceLabel = usize;
 pub type IRVariableLabel = usize;
 pub type IRTypeLabel = usize;
 pub type IRStructLabel = usize;
@@ -13,11 +12,11 @@ pub type IRAutoRefLabel = usize;
 
 pub struct IR {
     pub structs: Vec<IRStruct>,
-    pub functions: Vec<IRFunction>,
+    pub instances: Vec<IRInstance>,
     pub types: Vec<IRType>,
     pub variable_types: Vec<IRTypeLabel>,
     pub autorefs: Vec<i32>,
-    pub main_function: IRFunctionLabel,
+    pub main_function: IRInstanceLabel,
 }
 
 #[derive(Clone, Eq, Hash, PartialEq)]
@@ -73,9 +72,9 @@ pub enum IRExpression {
     Constant {
         constant: IRConstant,
     },
-    FunctionCall {
-        function_label: IRFunctionLabel,
-        function_arguments: Vec<IRExpression>,
+    InstanceCall {
+        instance_label: IRInstanceLabel,
+        instance_arguments: Vec<IRExpression>,
     },
     FieldAccess {
         expression: Box<IRExpression>,
@@ -136,15 +135,15 @@ pub enum IRStatement {
     },
 }
 
-pub struct IRFunction {
+pub struct IRInstance {
     pub arguments: Vec<IRVariableLabel>,
     pub variables: Vec<IRVariableLabel>,
     pub block: IRBlock,
     pub ret_type: IRTypeLabel,
-    pub label: IRFunctionLabel,
+    pub label: IRInstanceLabel,
 }
 
 #[derive(Debug, Clone)]
 pub struct IRStruct {
-    pub fields: Vec<(IRFieldLabel, ASTType)>,
+    pub fields: Vec<IRFieldLabel>,
 }
