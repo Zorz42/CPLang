@@ -1,0 +1,8 @@
+//ERR 6 19 6 32
+
+struct TestStruct
+    x
+
+main
+    a = TestStruct invalid_field "compile"
+    out "ok"

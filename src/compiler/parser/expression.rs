@@ -39,7 +39,16 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
 
                 while fields_left > 0 {
                     let (field_name, field_pos) = match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
-                        Some(Token::Identifier(ident)) => (ident.clone(), block.children[*curr_idx].1.clone()),
+                        Some(Token::Identifier(ident)) => {
+                            if struct_declaration.fields.iter().find(|(name, _type_hint)| name == ident).is_none() {
+                                return Err(CompilerError {
+                                    message: format!("Field with name {ident} not found"),
+                                    position: Some(block.children[*curr_idx].1.clone()),
+                                });
+                            }
+
+                            (ident.clone(), block.children[*curr_idx].1.clone())
+                        }
                         _ => {
                             return Err(CompilerError {
                                 message: "Expected struct field identifier after this token".to_owned(),
@@ -67,7 +76,6 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
 
                 let mut fields_res = Vec::new();
                 for (field_name, _field_type) in struct_declaration.fields.iter() {
-                    println!("{field_name} {:?}", fields.keys());
                     fields_res.push(fields[field_name].clone());
                 }
 
