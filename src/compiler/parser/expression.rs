@@ -40,7 +40,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                 while fields_left > 0 {
                     let (field_name, field_pos) = match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
                         Some(Token::Identifier(ident)) => {
-                            if struct_declaration.fields.iter().find(|(name, _type_hint)| name == ident).is_none() {
+                            if struct_declaration.fields.iter().any(|(name, _type_hint)| name == ident) {
                                 return Err(CompilerError {
                                     message: format!("Field with name {ident} not found"),
                                     position: Some(block.children[*curr_idx].1.clone()),
