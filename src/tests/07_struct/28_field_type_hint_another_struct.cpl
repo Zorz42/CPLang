@@ -1,0 +1,11 @@
+//OUT=ok
+
+struct Struct2
+    x: string
+
+struct TestStruct
+    x: Struct2
+
+main
+    a = TestStruct x Struct2 x "compile"
+    out "ok"

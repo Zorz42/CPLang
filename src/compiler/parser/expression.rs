@@ -67,6 +67,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
 
                 let mut fields_res = Vec::new();
                 for (field_name, _field_type) in struct_declaration.fields.iter() {
+                    println!("{field_name} {:?}", fields.keys());
                     fields_res.push(fields[field_name].clone());
                 }
 
