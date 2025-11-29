@@ -64,14 +64,14 @@ fn gen_op_block(pos: FilePosition, operator: ASTOperator, assign_to: ASTExpressi
                     },
                     value: ASTExpression::BinaryOperation {
                         expression1: Box::new(ASTExpression::Dereference {
-                            expression: Box::new(ASTExpression::Variable(var_name.clone(), pos.clone())),
+                            expression: Box::new(ASTExpression::Variable(var_name, pos.clone())),
                             pos: pos.clone(),
                         }),
                         operator,
                         expression2: Box::new(value),
                         pos: pos.clone(),
                     },
-                    pos: pos.clone(),
+                    pos,
                 },
             ],
         },

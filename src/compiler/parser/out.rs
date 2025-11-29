@@ -86,7 +86,7 @@ pub fn parse_out_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
             }
             _ => Err(CompilerError {
                 message: "Expected string after out keyword".to_string(),
-                position: Some(print_pos.clone()),
+                position: Some(print_pos),
             }),
         }
     } else {

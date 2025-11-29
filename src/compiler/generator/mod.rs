@@ -42,12 +42,12 @@ pub fn generate_code(ir: IR) -> String {
         code += &gen_function(&mut ctx, func);
     }
 
-    let main_code = r#"
+    let main_code = "
 int main(){
     $main$();
     return 0;
 }
-    "#;
+    ";
     let main_code = main_code.replace("$main$", &gen_function_label(ir.main_function));
 
     format!("{}\n{}\n{}\n{}", imports, ctx.struct_declarations, code, main_code)
@@ -55,11 +55,11 @@ int main(){
 
 fn gen_primitive_type(typ: IRPrimitiveType) -> String {
     match typ {
-        IRPrimitiveType::I32 => "int",
+        IRPrimitiveType::I32 |
+        IRPrimitiveType::Bool => "int",
         IRPrimitiveType::I64 => "long",
         IRPrimitiveType::F32 => "float",
         IRPrimitiveType::F64 => "double",
-        IRPrimitiveType::Bool => "int",
         IRPrimitiveType::String => "char*",
         IRPrimitiveType::Void => "void",
     }
@@ -78,13 +78,13 @@ fn gen_struct_declaration(ctx: &mut GeneratorContext, fields: Vec<(IRType, IRFie
     let mut code = String::new();
 
     let c_name = gen_struct_name(c_label);
-    code += &format!("typedef struct {} {{\n", c_name);
+    code += &format!("typedef struct {c_name} {{\n");
 
     for (field_type, field_label) in fields {
         code += &format!("    {} {};\n", gen_type(ctx, field_type), gen_field_name(field_label));
     }
 
-    code += &format!("}} {};\n", c_name);
+    code += &format!("}} {c_name};\n");
     code
 }
 
@@ -114,17 +114,17 @@ fn gen_type(ctx: &mut GeneratorContext, typ: IRType) -> String {
 }
 
 fn gen_function_label(func: IRInstanceLabel) -> String {
-    format!("func{}", func)
+    format!("func{func}")
 }
 
 fn gen_variable_label(func: IRVariableLabel) -> String {
-    format!("var{}", func)
+    format!("var{func}")
 }
 
 fn type_to_printf_format(typ: &IRType) -> &'static str {
     match typ {
         IRType::Primitive(typ) => match typ {
-            IRPrimitiveType::I32 => "d",
+            IRPrimitiveType::I32 |
             IRPrimitiveType::I64 => "ld",
             IRPrimitiveType::F32 => "f",
             IRPrimitiveType::F64 => "lf",
@@ -203,7 +203,7 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
                 code += &gen_expression(ctx, arg);
                 code += ",";
             }
-            if code.ends_with(",") {
+            if code.ends_with(',') {
                 code.pop();
             }
             code += "}";
@@ -258,11 +258,7 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
                 }
             }
             IRStatement::Return { return_value } => {
-                if let Some(return_value) = return_value {
-                    format!("return {};", gen_expression(ctx, return_value))
-                } else {
-                    "return;".to_string()
-                }
+                return_value.map_or_else(|| "return;".to_string(), |return_value| format!("return {};", gen_expression(ctx, return_value)))
             }
             IRStatement::Assignment { assign_to, value } => {
                 format!("{} = {};", gen_expression(ctx, assign_to), gen_expression(ctx, value))
@@ -271,10 +267,10 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
         code += &s_code;
         code += "\n";
     }
-    while code.ends_with("\n") {
+    while code.ends_with('\n') {
         code.pop();
     }
-    code = code.replace("\n", "\n  ");
+    code = code.replace('\n', "\n  ");
     code += "\n}\n";
 
     code

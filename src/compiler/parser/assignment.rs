@@ -7,11 +7,7 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: &ASTExpr
     let (symbol, symbol_pos) = {
         let token = block.peek();
         match token {
-            (Token::Assign, _) |
-            (Token::Increase, _) |
-            (Token::Decrease, _) |
-            (Token::Increment, _) |
-            (Token::Decrement, _) => block.get(),
+            (Token::Assign | Token::Increase | Token::Decrease | Token::Increment | Token::Decrement, _) => block.get(),
             _ => {
                 return Ok(None);
             }

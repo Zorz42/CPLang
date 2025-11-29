@@ -40,7 +40,7 @@ pub struct Node {
 }
 
 impl Add for Node {
-    type Output = Node;
+    type Output = Self;
 
     fn add(mut self, rhs: Self) -> Self::Output {
         assert_eq!(self.typ, rhs.typ);
@@ -62,7 +62,7 @@ impl Node {
         }
 
         for _ in 0..dep {
-            typ = IRType::Reference(Box::new(typ))
+            typ = IRType::Reference(Box::new(typ));
         }
         Some(typ)
     }
@@ -129,7 +129,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    fn run_queue(&mut self, ir: &mut IR) -> CompilerResult<()> {
+    fn run_queue(&mut self, ir: &IR) -> CompilerResult<()> {
         while let Some(node) = self.queue.pop_front() {
             // loop for type deduction
             if let Some(node_type) = self.types_dsu.get(node).typ.clone() {
@@ -140,11 +140,9 @@ impl TypeResolver {
                         }
                         Conn::Operator(ne, op, typ2) => {
                             if let Some(node_type2) = self.types_dsu.get(typ2).typ.clone() {
-                                let ir_type = if let Some(x) = self.operator_map.get(&(node_type.clone(), op, node_type2.clone())).cloned() {
-                                    x
-                                } else {
+                                let Some(ir_type) = self.operator_map.get(&(node_type.clone(), op, node_type2.clone())).cloned() else {
                                     return Err(CompilerError {
-                                        message: format!("Operator {:?} is not defined for {:?} and {:?}", op, node_type2, node_type),
+                                        message: format!("Operator {op:?} is not defined for {node_type2:?} and {node_type:?}"),
                                         position: Some(self.type_positions[ne].clone()),
                                     })
                                 };
@@ -155,9 +153,8 @@ impl TypeResolver {
                         }
                         Conn::Struct(typ, structure, args) => {
                             if typ == node {
-                                let args2 = match node_type.clone() {
-                                    IRType::Struct(_, args) => args,
-                                    _ => return Err(CompilerError {
+                                let IRType::Struct(_, args2) = node_type.clone() else {
+                                    return Err(CompilerError {
                                         message: format!("This cannot be a struct and {node_type:?} at the same time."),
                                         position: Some(self.type_positions[node].clone()),
                                     })
@@ -219,9 +216,7 @@ impl TypeResolver {
                 for ne in self.types_dsu.get(node).neighbours.clone() {
                     if let Conn::Struct(typ, structure, args) = ne && self.are_equal(typ, node) {
                         if let Some((curr_structure, curr_args)) = &struct_fields {
-                            if *curr_structure != structure {
-                                panic!();
-                            }
+                            assert_eq!(*curr_structure, structure);
 
                             for (arg1, arg2) in args.iter().zip(curr_args.clone()) {
                                 self.merge(*arg1, arg2)?;
@@ -322,7 +317,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_is(&mut self, ir: &mut IR, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
+    pub fn hint_is(&mut self, ir: &IR, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
         let ir_type = IRType::Primitive(typ);
         self.try_set_type(label, ir_type)?;
         self.try_set_ref(label, 0)?;
@@ -331,7 +326,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_equal(&mut self, ir: &mut IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
+    pub fn hint_equal(&mut self, ir: &IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
         self.merge(label1, label2)?;
 
         self.queue.push_back(label2);
@@ -341,7 +336,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_operator(&mut self, ir: &mut IR, label1: IRTypeLabel, label2: IRTypeLabel, operator: IROperator, res_label: IRTypeLabel) -> CompilerResult<()> {
+    pub fn hint_operator(&mut self, ir: &IR, label1: IRTypeLabel, label2: IRTypeLabel, operator: IROperator, res_label: IRTypeLabel) -> CompilerResult<()> {
         self.types_dsu.get(label1).neighbours.push(Conn::Operator(res_label, operator, label2));
         self.types_dsu.get(label2).neighbours.push(Conn::Operator(res_label, operator, label1));
 
@@ -355,7 +350,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_is_ref(&mut self, ir: &mut IR, phys_label: IRTypeLabel, ref_label: IRTypeLabel) -> CompilerResult<()> {
+    pub fn hint_is_ref(&mut self, ir: &IR, phys_label: IRTypeLabel, ref_label: IRTypeLabel) -> CompilerResult<()> {
         self.types_dsu.get(phys_label).neighbours.push(Conn::Is(ref_label));
         self.types_dsu.get(ref_label).neighbours.push(Conn::Is(phys_label));
 
@@ -369,12 +364,12 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_struct(&mut self, ir: &mut IR, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
+    pub fn hint_struct(&mut self, ir: &IR, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
         for field_type in &fields {
             self.types_dsu.get(*field_type).neighbours.push(Conn::Struct(res_label, struct_label, fields.clone()));
             self.queue.push_back(*field_type);
         }
-        self.types_dsu.get(res_label).neighbours.push(Conn::Struct(res_label, struct_label, fields.clone()));
+        self.types_dsu.get(res_label).neighbours.push(Conn::Struct(res_label, struct_label, fields));
         self.queue.push_back(res_label);
         self.try_set_ref(res_label, 0)?;
 
@@ -382,7 +377,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_is_field(&mut self, ir: &mut IR, res_label: IRTypeLabel, struct_label: IRTypeLabel, field_label: IRFieldLabel) -> CompilerResult<()> {
+    pub fn hint_is_field(&mut self, ir: &IR, res_label: IRTypeLabel, struct_label: IRTypeLabel, field_label: IRFieldLabel) -> CompilerResult<()> {
         self.types_dsu.get(struct_label).neighbours.push(Conn::IsField(res_label, field_label));
         self.try_set_ref(struct_label, 0)?;
         self.queue.push_back(struct_label);
@@ -392,7 +387,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_autoref(&mut self, ir: &mut IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
+    pub fn hint_autoref(&mut self, ir: &IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
         self.types_dsu.get(label1).neighbours.push(Conn::Is(label2));
         self.types_dsu.get(label2).neighbours.push(Conn::Is(label1));
 
@@ -412,9 +407,7 @@ impl TypeResolver {
         }
 
         for i in 0..self.types_dsu.len() {
-            let typ = if let Some(typ) = self.types_dsu.get(i).get_ir_type() {
-                typ
-            } else {
+            let Some(typ) = self.types_dsu.get(i).get_ir_type() else {
                 return Err(CompilerError {
                     message: "Could not deduce this expression's type".to_string(),
                     position: Some(self.type_positions[i].clone()),

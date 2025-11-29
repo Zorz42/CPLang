@@ -15,7 +15,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
 
     match block.get() {
         (Token::Identifier(name), pos) => {
-            res_signature.name = name.clone();
+            res_signature.name = name;
             res_signature.pos = merge_file_positions(res_signature.pos, pos);
         }
         (_, pos) => {

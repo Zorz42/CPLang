@@ -8,9 +8,9 @@ impl Debug for IRBlock {
         writeln!(f, "Statements:")?;
         let mut output = String::new();
         for statement in &self.statements {
-            writeln!(&mut output, "{:?}", statement)?;
+            writeln!(&mut output, "{statement:?}")?;
         }
-        writeln!(f, "    {}", output.replace("\n", "\n    "))?;
+        writeln!(f, "    {}", output.replace('\n', "\n    "))?;
         Ok(())
     }
 }
@@ -29,15 +29,15 @@ impl Debug for IR {
         writeln!(f, "Structs: ")?;
         let mut output = String::new();
         for statement in &self.structs {
-            writeln!(&mut output, "{:?}", statement)?;
+            writeln!(&mut output, "{statement:?}")?;
         }
-        writeln!(f, "    {}", output.replace("\n", "\n    "))?;
+        writeln!(f, "    {}", output.replace('\n', "\n    "))?;
         writeln!(f, "Functions: ")?;
         let mut output = String::new();
         for statement in &self.instances {
-            writeln!(&mut output, "{:?}", statement)?;
+            writeln!(&mut output, "{statement:?}")?;
         }
-        writeln!(f, "    {}", output.replace("\n", "\n    "))?;
+        writeln!(f, "    {}", output.replace('\n', "\n    "))?;
         Ok(())
     }
 }
@@ -45,7 +45,7 @@ impl Debug for IR {
 impl Debug for IRType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            IRType::Primitive(prim) => {
+            Self::Primitive(prim) => {
                 let string = match prim {
                     IRPrimitiveType::I32 => "i32",
                     IRPrimitiveType::I64 => "i64",
@@ -57,14 +57,14 @@ impl Debug for IRType {
                 };
                 write!(f, "{string}")?;
             }
-            IRType::Reference(typ) => write!(f, "&{:?}", *typ)?,
-            IRType::Struct(label, types) => {
+            Self::Reference(typ) => write!(f, "&{:?}", *typ)?,
+            Self::Struct(label, types) => {
                 write!(f, "S{label}")?;
                 let n = types.len();
                 if n != 0 {
                     write!(f, "<")?;
                     for (i, typ) in types.iter().enumerate() {
-                        write!(f, "{:?}", typ)?;
+                        write!(f, "{typ:?}")?;
                         if i != n - 1 {
                             write!(f, ", ")?;
                         }

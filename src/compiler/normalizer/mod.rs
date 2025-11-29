@@ -13,7 +13,7 @@ mod type_resolver;
 mod default_operator_map;
 mod dsu;
 
-fn operator_to_ir_operator(operator: ASTOperator) -> IROperator {
+const fn operator_to_ir_operator(operator: ASTOperator) -> IROperator {
     match operator {
         ASTOperator::Plus => IROperator::Plus,
         ASTOperator::Mul => IROperator::Mul,
@@ -48,7 +48,7 @@ pub struct NormalizerState {
 }
 
 impl NormalizerState {
-    pub fn new_var_label(&mut self) -> IRVariableLabel {
+    pub const fn new_var_label(&mut self) -> IRVariableLabel {
         self.curr_var_label += 1;
         self.curr_var_label - 1
     }
@@ -59,7 +59,7 @@ impl NormalizerState {
         label
     }
 
-    pub fn new_field_label(&mut self) -> IRFieldLabel {
+    pub const fn new_field_label(&mut self) -> IRFieldLabel {
         self.curr_field_label += 1;
         self.curr_field_label - 1
     }
@@ -181,13 +181,11 @@ fn normalize_struct(state: &mut NormalizerState, structure: ASTStructDeclaration
 }
 
 fn find_matching_function(state: &mut NormalizerState, ir: &mut IR, function_name: String, function_arguments: Vec<IRTypeLabel>, pos: FilePosition) -> CompilerResult<(ASTFunctionSignature, ASTBlock)> {
-    let candidates = if let Some(vec) = state.functions_name_map.get(&(function_name.clone(), function_arguments.len())).cloned() {
-        vec
-    } else {
+    let Some(candidates) = state.functions_name_map.get(&(function_name.clone(), function_arguments.len())).cloned() else {
         return Err(CompilerError {
             message: format!("Function {} does not exist.", &function_name[1..]),
             position: Some(pos),
-        });
+        })
     };
 
     let mut matching = Vec::new();
@@ -207,7 +205,6 @@ fn find_matching_function(state: &mut NormalizerState, ir: &mut IR, function_nam
 
             if state.type_resolver.hint_equal(ir, *typ, hint_typ).is_err() {
                 ok = false;
-                continue;
             }
         }
 
@@ -243,15 +240,15 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
     let (expr, is_phys) = match expression {
         ASTExpression::Integer(x, _) => {
             state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::I32)?;
-            (IRExpression::Constant { constant: IRConstant::Int(x as i64) }, false)
+            (IRExpression::Constant { constant: IRConstant::Int(i64::from(x)) }, false)
         }
         ASTExpression::Float(x, _) => {
             state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::F32)?;
-            (IRExpression::Constant { constant: IRConstant::Float(x as f64) }, false)
+            (IRExpression::Constant { constant: IRConstant::Float(f64::from(x)) }, false)
         }
         ASTExpression::String(x, _) => {
             state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::String)?;
-            (IRExpression::Constant { constant: IRConstant::String(x.clone()) }, false)
+            (IRExpression::Constant { constant: IRConstant::String(x) }, false)
         }
         ASTExpression::Boolean(x, _) => {
             state.type_resolver.hint_is(ir, type_label, IRPrimitiveType::Bool)?;
@@ -336,9 +333,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
             pos,
         } => {
             let (expression, type_label2, _is_phys) = normalize_expression(state, ir, *expression)?;
-            let field_label = if let Some(x) = state.fields_name_map.get(&field_name) {
-                *x
-            } else {
+            let Some(&field_label) = state.fields_name_map.get(&field_name) else {
                 return Err(CompilerError {
                     message: format!("Unknown field {field_name}"),
                     position: Some(pos),
@@ -387,7 +382,7 @@ fn normalize_expression(state: &mut NormalizerState, ir: &mut IR, expression: AS
     Ok((expr, type_label, is_phys))
 }
 
-fn primitive_type_to_ir_type(typ: ASTPrimitiveType) -> IRPrimitiveType {
+const fn primitive_type_to_ir_type(typ: ASTPrimitiveType) -> IRPrimitiveType {
     match typ {
         ASTPrimitiveType::I32 => IRPrimitiveType::I32,
         ASTPrimitiveType::I64 => IRPrimitiveType::I64,
@@ -408,9 +403,9 @@ fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: ASTType) -> Com
             state.type_resolver.hint_is(ir, type_label, typ)?;
         }
         ASTType::Struct(name, pos) => {
-            if let Some(label) = state.template_types.get(&name).cloned() {
+            if let Some(label) = state.template_types.get(&name).copied() {
                 state.type_resolver.hint_equal(ir, label, type_label)?;
-            } else if let Some(struct_label) = state.structs_name_map.get(&name).cloned() {
+            } else if let Some(struct_label) = state.structs_name_map.get(&name).copied() {
                 let mut args = Vec::new();
                 for _ in &ir.structs[struct_label].fields {
                     args.push(state.type_resolver.new_type_label(pos.clone()));
@@ -422,7 +417,7 @@ fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: ASTType) -> Com
                     message: format!("Unknown type: {name}"),
                     position: Some(pos),
                 })
-            };
+            }
         }
         ASTType::Reference(typ, _) => {
             let type_label2 = normalize_type(state, ir, *typ)?;
@@ -461,9 +456,9 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
 
                 res.statements.push(IRStatement::Assignment { assign_to, value });
             }
-            ASTStatement::AssignmentOperator { .. } => unreachable!(), // lowerer took care of that
-            ASTStatement::AssignmentIncrement { .. } => unreachable!(),
-            ASTStatement::AssignmentDecrement { .. } => unreachable!(),
+            ASTStatement::AssignmentOperator { .. } |
+            ASTStatement::AssignmentIncrement { .. } |
+            ASTStatement::AssignmentDecrement { .. } => unreachable!(), // lowerer took care of that
 
             ASTStatement::Block { block } => {
                 let block = normalize_block(state, ir, block)?;
@@ -520,6 +515,7 @@ fn normalize_block(state: &mut NormalizerState, ir: &mut IR, block: ASTBlock) ->
 }
 
 fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctionSignature, block: ASTBlock, arg_types: Vec<IRTypeLabel>) -> CompilerResult<IRInstanceLabel> {
+    const RECURSION_LIMIT: i32 = 100;
     assert_eq!(arg_types.len(), sign.args.len());
 
     if let Some(cache) = state.instance_cache.get(&sign.name) {
@@ -547,7 +543,6 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
     let prev_func_ret_type = state.curr_func_ret_type;
     let prev_has_ret_statement = state.has_ret_statement;
 
-    const RECURSION_LIMIT: i32 = 100;
     if state.depth == RECURSION_LIMIT {
         return Err(CompilerError {
             message: format!("This function is in the {RECURSION_LIMIT}-th recursive call \

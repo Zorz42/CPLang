@@ -80,7 +80,7 @@ fn str_to_keyword(s: &str) -> Option<Token> {
 }
 
 
-fn symbol_from_char(c: char) -> Option<Token> {
+const fn symbol_from_char(c: char) -> Option<Token> {
     match c {
         '+' => Some(Token::Plus),
         '*' => Some(Token::Star),
@@ -97,7 +97,7 @@ fn symbol_from_char(c: char) -> Option<Token> {
     }
 }
 
-fn symbol_from_two_chars(c1: char, c2: char) -> Option<Token> {
+const fn symbol_from_two_chars(c1: char, c2: char) -> Option<Token> {
     match (c1, c2) {
         ('=', '=') => Some(Token::Equals),
         ('!', '=') => Some(Token::NotEquals),
@@ -142,7 +142,7 @@ impl TokenBlock {
     }
 
     pub fn get(&mut self) -> (Token, FilePosition) {
-        self.tokens.pop().unwrap_or(LAST_TOKEN.clone())
+        self.tokens.pop().unwrap_or_else(|| LAST_TOKEN.clone())
     }
 
     pub fn has_tokens(&self) -> bool {
@@ -208,11 +208,10 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
                 let pos = &pos_char.pos;
                 let next_char = iter
                     .peek()
-                    .map(|x| match x {
+                    .map_or('\0', |x| match x {
                         Fragment::Char(pc) => pc.c,
                         _ => '\0',
-                    })
-                    .unwrap_or('\0');
+                    });
 
                 if c == '.' && curr_token.parse::<i32>().is_ok() {
                     // decimal point in a float
@@ -249,7 +248,7 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
     }
 
     if !curr_token.is_empty() {
-        tokens.push((string_to_token(&curr_token), token_pos.clone()));
+        tokens.push((string_to_token(&curr_token), token_pos));
     }
 
     Ok(TokenBlock::new(tokens))

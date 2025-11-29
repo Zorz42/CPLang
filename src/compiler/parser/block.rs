@@ -13,16 +13,11 @@ pub fn parse_block(structs: &Vec<ASTStructDeclaration>, mut block: TokenBlock) -
     while block.has_tokens() {
         let statement = match block.peek() {
             (Token::BraceBlock(_), _pos) => {
-                let sub_block = if let Token::BraceBlock(sub_block) = block.get().0 {
-                    sub_block
-                } else {
-                    unreachable!()
-                };
+                let Token::BraceBlock(sub_block) = block.get().0 else { unreachable!() };
 
-                let statement = ASTStatement::Block {
+                ASTStatement::Block {
                     block: parse_block(structs, sub_block)?,
-                };
-                statement
+                }
             }
             _ => {
                 if let Some(statement) = parse_return_statement(structs, &mut block)? {
@@ -35,11 +30,7 @@ pub fn parse_block(structs: &Vec<ASTStructDeclaration>, mut block: TokenBlock) -
                     statement
                 } else {
                     let expression = parse_expression(structs, &mut block)?;
-                    if let Some(statement) = parse_assignment(structs, &expression, &mut block)? {
-                        statement
-                    } else {
-                        ASTStatement::Expression { expression }
-                    }
+                    parse_assignment(structs, &expression, &mut block)?.map_or(ASTStatement::Expression { expression }, |statement| statement)
                 }
             }
         };

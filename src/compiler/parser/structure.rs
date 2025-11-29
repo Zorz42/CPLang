@@ -16,7 +16,7 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
     block.get();
 
     let name = match block.get() {
-        (Token::Identifier(name), _) => name.clone(),
+        (Token::Identifier(name), _) => name,
         (_, pos) => {
             return Err(CompilerError {
                 message: "Expected struct name after struct keyword".to_owned(),
@@ -26,7 +26,7 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
     };
 
     let mut block = match block.get() {
-        (Token::BraceBlock(block), _) => block.clone(),
+        (Token::BraceBlock(block), _) => block,
         (_, pos) => {
             return Err(CompilerError {
                 message: "Expected block after struct name".to_owned(),
@@ -98,7 +98,7 @@ pub fn parse_struct_instantiation(structs: &Vec<ASTStructDeclaration>, block: &m
 
         if fields.contains_key(&field_name) {
             return Err(CompilerError {
-                message: format!("Field {} assigned twice.", field_name),
+                message: format!("Field {field_name} assigned twice."),
                 position: Some(field_pos),
             });
         }
@@ -109,7 +109,7 @@ pub fn parse_struct_instantiation(structs: &Vec<ASTStructDeclaration>, block: &m
     }
 
     let mut fields_res = Vec::new();
-    for (field_name, _field_type) in struct_declaration.fields.iter() {
+    for (field_name, _field_type) in &struct_declaration.fields {
         fields_res.push(fields[field_name].clone());
     }
 

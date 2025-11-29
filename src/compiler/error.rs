@@ -1,5 +1,5 @@
 // this struct stores file position so the error can be displayed
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FilePosition {
     pub first_pos: (usize, usize),
     pub last_pos: (usize, usize),
@@ -16,10 +16,10 @@ impl FilePosition {
 
 pub fn merge_file_positions(position1: FilePosition, position2: FilePosition) -> FilePosition {
     if position1 == FilePosition::unknown() {
-        return position2.clone();
+        return position2;
     }
     if position2 == FilePosition::unknown() {
-        return position1.clone();
+        return position1;
     }
     FilePosition {
         first_pos: position1.first_pos.min(position2.first_pos),
@@ -67,9 +67,9 @@ pub fn display_error(error: &CompilerError, input: &str) {
 
             for (idx, ch) in lines[line].chars().enumerate() {
                 if position.first_pos <= (line, idx) && (line, idx) < position.last_pos {
-                    print!("{RED_BG}{}{RESET}", ch);
+                    print!("{RED_BG}{ch}{RESET}");
                 } else {
-                    print!("{}", ch);
+                    print!("{ch}");
                 }
             }
             println!();

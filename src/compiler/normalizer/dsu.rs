@@ -15,14 +15,14 @@ pub struct Dsu<T: Add + Default> {
 }
 
 impl<T: Add<Output=T> + Default> Dsu<T> {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             parent: Vec::new(),
             value: Vec::new(),
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.parent.len()
     }
 

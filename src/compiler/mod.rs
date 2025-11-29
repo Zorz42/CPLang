@@ -1,3 +1,17 @@
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+#![warn(clippy::cargo)]
+// most of the time i like it if there are no references,
+// since the code looks prettier, especially in functions that consume arguments
+#![allow(clippy::needless_pass_by_value)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::too_many_lines)]
+#![allow(clippy::assigning_clones)]
+#![allow(clippy::format_push_string)]
+
 use crate::compiler::error::CompilerResult;
 use crate::compiler::generator::generate_code;
 use crate::compiler::lowerer::lower_ast;

@@ -35,7 +35,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
             } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 parse_struct_instantiation(structs, block, struct_declaration, pos, identifier)?
             } else {
-                ASTExpression::Variable(identifier.clone(), pos.clone())
+                ASTExpression::Variable(identifier.clone(), pos)
             }
         }
         (Token::Reference, _) => {
@@ -44,7 +44,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
 
             ASTExpression::Reference {
                 expression: Box::new(res),
-                pos: pos.clone(),
+                pos,
             }
         }
         (Token::Colon, _) => {
@@ -53,7 +53,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
 
             ASTExpression::Dereference {
                 expression: Box::new(res),
-                pos: pos.clone(),
+                pos,
             }
         }
         (Token::ParenthesisBlock(mut block), _) => {
@@ -62,7 +62,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
         (_, pos) => {
             return Err(CompilerError {
                 message: "Unexpected token".to_owned(),
-                position: Some(pos.clone()),
+                position: Some(pos),
             });
         }
     };
@@ -106,7 +106,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
     Ok(res)
 }
 
-fn token_to_operator(symbol: &Token) -> Option<ASTOperator> {
+const fn token_to_operator(symbol: &Token) -> Option<ASTOperator> {
     match symbol {
         Token::Plus => Some(ASTOperator::Plus),
         Token::Star => Some(ASTOperator::Mul),
@@ -128,14 +128,10 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
     let mut ops = Vec::new();
     let first_val = parse_value(structs, block)?;
     vals.push(first_val);
-    loop {
-        if let Some(op) = token_to_operator(&block.peek().0) {
-            block.get();
-            ops.push(op);
-            vals.push(parse_value(structs, block)?);
-        } else {
-            break;
-        }
+    while let Some(op) = token_to_operator(&block.peek().0) {
+        block.get();
+        ops.push(op);
+        vals.push(parse_value(structs, block)?);
     }
 
     let operator_precedence = vec![
