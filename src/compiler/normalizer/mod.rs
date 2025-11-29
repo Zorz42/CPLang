@@ -44,6 +44,7 @@ pub struct NormalizerState {
     structs_name_map: HashMap<String, IRStructLabel>,
     structs_type_hints: Vec<Vec<ASTType>>,
     instance_cache: HashMap<String, Vec<(Vec<IRTypeLabel>, IRInstanceLabel)>>,
+    template_types: HashMap<String, IRTypeLabel>,
 }
 
 impl NormalizerState {
@@ -94,6 +95,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         structs_name_map: HashMap::new(),
         instance_cache: HashMap::new(),
         structs_type_hints: Vec::new(),
+        template_types: HashMap::new(),
     };
 
     for (sig, block) in ast.functions {
@@ -191,8 +193,14 @@ fn find_matching_function(state: &mut NormalizerState, ir: &mut IR, function_nam
     let mut matching = Vec::new();
 
     for (sign, block) in candidates {
-        let resolver_backup = state.type_resolver.clone();
+        let old_resolver = state.type_resolver.clone();
+        let old_template_types = state.template_types.clone();
+        state.template_types.clear();
         let mut ok = true;
+
+        for (template_arg, pos) in sign.template.clone() {
+            state.template_types.insert(template_arg, state.type_resolver.new_type_label(pos));
+        }
 
         for ((_, hint, _), typ) in sign.args.iter().zip(function_arguments.iter()) {
             let hint_typ = normalize_type(state, ir, hint.clone())?;
@@ -203,7 +211,8 @@ fn find_matching_function(state: &mut NormalizerState, ir: &mut IR, function_nam
             }
         }
 
-        state.type_resolver = resolver_backup;
+        state.type_resolver = old_resolver;
+        state.template_types = old_template_types;
 
         if ok {
             matching.push((sign, block));
@@ -399,13 +408,21 @@ fn normalize_type(state: &mut NormalizerState, ir: &mut IR, typ: ASTType) -> Com
             state.type_resolver.hint_is(ir, type_label, typ)?;
         }
         ASTType::Struct(name, pos) => {
-            let struct_label = state.structs_name_map[&name];
-            let mut args = Vec::new();
-            for _ in &ir.structs[struct_label].fields {
-                args.push(state.type_resolver.new_type_label(pos.clone()));
-            }
+            if let Some(label) = state.template_types.get(&name).cloned() {
+                state.type_resolver.hint_equal(ir, label, type_label)?;
+            } else if let Some(struct_label) = state.structs_name_map.get(&name).cloned() {
+                let mut args = Vec::new();
+                for _ in &ir.structs[struct_label].fields {
+                    args.push(state.type_resolver.new_type_label(pos.clone()));
+                }
 
-            state.type_resolver.hint_struct(ir, type_label, struct_label, args)?;
+                state.type_resolver.hint_struct(ir, type_label, struct_label, args)?;
+            } else {
+                return Err(CompilerError {
+                    message: format!("Unknown type: {name}"),
+                    position: Some(pos),
+                })
+            };
         }
         ASTType::Reference(typ, _) => {
             let type_label2 = normalize_type(state, ir, *typ)?;
@@ -548,6 +565,10 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
     let label = state.curr_func_label;
     state.curr_func_label += 1;
 
+    for (template_arg, pos) in sign.template {
+        state.template_types.insert(template_arg, state.type_resolver.new_type_label(pos));
+    }
+
     let mut arguments = Vec::new();
     for ((arg, type_hint, _pos), arg_type) in sign.args.into_iter().zip(arg_types.clone()) {
         let hint_label = normalize_type(state, ir, type_hint)?;
@@ -582,6 +603,7 @@ fn normalize_function(state: &mut NormalizerState, ir: &mut IR, sign: ASTFunctio
     state.curr_func_vars = prev_func_vars;
     state.curr_func_ret_type = prev_func_ret_type;
     state.has_ret_statement = prev_has_ret_statement;
+    state.template_types.clear();
     state.depth -= 1;
 
     Ok(label)

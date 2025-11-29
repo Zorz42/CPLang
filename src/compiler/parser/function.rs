@@ -8,6 +8,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
     let mut res_signature = ASTFunctionSignature {
         name: String::new(),
         args: Vec::new(),
+        template: Vec::new(),
         pos: FilePosition::unknown(),
     };
     let res_block;
@@ -26,21 +27,41 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
     }
     *curr_idx += 1;
 
+    // check for template declaration
+    if let Some((Token::BracketBlock(block), _pos)) = block.children.get(*curr_idx) {
+        *curr_idx += 1;
+        for (token, token_pos) in block.children.clone() {
+            if let Token::Identifier(name) = token {
+                res_signature.template.push((name, token_pos));
+            } else {
+                return Err(CompilerError {
+                    message: "Unexpected token, expected identifier".to_string(),
+                    position: Some(token_pos),
+                });
+            }
+        }
+    }
+
     loop {
-        let (arg, arg_pos) = match &block.children.get(*curr_idx).clone() {
+        let (arg, arg_pos) = match block.children.get(*curr_idx).cloned() {
             Some((Token::BraceBlock(block), _pos)) => {
-                res_block = block.clone();
+                res_block = block;
                 *curr_idx += 1;
                 break;
             }
             Some((Token::Identifier(arg), pos)) => {
-                res_signature.pos = merge_file_positions(&res_signature.pos, pos);
-                (arg.clone(), block.children[*curr_idx].1.clone())
+                res_signature.pos = merge_file_positions(&res_signature.pos, &pos);
+                (arg, block.children[*curr_idx].1.clone())
             }
             _ => {
+                let pos = if let Some((_, pos)) = block.children.get(*curr_idx) {
+                    pos.clone()
+                } else {
+                    block.children[*curr_idx - 1].1.clone()
+                };
                 return Err(CompilerError {
                     message: "Expected block or argument identifier after function signature".to_string(),
-                    position: Some(block.children[*curr_idx - 1].1.clone()),
+                    position: Some(pos),
                 });
             }
         };

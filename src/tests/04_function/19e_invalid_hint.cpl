@@ -1,0 +1,8 @@
+//ERR 2 8 2 9
+
+func x: A
+    ret x + 10
+
+main
+    s = func("OK")
+    out "{func(12)} {s}"
