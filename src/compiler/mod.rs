@@ -35,7 +35,7 @@ fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
     //println!("{:?}", program_block);
 
-    let ast = parse_tokens(&program_block)?;
+    let ast = parse_tokens(program_block)?;
     let ast = lower_ast(ast);
 
     //println!("{:?}", ast);

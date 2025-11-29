@@ -1,96 +1,45 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
 use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStructDeclaration};
+use crate::compiler::parser::structure::parse_struct_instantiation;
 use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
-use std::collections::HashMap;
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
-fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<ASTExpression> {
-    let mut pos = block.children[*curr_idx].1.clone();
-    let mut res = match &block.children[*curr_idx].0 {
-        Token::Constant(constant) => {
-            *curr_idx += 1;
+fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<ASTExpression> {
+    let mut res = match block.get() {
+        (Token::Constant(constant), pos) => {
             match constant {
-                Constant::Integer(int) => ASTExpression::Integer(*int, pos),
-                Constant::Float(float) => ASTExpression::Float(*float, pos),
+                Constant::Integer(int) => ASTExpression::Integer(int, pos),
+                Constant::Float(float) => ASTExpression::Float(float, pos),
                 Constant::String(string) => ASTExpression::String(string.iter().map(|x| x.c).collect(), pos),
-                Constant::Boolean(boolean) => ASTExpression::Boolean(*boolean, pos),
+                Constant::Boolean(boolean) => ASTExpression::Boolean(boolean, pos),
             }
         }
-        Token::Identifier(identifier) => {
-            *curr_idx += 1;
+        (Token::Identifier(identifier), pos) => {
 
             // we need to know if this is a function call, a struct instantiation or a variable
-            if let Some((Token::ParenthesisBlock(call_block), call_block_pos)) = block.children.get(*curr_idx) {
+            if let Token::ParenthesisBlock(_) = block.peek().0 {
+                let (Token::ParenthesisBlock(mut call_block), call_block_pos) = block.get() else { unreachable!() };
+
                 let mut args = Vec::new();
-                let mut block_idx = 0;
-                *curr_idx += 1;
-                while block_idx < call_block.children.len() {
-                    let expr = parse_expression(structs, call_block, &mut block_idx)?;
+
+                while call_block.has_tokens() {
+                    let expr = parse_expression(structs, &mut call_block)?;
                     args.push(expr);
                 }
+
                 ASTExpression::FunctionCall {
                     name: identifier.clone(),
                     arguments: args,
-                    pos: merge_file_positions(&pos, call_block_pos),
+                    pos: merge_file_positions(&pos, &call_block_pos),
                 }
             } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
-                let mut fields = HashMap::new();
-                let mut fields_left = struct_declaration.fields.len();
-
-                while fields_left > 0 {
-                    let (field_name, field_pos) = match &block.children.get(*curr_idx).map(|x| x.0.clone()) {
-                        Some(Token::Identifier(ident)) => {
-                            if !struct_declaration.fields.iter().any(|(name, _type_hint)| name == ident) {
-                                return Err(CompilerError {
-                                    message: format!("Field with name {ident} not found"),
-                                    position: Some(block.children[*curr_idx].1.clone()),
-                                });
-                            }
-
-                            (ident.clone(), block.children[*curr_idx].1.clone())
-                        }
-                        _ => {
-                            return Err(CompilerError {
-                                message: "Expected struct field identifier after this token".to_owned(),
-                                position: Some(block.children[*curr_idx - 1].1.clone()),
-                            });
-                        }
-                    };
-
-                    *curr_idx += 1;
-
-                    let expr = parse_expression(structs, block, curr_idx)?;
-                    let expr_pos = expr.get_pos();
-
-                    if fields.contains_key(&field_name) {
-                        return Err(CompilerError {
-                            message: format!("Field {} assigned twice.", field_name),
-                            position: Some(field_pos),
-                        });
-                    }
-
-                    fields.insert(field_name, expr);
-                    pos = merge_file_positions(&pos, &expr_pos);
-                    fields_left -= 1;
-                }
-
-                let mut fields_res = Vec::new();
-                for (field_name, _field_type) in struct_declaration.fields.iter() {
-                    fields_res.push(fields[field_name].clone());
-                }
-
-                ASTExpression::StructInitialization {
-                    name: identifier.clone(),
-                    fields: fields_res,
-                    pos,
-                }
+                parse_struct_instantiation(structs, block, struct_declaration, pos, identifier)?
             } else {
                 ASTExpression::Variable(identifier.clone(), pos.clone())
             }
         }
-        Token::Reference => {
-            *curr_idx += 1;
-            let res = parse_value(structs, block, curr_idx)?;
+        (Token::Reference, _) => {
+            let res = parse_value(structs, block)?;
             let pos = res.get_pos();
 
             ASTExpression::Reference {
@@ -98,9 +47,8 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                 pos: pos.clone(),
             }
         }
-        Token::Colon => {
-            *curr_idx += 1;
-            let res = parse_value(structs, block, curr_idx)?;
+        (Token::Colon, _) => {
+            let res = parse_value(structs, block)?;
             let pos = res.get_pos();
 
             ASTExpression::Dereference {
@@ -108,12 +56,10 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                 pos: pos.clone(),
             }
         }
-        Token::ParenthesisBlock(block) => {
-            *curr_idx += 1;
-            parse_expression(structs, block, &mut 0)?
+        (Token::ParenthesisBlock(mut block), _) => {
+            parse_expression(structs, &mut block)?
         }
-        _ => {
-            let pos = &block.children[*curr_idx].1;
+        (_, pos) => {
             return Err(CompilerError {
                 message: "Unexpected token".to_owned(),
                 position: Some(pos.clone()),
@@ -121,22 +67,22 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
         }
     };
 
-    while let Some((Token::Dot, _)) = block.children.get(*curr_idx) {
-        *curr_idx += 1;
-        match block.children.get(*curr_idx) {
-            Some((Token::Identifier(s), pos)) => {
-                *curr_idx += 1;
-                if let Some(Token::ParenthesisBlock(call_block)) = block.children.get(*curr_idx).map(|x| &x.0) {
+    while Token::Dot == block.peek().0 {
+        block.get();
+        match block.get() {
+            (Token::Identifier(s), pos) => {
+                if let Token::ParenthesisBlock(_) = block.peek().0 {
                     let mut args = Vec::new();
-                    let mut block_idx = 0;
-                    *curr_idx += 1;
-                    while block_idx < call_block.children.len() {
-                        let expr = parse_expression(structs, call_block, &mut block_idx)?;
+
+                    let (Token::ParenthesisBlock(mut call_block), block_pos) = block.get() else { unreachable!() };
+
+                    while call_block.has_tokens() {
+                        let expr = parse_expression(structs, &mut call_block)?;
                         args.push(expr);
                     }
                     res = ASTExpression::MethodCall {
                         expression: Box::new(res),
-                        pos: pos.clone(),
+                        pos: merge_file_positions(&pos, &block_pos),
                         method_name: s.clone(),
                         arguments: args,
                     };
@@ -148,10 +94,10 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                     };
                 }
             }
-            _ => {
+            (_, pos) => {
                 return Err(CompilerError {
                     message: "Expected identifier after dot".to_owned(),
-                    position: Some(block.children[*curr_idx - 1].1.clone()),
+                    position: Some(pos),
                 });
             }
         }
@@ -177,16 +123,16 @@ fn token_to_operator(symbol: &Token) -> Option<ASTOperator> {
 }
 
 // looks for operators and values
-pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<ASTExpression> {
+pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<ASTExpression> {
     let mut vals = Vec::new();
     let mut ops = Vec::new();
-    let first_val = parse_value(structs, block, curr_idx)?;
+    let first_val = parse_value(structs, block)?;
     vals.push(first_val);
-    while *curr_idx < block.children.len() {
-        if let Some(op) = token_to_operator(&block.children[*curr_idx].0) {
-            *curr_idx += 1;
+    loop {
+        if let Some(op) = token_to_operator(&block.peek().0) {
+            block.get();
             ops.push(op);
-            vals.push(parse_value(structs, block, curr_idx)?);
+            vals.push(parse_value(structs, block)?);
         } else {
             break;
         }

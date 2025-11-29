@@ -21,23 +21,22 @@ It just converts tokens into a tree that represents the layout of the program, w
 It does however decide when statements end and operator precedence.
  */
 
-pub fn parse_tokens(program_block: &TokenBlock) -> CompilerResult<Ast> {
-    let mut curr_idx = 0;
+pub fn parse_tokens(mut program_block: TokenBlock) -> CompilerResult<Ast> {
     let mut function_declarations = Vec::new();
     let mut res = Ast {
         functions: Vec::new(),
         structs: Vec::new(),
     };
-    while curr_idx < program_block.children.len() {
-        if let Some(struct_declaration) = parse_struct_declaration(program_block, &mut curr_idx)? {
+    while program_block.has_tokens() {
+        if let Some(struct_declaration) = parse_struct_declaration(&mut program_block)? {
             res.structs.push(struct_declaration);
         } else {
-            let declaration = parse_function_declaration(program_block, &mut curr_idx)?;
+            let declaration = parse_function_declaration(&mut program_block)?;
             function_declarations.push(declaration);
         }
     }
     for (signature, function_block) in function_declarations {
-        let parsed_block = parse_block(&res.structs, &function_block)?;
+        let parsed_block = parse_block(&res.structs, function_block)?;
 
         res.functions.push((signature, parsed_block));
     }

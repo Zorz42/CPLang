@@ -6,7 +6,7 @@ pub struct FilePosition {
 }
 
 impl FilePosition {
-    pub fn unknown() -> Self {
+    pub const fn unknown() -> Self {
         Self {
             first_pos: (usize::MAX, usize::MAX),
             last_pos: (usize::MAX, usize::MAX),

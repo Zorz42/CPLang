@@ -7,34 +7,39 @@ use crate::compiler::parser::out::parse_out_statement;
 use crate::compiler::parser::statement::{parse_if_statement, parse_while_statement};
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
-pub fn parse_block(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock) -> CompilerResult<ASTBlock> {
-    let mut curr_idx = 0;
-
+pub fn parse_block(structs: &Vec<ASTStructDeclaration>, mut block: TokenBlock) -> CompilerResult<ASTBlock> {
     let mut res = ASTBlock { children: Vec::new() };
 
-    while curr_idx < block.children.len() {
-        let statement = match &block.children[curr_idx].0 {
-            Token::BraceBlock(sub_block) => {
+    while block.has_tokens() {
+        let statement = match block.peek() {
+            (Token::BraceBlock(_), _pos) => {
+                let sub_block = if let Token::BraceBlock(sub_block) = block.get().0 {
+                    sub_block
+                } else {
+                    unreachable!()
+                };
+
                 let statement = ASTStatement::Block {
                     block: parse_block(structs, sub_block)?,
                 };
-                curr_idx += 1;
                 statement
             }
             _ => {
-                if let Some(statement) = parse_return_statement(structs, block, &mut curr_idx)? {
+                if let Some(statement) = parse_return_statement(structs, &mut block)? {
                     statement
-                } else if let Some(statement) = parse_assignment(structs, block, &mut curr_idx)? {
+                } else if let Some(statement) = parse_out_statement(structs, &mut block)? {
                     statement
-                } else if let Some(statement) = parse_out_statement(structs, block, &mut curr_idx)? {
+                } else if let Some(statement) = parse_if_statement(structs, &mut block)? {
                     statement
-                } else if let Some(statement) = parse_if_statement(structs, block, &mut curr_idx)? {
-                    statement
-                } else if let Some(statement) = parse_while_statement(structs, block, &mut curr_idx)? {
+                } else if let Some(statement) = parse_while_statement(structs, &mut block)? {
                     statement
                 } else {
-                    let expression = parse_expression(structs, block, &mut curr_idx)?;
-                    ASTStatement::Expression { expression }
+                    let expression = parse_expression(structs, &mut block)?;
+                    if let Some(statement) = parse_assignment(structs, &expression, &mut block)? {
+                        statement
+                    } else {
+                        ASTStatement::Expression { expression }
+                    }
                 }
             }
         };

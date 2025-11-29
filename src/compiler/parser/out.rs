@@ -4,12 +4,13 @@ use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
 use crate::compiler::tokenizer::{tokenize_fragments, Constant, Token, TokenBlock};
 
-fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], pos: &FilePosition) -> CompilerResult<Vec<ASTExpression>> {
+fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>, pos: FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
     let mut curr = String::new();
     let mut in_format = false;
     let mut format_pos = FilePosition::unknown();
-    for (idx, pc) in string.iter().enumerate() {
+    let string_len = string.len();
+    for (idx, pc) in string.into_iter().enumerate() {
         if in_format {
             if pc.c == '}' {
                 in_format = false;
@@ -25,16 +26,15 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], 
                     )));
                 }
                 let fragment_block = parse_blocks(&string, &mut 0)?;
-                let token_block = tokenize_fragments(&fragment_block.fragments)?;
-                let mut idx2 = 0;
-                let expression = parse_expression(structs, &token_block, &mut idx2)?;
+                let mut token_block = tokenize_fragments(&fragment_block.fragments)?;
+                let expression = parse_expression(structs, &mut token_block)?;
 
                 let end_pos = FilePosition {
                     first_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 2),
                     last_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 2),
                 };
 
-                if idx2 != token_block.children.len() {
+                if token_block.has_tokens() {
                     return Err(CompilerError {
                         message: "There are multiple expressions in one format string".to_string(),
                         position: Some(merge_file_positions(&format_pos, &end_pos)),
@@ -60,8 +60,8 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], 
     }
     if in_format {
         let end_pos = FilePosition {
-            first_pos: (pos.first_pos.0, pos.first_pos.1 + string.len() + 1),
-            last_pos: (pos.first_pos.0, pos.first_pos.1 + string.len() + 1),
+            first_pos: (pos.first_pos.0, pos.first_pos.1 + string_len + 1),
+            last_pos: (pos.first_pos.0, pos.first_pos.1 + string_len + 1),
         };
         return Err(CompilerError {
             message: "Expected } to close format string".to_string(),
@@ -75,14 +75,11 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], 
     Ok(res)
 }
 
-pub fn parse_out_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
-    let print_pos = &block.children[*curr_idx].1;
-    if block.children[*curr_idx].0 == Token::Out {
-        *curr_idx += 1;
-        let pos = &block.children[*curr_idx].1;
-        match &block.children[*curr_idx].0 {
-            Token::Constant(Constant::String(string)) => {
-                *curr_idx += 1;
+pub fn parse_out_statement(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<ASTStatement>> {
+    if block.peek().0 == Token::Out {
+        let print_pos = block.get().1;
+        match block.get() {
+            (Token::Constant(Constant::String(string)), pos) => {
                 Ok(Some(ASTStatement::Print {
                     values: parse_format_string(structs, string, pos)?,
                 }))

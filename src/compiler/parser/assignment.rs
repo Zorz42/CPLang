@@ -1,43 +1,29 @@
 use crate::compiler::error::{merge_file_positions, CompilerResult};
-use crate::compiler::parser::ast::{ASTOperator, ASTStatement, ASTStructDeclaration};
+use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
-pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
-    let old_idx = *curr_idx;
-    if *curr_idx + 1 >= block.children.len() {
-        return Ok(None);
-    }
-
-    let assign_to = match parse_expression(structs, block, curr_idx) {
-        Ok(x) => x,
-        Err(_) => {
-            *curr_idx = old_idx;
-            return Ok(None);
-        }
-    };
-    let assign_to_pos = assign_to.get_pos();
-
+pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: &ASTExpression, block: &mut TokenBlock) -> CompilerResult<Option<ASTStatement>> {
     let (symbol, symbol_pos) = {
-        let token = block.children.get(*curr_idx).cloned();
-        match &token {
-            Some((Token::Assign, _)) |
-            Some((Token::Increase, _)) |
-            Some((Token::Decrease, _)) |
-            Some((Token::Increment, _)) |
-            Some((Token::Decrement, _)) => token.unwrap(),
+        let token = block.peek();
+        match token {
+            (Token::Assign, _) |
+            (Token::Increase, _) |
+            (Token::Decrease, _) |
+            (Token::Increment, _) |
+            (Token::Decrement, _) => block.get(),
             _ => {
-                *curr_idx = old_idx;
                 return Ok(None);
             }
         }
     };
 
-    *curr_idx += 1;
+    let assign_to_pos = assign_to.get_pos();
+    let assign_to = assign_to.clone();
 
     let res = match symbol.clone() {
         Token::Assign | Token::Increase | Token::Decrease => {
-            let value = parse_expression(structs, block, curr_idx)?;
+            let value = parse_expression(structs, block)?;
             let value_pos = value.get_pos();
             let pos = merge_file_positions(&assign_to_pos, &value_pos);
             match symbol {

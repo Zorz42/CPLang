@@ -124,7 +124,35 @@ pub enum Constant {
 // blocks are formed by indentation levels
 #[derive(Debug, PartialEq, Clone)]
 pub struct TokenBlock {
-    pub(crate) children: Vec<(Token, FilePosition)>,
+    tokens: Vec<(Token, FilePosition)>,
+}
+
+const LAST_TOKEN: (Token, FilePosition) = (Token::End, FilePosition::unknown());
+
+impl TokenBlock {
+    pub fn new(mut tokens: Vec<(Token, FilePosition)>) -> Self {
+        tokens.reverse();
+        Self {
+            tokens
+        }
+    }
+
+    pub fn peek(&self) -> &(Token, FilePosition) {
+        self.tokens.last().unwrap_or(&LAST_TOKEN)
+    }
+
+    pub fn get(&mut self) -> (Token, FilePosition) {
+        self.tokens.pop().unwrap_or(LAST_TOKEN.clone())
+    }
+
+    pub fn has_tokens(&self) -> bool {
+        self.peek().0 != Token::End
+    }
+
+    pub fn into_iter(mut self) -> Vec<(Token, FilePosition)> {
+        self.tokens.reverse();
+        self.tokens
+    }
 }
 
 fn string_to_token(string: &str) -> Token {
@@ -224,7 +252,5 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
         tokens.push((string_to_token(&curr_token), token_pos.clone()));
     }
 
-    Ok(TokenBlock {
-        children: tokens,
-    })
+    Ok(TokenBlock::new(tokens))
 }
