@@ -2,7 +2,7 @@ use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult
 use crate::compiler::parser::ast::{ASTExpression, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
-use crate::compiler::tokenizer::{tokenize_fragments, Constant, Keyword, Token, TokenBlock};
+use crate::compiler::tokenizer::{tokenize_fragments, Constant, Token, TokenBlock};
 
 fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], pos: &FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
@@ -77,7 +77,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: &[PosChar], 
 
 pub fn parse_out_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
     let print_pos = &block.children[*curr_idx].1;
-    if block.children[*curr_idx].0 == Token::Keyword(Keyword::Out) {
+    if block.children[*curr_idx].0 == Token::Out {
         *curr_idx += 1;
         let pos = &block.children[*curr_idx].1;
         match &block.children[*curr_idx].0 {

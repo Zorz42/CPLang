@@ -1,6 +1,6 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
 use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStructDeclaration};
-use crate::compiler::tokenizer::{Constant, Symbol, Token, TokenBlock};
+use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
 use std::collections::HashMap;
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
@@ -88,7 +88,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                 ASTExpression::Variable(identifier.clone(), pos.clone())
             }
         }
-        Token::Symbol(Symbol::Reference) => {
+        Token::Reference => {
             *curr_idx += 1;
             let res = parse_value(structs, block, curr_idx)?;
             let pos = res.get_pos();
@@ -98,7 +98,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
                 pos: pos.clone(),
             }
         }
-        Token::Symbol(Symbol::Colon) => {
+        Token::Colon => {
             *curr_idx += 1;
             let res = parse_value(structs, block, curr_idx)?;
             let pos = res.get_pos();
@@ -121,7 +121,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
         }
     };
 
-    while let Some((Token::Symbol(Symbol::Dot), _)) = block.children.get(*curr_idx) {
+    while let Some((Token::Dot, _)) = block.children.get(*curr_idx) {
         *curr_idx += 1;
         match block.children.get(*curr_idx) {
             Some((Token::Identifier(s), pos)) => {
@@ -160,18 +160,18 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx
     Ok(res)
 }
 
-fn symbol_to_operator(symbol: &Symbol) -> Option<ASTOperator> {
+fn token_to_operator(symbol: &Token) -> Option<ASTOperator> {
     match symbol {
-        Symbol::Plus => Some(ASTOperator::Plus),
-        Symbol::Star => Some(ASTOperator::Mul),
-        Symbol::Slash => Some(ASTOperator::Div),
-        Symbol::Equals => Some(ASTOperator::Equals),
-        Symbol::GreaterThan => Some(ASTOperator::Greater),
-        Symbol::LessThan => Some(ASTOperator::Less),
-        Symbol::GreaterThanOrEqual => Some(ASTOperator::GreaterEquals),
-        Symbol::LessThanOrEqual => Some(ASTOperator::LessEquals),
-        Symbol::Minus => Some(ASTOperator::Minus),
-        Symbol::NotEquals => Some(ASTOperator::NotEquals),
+        Token::Plus => Some(ASTOperator::Plus),
+        Token::Star => Some(ASTOperator::Mul),
+        Token::Slash => Some(ASTOperator::Div),
+        Token::Equals => Some(ASTOperator::Equals),
+        Token::GreaterThan => Some(ASTOperator::Greater),
+        Token::LessThan => Some(ASTOperator::Less),
+        Token::GreaterThanOrEqual => Some(ASTOperator::GreaterEquals),
+        Token::LessThanOrEqual => Some(ASTOperator::LessEquals),
+        Token::Minus => Some(ASTOperator::Minus),
+        Token::NotEquals => Some(ASTOperator::NotEquals),
         _ => None,
     }
 }
@@ -183,18 +183,12 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock,
     let first_val = parse_value(structs, block, curr_idx)?;
     vals.push(first_val);
     while *curr_idx < block.children.len() {
-        match &block.children[*curr_idx].0 {
-            Token::Symbol(symbol) => {
-                if let Some(op) = symbol_to_operator(symbol) {
-                    *curr_idx += 1;
-                    ops.push(op);
-                } else {
-                    break;
-                }
-
-                vals.push(parse_value(structs, block, curr_idx)?);
-            }
-            _ => break,
+        if let Some(op) = token_to_operator(&block.children[*curr_idx].0) {
+            *curr_idx += 1;
+            ops.push(op);
+            vals.push(parse_value(structs, block, curr_idx)?);
+        } else {
+            break;
         }
     }
 

@@ -2,7 +2,7 @@ use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult
 use crate::compiler::parser::ast::{ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::typed::parse_type;
-use crate::compiler::tokenizer::{Keyword, Symbol, Token, TokenBlock};
+use crate::compiler::tokenizer::{Token, TokenBlock};
 
 pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<(ASTFunctionSignature, TokenBlock)> {
     let mut res_signature = ASTFunctionSignature {
@@ -68,7 +68,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
         *curr_idx += 1;
 
         let type_hint = match &block.children.get(*curr_idx).clone() {
-            Some((Token::Symbol(Symbol::Colon), pos)) => {
+            Some((Token::Colon, pos)) => {
                 // type hint
                 *curr_idx += 1;
                 res_signature.pos = merge_file_positions(&res_signature.pos, pos);
@@ -84,7 +84,7 @@ pub fn parse_function_declaration(block: &TokenBlock, curr_idx: &mut usize) -> C
 }
 
 pub fn parse_return_statement(structs: &Vec<ASTStructDeclaration>, block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStatement>> {
-    if block.children[*curr_idx].0 != Token::Keyword(Keyword::Return) {
+    if block.children[*curr_idx].0 != Token::Return {
         return Ok(None);
     }
     let pos1 = block.children[*curr_idx].1.clone();

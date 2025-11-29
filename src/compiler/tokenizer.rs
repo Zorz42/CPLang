@@ -8,7 +8,15 @@ are identifiers which are later resolved by normalizer as well since they requir
  */
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Keyword {
+pub enum Token {
+    Identifier(String),
+    Constant(Constant),
+    BraceBlock(TokenBlock),
+    BracketBlock(TokenBlock),
+    ParenthesisBlock(TokenBlock),
+    End,
+
+    // keywords
     If,
     Else,
     While,
@@ -25,34 +33,8 @@ pub enum Keyword {
     Void,
     String,
     Bool,
-}
 
-impl Keyword {
-    fn from_str(s: &str) -> Option<Keyword> {
-        match s {
-            "if" => Some(Keyword::If),
-            "else" => Some(Keyword::Else),
-            "while" => Some(Keyword::While),
-            "for" => Some(Keyword::For),
-            "out" => Some(Keyword::Out),
-            "ret" => Some(Keyword::Return),
-            "struct" => Some(Keyword::Struct),
-            "inline_c" => Some(Keyword::InlineC),
-            "fn" => Some(Keyword::Fn),
-            "i32" => Some(Keyword::I32),
-            "i64" => Some(Keyword::I64),
-            "f32" => Some(Keyword::F32),
-            "f64" => Some(Keyword::F64),
-            "void" => Some(Keyword::Void),
-            "string" => Some(Keyword::String),
-            "bool" => Some(Keyword::Bool),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Symbol {
+    // symbols
     Plus,
     Star,
     Slash,
@@ -74,36 +56,58 @@ pub enum Symbol {
     QuestionMark,
 }
 
-impl Symbol {
-    fn from_char(c: char) -> Option<Symbol> {
-        match c {
-            '+' => Some(Symbol::Plus),
-            '*' => Some(Symbol::Star),
-            '/' => Some(Symbol::Slash),
-            '=' => Some(Symbol::Assign),
-            '<' => Some(Symbol::LessThan),
-            '>' => Some(Symbol::GreaterThan),
-            '-' => Some(Symbol::Minus),
-            '&' => Some(Symbol::Reference),
-            '.' => Some(Symbol::Dot),
-            ':' => Some(Symbol::Colon),
-            '?' => Some(Symbol::QuestionMark),
-            _ => None,
-        }
-    }
 
-    fn from_two_chars(c1: char, c2: char) -> Option<Symbol> {
-        match (c1, c2) {
-            ('=', '=') => Some(Symbol::Equals),
-            ('!', '=') => Some(Symbol::NotEquals),
-            ('<', '=') => Some(Symbol::LessThanOrEqual),
-            ('>', '=') => Some(Symbol::GreaterThanOrEqual),
-            ('+', '=') => Some(Symbol::Increase),
-            ('-', '=') => Some(Symbol::Decrease),
-            ('+', '+') => Some(Symbol::Increment),
-            ('-', '-') => Some(Symbol::Decrement),
-            _ => None,
-        }
+fn str_to_keyword(s: &str) -> Option<Token> {
+    match s {
+        "if" => Some(Token::If),
+        "else" => Some(Token::Else),
+        "while" => Some(Token::While),
+        "for" => Some(Token::For),
+        "out" => Some(Token::Out),
+        "ret" => Some(Token::Return),
+        "struct" => Some(Token::Struct),
+        "inline_c" => Some(Token::InlineC),
+        "fn" => Some(Token::Fn),
+        "i32" => Some(Token::I32),
+        "i64" => Some(Token::I64),
+        "f32" => Some(Token::F32),
+        "f64" => Some(Token::F64),
+        "void" => Some(Token::Void),
+        "string" => Some(Token::String),
+        "bool" => Some(Token::Bool),
+        _ => None,
+    }
+}
+
+
+fn symbol_from_char(c: char) -> Option<Token> {
+    match c {
+        '+' => Some(Token::Plus),
+        '*' => Some(Token::Star),
+        '/' => Some(Token::Slash),
+        '=' => Some(Token::Assign),
+        '<' => Some(Token::LessThan),
+        '>' => Some(Token::GreaterThan),
+        '-' => Some(Token::Minus),
+        '&' => Some(Token::Reference),
+        '.' => Some(Token::Dot),
+        ':' => Some(Token::Colon),
+        '?' => Some(Token::QuestionMark),
+        _ => None,
+    }
+}
+
+fn symbol_from_two_chars(c1: char, c2: char) -> Option<Token> {
+    match (c1, c2) {
+        ('=', '=') => Some(Token::Equals),
+        ('!', '=') => Some(Token::NotEquals),
+        ('<', '=') => Some(Token::LessThanOrEqual),
+        ('>', '=') => Some(Token::GreaterThanOrEqual),
+        ('+', '=') => Some(Token::Increase),
+        ('-', '=') => Some(Token::Decrease),
+        ('+', '+') => Some(Token::Increment),
+        ('-', '-') => Some(Token::Decrement),
+        _ => None,
     }
 }
 
@@ -123,20 +127,9 @@ pub struct TokenBlock {
     pub(crate) children: Vec<(Token, FilePosition)>,
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum Token {
-    Keyword(Keyword),
-    Identifier(String),
-    Symbol(Symbol),
-    Constant(Constant),
-    BraceBlock(TokenBlock),
-    BracketBlock(TokenBlock),
-    ParenthesisBlock(TokenBlock),
-}
-
 fn string_to_token(string: &str) -> Token {
-    if let Some(keyword) = Keyword::from_str(string) {
-        return Token::Keyword(keyword);
+    if let Some(keyword) = str_to_keyword(string) {
+        return keyword;
     }
 
     if let Ok(integer) = string.parse::<i32>() {
@@ -196,13 +189,13 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
                 if c == '.' && curr_token.parse::<i32>().is_ok() {
                     // decimal point in a float
                     add_to_token(&mut curr_token, &mut token_pos, c, pos);
-                } else if let Some(symbol) = Symbol::from_two_chars(c, next_char) {
+                } else if let Some(symbol) = symbol_from_two_chars(c, next_char) {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                    tokens.push((Token::Symbol(symbol), pos.clone()));
+                    tokens.push((symbol, pos.clone()));
                     iter.next();
-                } else if let Some(symbol) = Symbol::from_char(c) {
+                } else if let Some(symbol) = symbol_from_char(c) {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                    tokens.push((Token::Symbol(symbol), pos.clone()));
+                    tokens.push((symbol, pos.clone()));
                 } else if c == ' ' {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 } else {

@@ -3,10 +3,10 @@ use crate::compiler::parser::ast::{ASTStructDeclaration, ASTType};
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::function::parse_function_declaration;
 use crate::compiler::parser::typed::parse_type;
-use crate::compiler::tokenizer::{Keyword, Symbol, Token, TokenBlock};
+use crate::compiler::tokenizer::{Token, TokenBlock};
 
 pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> CompilerResult<Option<ASTStructDeclaration>> {
-    if Some(Token::Keyword(Keyword::Struct)) != block.children.get(*curr_idx).map(|x| x.0.clone()) {
+    if Some(Token::Struct) != block.children.get(*curr_idx).map(|x| x.0.clone()) {
         return Ok(None);
     }
 
@@ -46,7 +46,7 @@ pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> Com
             Some(Token::Identifier(name)) => {
                 idx += 1;
 
-                let type_hint = if let Some(Token::Symbol(Symbol::Colon)) = block.children.get(idx).map(|x| &x.0) {
+                let type_hint = if let Some(Token::Colon) = block.children.get(idx).map(|x| &x.0) {
                     idx += 1;
                     parse_type(&block, &mut idx)?
                 } else {
@@ -55,7 +55,7 @@ pub fn parse_struct_declaration(block: &TokenBlock, curr_idx: &mut usize) -> Com
 
                 fields.push((name.clone(), type_hint));
             }
-            Some(Token::Keyword(Keyword::Fn)) => {
+            Some(Token::Fn) => {
                 idx += 1;
                 let (signature, block) = parse_function_declaration(&block, &mut idx)?;
                 let block = parse_block(&Vec::new(), &block)?;
