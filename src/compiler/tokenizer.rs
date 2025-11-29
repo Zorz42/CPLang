@@ -191,7 +191,7 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
         if curr_token.is_empty() {
             *token_pos = pos.clone();
         } else {
-            *token_pos = merge_file_positions(token_pos, pos);
+            *token_pos = merge_file_positions(token_pos.clone(), pos.clone());
         }
         curr_token.push(c);
     };

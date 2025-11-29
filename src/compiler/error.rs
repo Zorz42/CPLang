@@ -14,11 +14,11 @@ impl FilePosition {
     }
 }
 
-pub fn merge_file_positions(position1: &FilePosition, position2: &FilePosition) -> FilePosition {
-    if *position1 == FilePosition::unknown() {
+pub fn merge_file_positions(position1: FilePosition, position2: FilePosition) -> FilePosition {
+    if position1 == FilePosition::unknown() {
         return position2.clone();
     }
-    if *position2 == FilePosition::unknown() {
+    if position2 == FilePosition::unknown() {
         return position1.clone();
     }
     FilePosition {

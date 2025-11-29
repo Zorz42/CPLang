@@ -104,7 +104,7 @@ pub fn parse_struct_instantiation(structs: &Vec<ASTStructDeclaration>, block: &m
         }
 
         fields.insert(field_name, expr);
-        pos = merge_file_positions(&pos, &expr_pos);
+        pos = merge_file_positions(pos, expr_pos);
         fields_left -= 1;
     }
 

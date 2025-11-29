@@ -61,7 +61,7 @@ impl FragmentBlock {
         let mut position = FilePosition::unknown();
         for fragment in &fragments {
             let fragment_pos = fragment.get_position();
-            position = merge_file_positions(&position, &fragment_pos);
+            position = merge_file_positions(position, fragment_pos);
         }
         Self { fragments, position }
     }
@@ -184,7 +184,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
             }
             Location::String => {
                 if pos_char.c == '"' {
-                    let pos = merge_file_positions(string_quote_position.as_ref().unwrap(), &pos_char.pos);
+                    let pos = merge_file_positions(string_quote_position.clone().unwrap(), pos_char.pos.clone());
                     res.push(Fragment::String(current_string.clone(), pos));
                     location = Location::Code;
                 }
@@ -238,7 +238,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
 
             return Err(CompilerError {
                 message: "Unclosed string literal".to_string(),
-                position: Some(merge_file_positions(start_pos, end_pos)),
+                position: Some(merge_file_positions(start_pos.clone(), end_pos.clone())),
             });
         }
         Location::MultiLineComment(_) => {
@@ -247,7 +247,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
 
             return Err(CompilerError {
                 message: "Unclosed multiline comment".to_string(),
-                position: Some(merge_file_positions(start_pos, end_pos)),
+                position: Some(merge_file_positions(start_pos.clone(), end_pos.clone())),
             });
         }
         _ => {}
@@ -284,7 +284,7 @@ pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<Fr
 
                 let mut fragment_block = parse_blocks(input, idx)?;
 
-                fragment_block.position = merge_file_positions(&fragment_block.position, opening_pos);
+                fragment_block.position = merge_file_positions(fragment_block.position, opening_pos.clone());
 
                 // expect closing char
                 if *idx >= input.len() {
@@ -295,7 +295,7 @@ pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<Fr
                 }
                 match &input[*idx] {
                     Fragment::Char(PosChar { c, pos: closing_pos }) if *c == closing_char => {
-                        fragment_block.position = merge_file_positions(&fragment_block.position, closing_pos);
+                        fragment_block.position = merge_file_positions(fragment_block.position, closing_pos.clone());
                         *idx += 1; // consume closing char
                         let fragment = match opening_char {
                             '(' => Fragment::ParenthesisBlock(fragment_block),
@@ -379,7 +379,7 @@ fn parse_indentation(input: &FragmentBlock) -> CompilerResult<FragmentBlock> {
 
             return Err(CompilerError {
                 message: format!("Indentation must have a multiple of 4 spaces, found {} spaces", leading_spaces),
-                position: Some(merge_file_positions(first_char_pos, last_char_pos)),
+                position: Some(merge_file_positions(first_char_pos.clone(), last_char_pos.clone())),
             });
         }
 

@@ -9,7 +9,7 @@ pub fn parse_type(block: &mut TokenBlock) -> CompilerResult<ASTType> {
         (Token::QuestionMark, pos) => Ok(ASTType::Any(pos)),
         (Token::Reference, pos) => {
             let typ = parse_type(block)?;
-            let pos = merge_file_positions(&pos, &typ.get_pos());
+            let pos = merge_file_positions(pos, typ.get_pos());
             Ok(ASTType::Reference(Box::new(typ), pos))
         }
         (Token::I32, pos) => Ok(ASTType::Primitive(ASTPrimitiveType::I32, pos)),

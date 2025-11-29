@@ -25,7 +25,7 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: &ASTExpr
         Token::Assign | Token::Increase | Token::Decrease => {
             let value = parse_expression(structs, block)?;
             let value_pos = value.get_pos();
-            let pos = merge_file_positions(&assign_to_pos, &value_pos);
+            let pos = merge_file_positions(assign_to_pos, value_pos);
             match symbol {
                 Token::Assign => ASTStatement::Assignment { assign_to, value, pos },
                 Token::Increase => ASTStatement::AssignmentOperator {
@@ -46,11 +46,11 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: &ASTExpr
 
         Token::Increment => ASTStatement::AssignmentIncrement {
             assign_to,
-            pos: merge_file_positions(&assign_to_pos, &symbol_pos),
+            pos: merge_file_positions(assign_to_pos, symbol_pos),
         },
         Token::Decrement => ASTStatement::AssignmentDecrement {
             assign_to,
-            pos: merge_file_positions(&assign_to_pos, &symbol_pos),
+            pos: merge_file_positions(assign_to_pos, symbol_pos),
         },
         _ => unreachable!(),
     };

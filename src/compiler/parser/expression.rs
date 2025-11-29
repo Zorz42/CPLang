@@ -30,7 +30,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                 ASTExpression::FunctionCall {
                     name: identifier.clone(),
                     arguments: args,
-                    pos: merge_file_positions(&pos, &call_block_pos),
+                    pos: merge_file_positions(pos, call_block_pos),
                 }
             } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 parse_struct_instantiation(structs, block, struct_declaration, pos, identifier)?
@@ -82,7 +82,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                     }
                     res = ASTExpression::MethodCall {
                         expression: Box::new(res),
-                        pos: merge_file_positions(&pos, &block_pos),
+                        pos: merge_file_positions(pos, block_pos),
                         method_name: s.clone(),
                         arguments: args,
                     };
@@ -166,7 +166,7 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
                 let expression1 = vals.remove(i);
                 let expression2 = vals.remove(i);
                 let operator = ops.remove(i);
-                let pos = merge_file_positions(&expression1.get_pos(), &expression2.get_pos());
+                let pos = merge_file_positions(expression1.get_pos(), expression2.get_pos());
                 vals.insert(
                     i,
                     ASTExpression::BinaryOperation {

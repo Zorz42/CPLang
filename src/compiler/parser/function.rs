@@ -16,7 +16,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
     match block.get() {
         (Token::Identifier(name), pos) => {
             res_signature.name = name.clone();
-            res_signature.pos = merge_file_positions(&res_signature.pos, &pos);
+            res_signature.pos = merge_file_positions(res_signature.pos, pos);
         }
         (_, pos) => {
             return Err(CompilerError {
@@ -49,7 +49,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
                 break;
             }
             (Token::Identifier(arg), pos) => {
-                res_signature.pos = merge_file_positions(&res_signature.pos, &pos);
+                res_signature.pos = merge_file_positions(res_signature.pos, pos.clone());
                 (arg, pos)
             }
             (_, pos) => {
@@ -64,7 +64,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
             (Token::Colon, _pos) => {
                 // type hint
                 let pos = block.get().1;
-                res_signature.pos = merge_file_positions(&res_signature.pos, &pos);
+                res_signature.pos = merge_file_positions(res_signature.pos, pos);
                 parse_type(block)?
             }
             _ => ASTType::Any(arg_pos.clone()),
@@ -90,6 +90,6 @@ pub fn parse_return_statement(structs: &Vec<ASTStructDeclaration>, block: &mut T
     let pos2 = expression.get_pos();
     Ok(Some(ASTStatement::Return {
         return_value: Some(expression),
-        pos: merge_file_positions(&pos1, &pos2),
+        pos: merge_file_positions(pos1, pos2),
     }))
 }

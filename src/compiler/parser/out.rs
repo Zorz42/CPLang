@@ -37,7 +37,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
                 if token_block.has_tokens() {
                     return Err(CompilerError {
                         message: "There are multiple expressions in one format string".to_string(),
-                        position: Some(merge_file_positions(&format_pos, &end_pos)),
+                        position: Some(merge_file_positions(format_pos, end_pos)),
                     });
                 }
 
@@ -65,7 +65,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
         };
         return Err(CompilerError {
             message: "Expected } to close format string".to_string(),
-            position: Some(merge_file_positions(&format_pos, &end_pos)),
+            position: Some(merge_file_positions(format_pos, end_pos)),
         });
     }
 
