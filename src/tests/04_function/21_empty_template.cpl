@@ -1,0 +1,7 @@
+//OUT=22
+
+func[] x
+    ret x + 10
+
+main
+    out "{func(12)}"

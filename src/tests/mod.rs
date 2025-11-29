@@ -19,7 +19,6 @@ mod tests {
         let exec_file = format!("{}/test_exec_{}", cache_dir, hash);
 
         if std::path::Path::new(&exec_file).exists() {
-            println!("Using cached executable");
             return exec_file;
         }
         let output = std::process::Command::new("gcc")
