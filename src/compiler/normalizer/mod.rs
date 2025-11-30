@@ -1,8 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
-    IRType, IRTypeLabel, IRVariableLabel,
+    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
+    IRTypeLabel, IRVariableLabel, IR,
 };
 use crate::compiler::normalizer::type_resolver::TypeResolver;
 use crate::compiler::parser::ast::{
@@ -15,6 +15,12 @@ mod dsu;
 pub mod ir;
 mod ir_debug;
 mod type_resolver;
+
+#[derive(PartialEq, Eq)]
+enum ValuePhysicality {
+    Temporary,
+    Physical,
+}
 
 const fn operator_to_ir_operator(operator: ASTOperator) -> IROperator {
     match operator {
@@ -248,8 +254,7 @@ impl Normalizer {
         Ok(matching.pop().unwrap())
     }
 
-    // returns (expression, expression type, is expression physical (assignable) value)
-    fn normalize_expression(&mut self, expression: ASTExpression) -> CompilerResult<(IRExpression, IRTypeLabel, bool)> {
+    fn normalize_expression(&mut self, expression: ASTExpression) -> CompilerResult<(IRExpression, IRTypeLabel, ValuePhysicality)> {
         let type_label = self.type_resolver.new_type_label(expression.get_pos());
 
         let (expr, is_phys) = match expression {
@@ -259,7 +264,7 @@ impl Normalizer {
                     IRExpression::Constant {
                         constant: IRConstant::Int(i64::from(x)),
                     },
-                    false,
+                    ValuePhysicality::Temporary,
                 )
             }
 
@@ -269,7 +274,7 @@ impl Normalizer {
                     IRExpression::Constant {
                         constant: IRConstant::Float(f64::from(x)),
                     },
-                    false,
+                    ValuePhysicality::Temporary,
                 )
             }
 
@@ -279,13 +284,16 @@ impl Normalizer {
                     IRExpression::Constant {
                         constant: IRConstant::String(x),
                     },
-                    false,
+                    ValuePhysicality::Temporary,
                 )
             }
 
             ASTExpression::Boolean(x, _) => {
                 self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::Bool)?;
-                (IRExpression::Constant { constant: IRConstant::Bool(x) }, false)
+                (
+                    IRExpression::Constant { constant: IRConstant::Bool(x) },
+                    ValuePhysicality::Temporary
+                )
             }
 
             ASTExpression::Variable(name, pos) => {
@@ -299,13 +307,13 @@ impl Normalizer {
                 };
                 let var_type_label = self.ir.variable_types[label];
                 self.type_resolver.hint_equal(&self.ir, type_label, var_type_label)?;
-                (IRExpression::Variable { variable_label: label }, true)
+                (IRExpression::Variable { variable_label: label }, ValuePhysicality::Physical)
             }
 
             ASTExpression::Reference { expression, pos } => {
                 let (expression, type_label2, is_phys) = self.normalize_expression(*expression)?;
 
-                if !is_phys {
+                if is_phys == ValuePhysicality::Temporary {
                     return Err(CompilerError {
                         message: "Cannot reference non-physical value.".to_string(),
                         position: Some(pos),
@@ -317,7 +325,7 @@ impl Normalizer {
                     IRExpression::Reference {
                         expression: Box::new(expression),
                     },
-                    false,
+                    ValuePhysicality::Temporary,
                 )
             }
 
@@ -328,7 +336,7 @@ impl Normalizer {
                     IRExpression::Dereference {
                         expression: Box::new(expression),
                     },
-                    true,
+                    ValuePhysicality::Physical,
                 )
             }
 
@@ -351,7 +359,7 @@ impl Normalizer {
                         instance_label: function_label,
                         instance_arguments: function_arguments,
                     },
-                    false,
+                    ValuePhysicality::Temporary,
                 )
             }
 
@@ -376,7 +384,7 @@ impl Normalizer {
                 };
                 self.type_resolver.hint_struct(&self.ir, type_label, struct_label, fields_type_labels)?;
 
-                (struct_expr, false)
+                (struct_expr, ValuePhysicality::Temporary)
             }
 
             ASTExpression::FieldAccess { expression, field_name, pos } => {
@@ -393,7 +401,7 @@ impl Normalizer {
                         expression: Box::new(expression),
                         field_label,
                     },
-                    true,
+                    ValuePhysicality::Physical,
                 )
             }
 
@@ -417,7 +425,7 @@ impl Normalizer {
                         type1_label,
                         type2_label,
                     },
-                    false,
+                    ValuePhysicality::Temporary,
                 )
             }
 
@@ -431,7 +439,7 @@ impl Normalizer {
                         autoref_label,
                         expression: Box::new(expression),
                     },
-                    false,
+                    ValuePhysicality::Temporary,
                 )
             }
         };
@@ -506,7 +514,7 @@ impl Normalizer {
                     let (value, type_label2, _is_phys) = self.normalize_expression(value)?;
                     self.type_resolver.hint_equal(&self.ir, type_label1, type_label2)?;
 
-                    if !is_phys {
+                    if is_phys == ValuePhysicality::Temporary {
                         return Err(CompilerError {
                             message: "Left hand side is non-assignable".to_string(),
                             position: Some(pos),
