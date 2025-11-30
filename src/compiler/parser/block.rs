@@ -11,27 +11,29 @@ pub fn parse_block(structs: &Vec<ASTStructDeclaration>, mut block: TokenBlock) -
     let mut res = ASTBlock { children: Vec::new() };
 
     while block.has_tokens() {
-        let statement = match block.peek() {
-            (Token::BraceBlock(_), _pos) => {
-                let Token::BraceBlock(sub_block) = block.get().0 else { unreachable!() };
+        let statement = if let (Token::BraceBlock(_), _pos) = block.peek() {
+            let Token::BraceBlock(sub_block) = block.get().0 else { unreachable!() };
 
-                ASTStatement::Block {
-                    block: parse_block(structs, sub_block)?,
+            ASTStatement::Block {
+                block: parse_block(structs, sub_block)?,
+            }
+        } else {
+            let parsers = [parse_return_statement, parse_out_statement, parse_if_statement, parse_while_statement];
+
+            let mut parser_res = None;
+
+            for parser in parsers {
+                if let Some(res) = parser(structs, &mut block)? {
+                    parser_res = Some(res);
+                    break;
                 }
             }
-            _ => {
-                if let Some(statement) = parse_return_statement(structs, &mut block)? {
-                    statement
-                } else if let Some(statement) = parse_out_statement(structs, &mut block)? {
-                    statement
-                } else if let Some(statement) = parse_if_statement(structs, &mut block)? {
-                    statement
-                } else if let Some(statement) = parse_while_statement(structs, &mut block)? {
-                    statement
-                } else {
-                    let expression = parse_expression(structs, &mut block)?;
-                    parse_assignment(structs, &expression, &mut block)?.map_or(ASTStatement::Expression { expression }, |statement| statement)
-                }
+
+            if let Some(parser_res) = parser_res {
+                parser_res
+            } else {
+                let expression = parse_expression(structs, &mut block)?;
+                parse_assignment(structs, &expression, &mut block)?.map_or(ASTStatement::Expression { expression }, |statement| statement)
             }
         };
         res.children.push(statement);

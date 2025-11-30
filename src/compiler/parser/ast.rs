@@ -123,18 +123,18 @@ pub enum ASTExpression {
 impl ASTExpression {
     pub fn get_pos(&self) -> FilePosition {
         match self {
-            Self::Integer(_, pos) |
-            Self::Float(_, pos) |
-            Self::String(_, pos) |
-            Self::Boolean(_, pos) |
-            Self::Variable(_, pos) |
-            Self::Reference { pos, .. } |
-            Self::FunctionCall { pos, .. } |
-            Self::StructInitialization { pos, .. } |
-            Self::FieldAccess { pos, .. } |
-            Self::MethodCall { pos, .. } |
-            Self::Dereference { pos, .. } |
-            Self::BinaryOperation { pos, .. } => pos.clone(),
+            Self::Integer(_, pos)
+            | Self::Float(_, pos)
+            | Self::String(_, pos)
+            | Self::Boolean(_, pos)
+            | Self::Variable(_, pos)
+            | Self::Reference { pos, .. }
+            | Self::FunctionCall { pos, .. }
+            | Self::StructInitialization { pos, .. }
+            | Self::FieldAccess { pos, .. }
+            | Self::MethodCall { pos, .. }
+            | Self::Dereference { pos, .. }
+            | Self::BinaryOperation { pos, .. } => pos.clone(),
             Self::AutoRef { expression } => expression.get_pos(),
         }
     }
@@ -171,16 +171,13 @@ pub enum ASTType {
     Any(FilePosition),
     Primitive(ASTPrimitiveType, FilePosition),
     Reference(Box<ASTType>, FilePosition),
-    Struct(String, FilePosition),
+    Identifier(String, FilePosition),
 }
 
 impl ASTType {
     pub fn get_pos(&self) -> FilePosition {
         match self {
-            Self::Any(pos) |
-            Self::Primitive(_, pos) |
-            Self::Reference(_, pos) |
-            Self::Struct(_, pos) => pos.clone()
+            Self::Any(pos) | Self::Primitive(_, pos) | Self::Reference(_, pos) | Self::Identifier(_, pos) => pos.clone(),
         }
     }
 }

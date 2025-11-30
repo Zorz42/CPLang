@@ -11,32 +11,30 @@ pub fn parse_if_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Token
     block.get();
     let condition = parse_expression(structs, block)?;
 
-    let res_block =
+    let res_block = match block.get() {
+        (Token::BraceBlock(token_block), _) => parse_block(structs, token_block)?,
+        (_, pos) => {
+            return Err(CompilerError {
+                message: "Expected block after if condition".to_string(),
+                position: Some(pos),
+            });
+        }
+    };
+
+    let else_block = if Token::Else == block.peek().0 {
+        block.get();
         match block.get() {
-            (Token::BraceBlock(token_block), _) => parse_block(structs, token_block)?,
+            (Token::BraceBlock(token_block), _) => Some(parse_block(structs, token_block)?),
             (_, pos) => {
                 return Err(CompilerError {
-                    message: "Expected block after if condition".to_string(),
+                    message: "Expected block after else keyword".to_string(),
                     position: Some(pos),
                 });
             }
-        };
-
-    let else_block =
-        if Token::Else == block.peek().0 {
-            block.get();
-            match block.get() {
-                (Token::BraceBlock(token_block), _) => Some(parse_block(structs, token_block)?),
-                (_, pos) => {
-                    return Err(CompilerError {
-                        message: "Expected block after else keyword".to_string(),
-                        position: Some(pos),
-                    })
-                }
-            }
-        } else {
-            None
-        };
+        }
+    } else {
+        None
+    };
 
     Ok(Some(ASTStatement::If {
         condition,
@@ -53,16 +51,15 @@ pub fn parse_while_statement(structs: &Vec<ASTStructDeclaration>, block: &mut To
     block.get();
     let condition = parse_expression(structs, block)?;
 
-    let res_block =
-        match block.get() {
-            (Token::BraceBlock(token_block), _) => parse_block(structs, token_block)?,
-            (_, pos) => {
-                return Err(CompilerError {
-                    message: "Expected block after while condition".to_string(),
-                    position: Some(pos),
-                });
-            }
-        };
+    let res_block = match block.get() {
+        (Token::BraceBlock(token_block), _) => parse_block(structs, token_block)?,
+        (_, pos) => {
+            return Err(CompilerError {
+                message: "Expected block after while condition".to_string(),
+                position: Some(pos),
+            });
+        }
+    };
 
     Ok(Some(ASTStatement::While { condition, block: res_block }))
 }

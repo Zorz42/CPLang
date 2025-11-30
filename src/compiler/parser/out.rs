@@ -1,8 +1,8 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition, merge_file_positions};
 use crate::compiler::parser::ast::{ASTExpression, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
-use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
-use crate::compiler::tokenizer::{tokenize_fragments, Constant, Token, TokenBlock};
+use crate::compiler::preprocessor::{Fragment, PosChar, parse_blocks};
+use crate::compiler::tokenizer::{Constant, Token, TokenBlock, tokenize_fragments};
 
 fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>, pos: FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
@@ -79,11 +79,9 @@ pub fn parse_out_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
     if block.peek().0 == Token::Out {
         let print_pos = block.get().1;
         match block.get() {
-            (Token::Constant(Constant::String(string)), pos) => {
-                Ok(Some(ASTStatement::Print {
-                    values: parse_format_string(structs, string, pos)?,
-                }))
-            }
+            (Token::Constant(Constant::String(string)), pos) => Ok(Some(ASTStatement::Print {
+                values: parse_format_string(structs, string, pos)?,
+            })),
             _ => Err(CompilerError {
                 message: "Expected string after out keyword".to_string(),
                 position: Some(print_pos),

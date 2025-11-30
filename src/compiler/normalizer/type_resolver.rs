@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::default_operator_map::setup_operator_map;
 use crate::compiler::normalizer::dsu::Dsu;
-use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
+use crate::compiler::normalizer::ir::{IR, IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel};
 use std::collections::{HashMap, VecDeque};
 use std::ops::Add;
 
@@ -104,7 +104,11 @@ impl TypeResolver {
     fn try_set_type(&mut self, label: IRTypeLabel, typ: IRType) -> CompilerResult<()> {
         if self.types_dsu.get(label).typ.is_some() && self.types_dsu.get(label).typ.as_ref() != Some(&typ) {
             return Err(CompilerError {
-                message: format!("This cannot be of type {:?} and {:?} at the same time", self.types_dsu.get(label).typ.as_ref().unwrap(), typ),
+                message: format!(
+                    "This cannot be of type {:?} and {:?} at the same time",
+                    self.types_dsu.get(label).typ.as_ref().unwrap(),
+                    typ
+                ),
                 position: Some(self.type_positions[label].clone()),
             });
         }
@@ -118,7 +122,11 @@ impl TypeResolver {
     fn try_set_ref(&mut self, label: IRTypeLabel, ref_val: i32) -> CompilerResult<()> {
         if self.types_dsu.get(label).ref_depth.is_some() && self.types_dsu.get(label).ref_depth != Some(ref_val) {
             return Err(CompilerError {
-                message: format!("This cannot be {}-time reference and {}-time reference at the same time", self.types_dsu.get(label).ref_depth.as_ref().unwrap(), ref_val),
+                message: format!(
+                    "This cannot be {}-time reference and {}-time reference at the same time",
+                    self.types_dsu.get(label).ref_depth.as_ref().unwrap(),
+                    ref_val
+                ),
                 position: Some(self.type_positions[label].clone()),
             });
         }
@@ -144,7 +152,7 @@ impl TypeResolver {
                                     return Err(CompilerError {
                                         message: format!("Operator {op:?} is not defined for {node_type2:?} and {node_type:?}"),
                                         position: Some(self.type_positions[ne].clone()),
-                                    })
+                                    });
                                 };
                                 let (ir_type, ref_depth) = deref_type(ir_type);
                                 self.try_set_type(ne, ir_type)?;
@@ -157,7 +165,7 @@ impl TypeResolver {
                                     return Err(CompilerError {
                                         message: format!("This cannot be a struct and {node_type:?} at the same time."),
                                         position: Some(self.type_positions[node].clone()),
-                                    })
+                                    });
                                 };
 
                                 for (typ_label, typ) in args.into_iter().zip(args2) {
@@ -185,10 +193,15 @@ impl TypeResolver {
                         Conn::IsField(typ, field) => {
                             let (struct_label, struct_args) = match &self.types_dsu.get(node).typ {
                                 Some(IRType::Struct(label, args)) => (*label, args),
-                                _ => return Err(CompilerError {
-                                    message: format!("Cannot access field since this is not a struct but has type {:?}", self.types_dsu.get(node).typ.as_ref().unwrap()),
-                                    position: Some(self.type_positions[node].clone()),
-                                })
+                                _ => {
+                                    return Err(CompilerError {
+                                        message: format!(
+                                            "Cannot access field since this is not a struct but has type {:?}",
+                                            self.types_dsu.get(node).typ.as_ref().unwrap()
+                                        ),
+                                        position: Some(self.type_positions[node].clone()),
+                                    });
+                                }
                             };
                             let curr_struct = &ir.structs[struct_label];
                             let mut field_idx = 0;
@@ -208,13 +221,14 @@ impl TypeResolver {
                 }
             }
 
-
             if self.types_dsu.get(node).typ.is_none() {
                 // if the type is struct, save its fields (if they exist).
                 let mut struct_fields: Option<(IRStructLabel, Vec<IRTypeLabel>)> = None;
 
                 for ne in self.types_dsu.get(node).neighbours.clone() {
-                    if let Conn::Struct(typ, structure, args) = ne && self.are_equal(typ, node) {
+                    if let Conn::Struct(typ, structure, args) = ne
+                        && self.are_equal(typ, node)
+                    {
                         if let Some((curr_structure, curr_args)) = &struct_fields {
                             assert_eq!(*curr_structure, structure);
 
@@ -263,7 +277,6 @@ impl TypeResolver {
                 }
             }
 
-
             // loop for ref deduction
             if let Some(node_ref) = self.types_dsu.get(node).ref_depth {
                 for (ne, delta) in self.types_dsu.get(node).ref_neighbours.clone() {
@@ -287,7 +300,7 @@ impl TypeResolver {
             return Err(CompilerError {
                 message: format!("This expression cannot be {:?} and {:?} at the same time.", typ1.unwrap(), typ2.unwrap()),
                 position: Some(self.type_positions[label1].clone()),
-            })
+            });
         }
 
         self.types_dsu.get(label1).typ = typ1;
@@ -302,9 +315,13 @@ impl TypeResolver {
             ref2 = ref1;
         } else if ref1 != ref2 {
             return Err(CompilerError {
-                message: format!("This expression cannot be {:?}-time and {:?}-time reference at the same time.", ref1.unwrap(), ref1.unwrap()),
+                message: format!(
+                    "This expression cannot be {:?}-time and {:?}-time reference at the same time.",
+                    ref1.unwrap(),
+                    ref2.unwrap()
+                ),
                 position: Some(self.type_positions[label1].clone()),
-            })
+            });
         }
 
         self.types_dsu.get(label1).ref_depth = ref1;
@@ -366,7 +383,10 @@ impl TypeResolver {
 
     pub fn hint_struct(&mut self, ir: &IR, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
         for field_type in &fields {
-            self.types_dsu.get(*field_type).neighbours.push(Conn::Struct(res_label, struct_label, fields.clone()));
+            self.types_dsu
+                .get(*field_type)
+                .neighbours
+                .push(Conn::Struct(res_label, struct_label, fields.clone()));
             self.queue.push_back(*field_type);
         }
         self.types_dsu.get(res_label).neighbours.push(Conn::Struct(res_label, struct_label, fields));
@@ -437,9 +457,11 @@ impl TypeResolver {
             return true;
         }
 
-        if self.types_dsu.get(label1).typ.is_some() && self.types_dsu.get(label2).ref_depth.is_some() &&
-            self.types_dsu.get(label1).typ.clone() == self.types_dsu.get(label2).typ &&
-            self.types_dsu.get(label1).ref_depth.clone() == self.types_dsu.get(label2).ref_depth {
+        if self.types_dsu.get(label1).typ.is_some()
+            && self.types_dsu.get(label2).ref_depth.is_some()
+            && self.types_dsu.get(label1).typ.clone() == self.types_dsu.get(label2).typ
+            && self.types_dsu.get(label1).ref_depth.clone() == self.types_dsu.get(label2).ref_depth
+        {
             return true;
         }
 

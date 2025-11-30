@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
+use crate::compiler::error::{CompilerError, CompilerResult, merge_file_positions};
 use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStructDeclaration};
 use crate::compiler::parser::structure::parse_struct_instantiation;
 use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
@@ -6,19 +6,18 @@ use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
 // only looks for a single value (if parentheses are used, it will parse whole expression)
 fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<ASTExpression> {
     let mut res = match block.get() {
-        (Token::Constant(constant), pos) => {
-            match constant {
-                Constant::Integer(int) => ASTExpression::Integer(int, pos),
-                Constant::Float(float) => ASTExpression::Float(float, pos),
-                Constant::String(string) => ASTExpression::String(string.iter().map(|x| x.c).collect(), pos),
-                Constant::Boolean(boolean) => ASTExpression::Boolean(boolean, pos),
-            }
-        }
+        (Token::Constant(constant), pos) => match constant {
+            Constant::Integer(int) => ASTExpression::Integer(int, pos),
+            Constant::Float(float) => ASTExpression::Float(float, pos),
+            Constant::String(string) => ASTExpression::String(string.iter().map(|x| x.c).collect(), pos),
+            Constant::Boolean(boolean) => ASTExpression::Boolean(boolean, pos),
+        },
         (Token::Identifier(identifier), pos) => {
-
             // we need to know if this is a function call, a struct instantiation or a variable
             if let Token::ParenthesisBlock(_) = block.peek().0 {
-                let (Token::ParenthesisBlock(mut call_block), call_block_pos) = block.get() else { unreachable!() };
+                let (Token::ParenthesisBlock(mut call_block), call_block_pos) = block.get() else {
+                    unreachable!()
+                };
 
                 let mut args = Vec::new();
 
@@ -56,9 +55,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                 pos,
             }
         }
-        (Token::ParenthesisBlock(mut block), _) => {
-            parse_expression(structs, &mut block)?
-        }
+        (Token::ParenthesisBlock(mut block), _) => parse_expression(structs, &mut block)?,
         (_, pos) => {
             return Err(CompilerError {
                 message: "Unexpected token".to_owned(),
@@ -74,7 +71,9 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                 if let Token::ParenthesisBlock(_) = block.peek().0 {
                     let mut args = Vec::new();
 
-                    let (Token::ParenthesisBlock(mut call_block), block_pos) = block.get() else { unreachable!() };
+                    let (Token::ParenthesisBlock(mut call_block), block_pos) = block.get() else {
+                        unreachable!()
+                    };
 
                     while call_block.has_tokens() {
                         let expr = parse_expression(structs, &mut call_block)?;

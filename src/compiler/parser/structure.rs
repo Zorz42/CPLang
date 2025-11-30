@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition, merge_file_positions};
 use crate::compiler::parser::ast::{ASTExpression, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::expression::parse_expression;
@@ -69,7 +69,13 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
     Ok(Some(ASTStructDeclaration { name, fields, methods }))
 }
 
-pub fn parse_struct_instantiation(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock, struct_declaration: &ASTStructDeclaration, mut pos: FilePosition, identifier: String) -> CompilerResult<ASTExpression> {
+pub fn parse_struct_instantiation(
+    structs: &Vec<ASTStructDeclaration>,
+    block: &mut TokenBlock,
+    struct_declaration: &ASTStructDeclaration,
+    mut pos: FilePosition,
+    identifier: String,
+) -> CompilerResult<ASTExpression> {
     let mut fields = HashMap::new();
     let mut fields_left = struct_declaration.fields.len();
 

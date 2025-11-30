@@ -14,7 +14,7 @@ pub struct Dsu<T: Add + Default> {
     value: Vec<T>,
 }
 
-impl<T: Add<Output=T> + Default> Dsu<T> {
+impl<T: Add<Output = T> + Default> Dsu<T> {
     pub const fn new() -> Self {
         Self {
             parent: Vec::new(),
@@ -80,7 +80,6 @@ impl<T: Add<Output=T> + Default> Dsu<T> {
         swap(&mut self.value[a], &mut a_val);
         swap(&mut self.value[b], &mut b_val);
         self.value[a] = a_val + b_val;
-
 
         true
     }

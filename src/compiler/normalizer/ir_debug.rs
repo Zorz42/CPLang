@@ -1,4 +1,4 @@
-use crate::compiler::normalizer::ir::{IRBlock, IRInstance, IRPrimitiveType, IRType, IR};
+use crate::compiler::normalizer::ir::{IR, IRBlock, IRInstance, IRPrimitiveType, IRType};
 use std::fmt::Write;
 use std::fmt::{Debug, Formatter};
 

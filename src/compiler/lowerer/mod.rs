@@ -19,7 +19,7 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
             let block = block.clone();
 
             sign.name = transform_method_name(sign.name);
-            let typ = ASTType::Reference(Box::new(ASTType::Struct(structure.name.clone(), sign.pos.clone())), sign.pos.clone());
+            let typ = ASTType::Reference(Box::new(ASTType::Identifier(structure.name.clone(), sign.pos.clone())), sign.pos.clone());
             sign.args.insert(0, ("self".to_string(), typ, sign.pos.clone()));
             let block = lower_block(block);
 
@@ -80,9 +80,11 @@ fn gen_op_block(pos: FilePosition, operator: ASTOperator, assign_to: ASTExpressi
 
 fn lower_expression(expression: ASTExpression) -> ASTExpression {
     match expression {
-        ASTExpression::Integer(_, _) | ASTExpression::Float(_, _) | ASTExpression::String(_, _) | ASTExpression::Boolean(_, _) | ASTExpression::Variable(_, _) => {
-            expression
-        }
+        ASTExpression::Integer(_, _)
+        | ASTExpression::Float(_, _)
+        | ASTExpression::String(_, _)
+        | ASTExpression::Boolean(_, _)
+        | ASTExpression::Variable(_, _) => expression,
         ASTExpression::Reference { mut expression, pos } => {
             *expression = lower_expression(*expression);
             ASTExpression::Reference { expression, pos }

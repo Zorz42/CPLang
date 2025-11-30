@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
+use crate::compiler::error::{CompilerResult, FilePosition, merge_file_positions};
 use crate::compiler::preprocessor::{Fragment, PosChar};
 
 /*
@@ -56,7 +56,6 @@ pub enum Token {
     QuestionMark,
 }
 
-
 fn str_to_keyword(s: &str) -> Option<Token> {
     match s {
         "if" => Some(Token::If),
@@ -78,7 +77,6 @@ fn str_to_keyword(s: &str) -> Option<Token> {
         _ => None,
     }
 }
-
 
 const fn symbol_from_char(c: char) -> Option<Token> {
     match c {
@@ -132,9 +130,7 @@ const LAST_TOKEN: (Token, FilePosition) = (Token::End, FilePosition::unknown());
 impl TokenBlock {
     pub fn new(mut tokens: Vec<(Token, FilePosition)>) -> Self {
         tokens.reverse();
-        Self {
-            tokens
-        }
+        Self { tokens }
     }
 
     pub fn peek(&self) -> &(Token, FilePosition) {
@@ -206,12 +202,10 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
             Fragment::Char(pos_char) => {
                 let c = pos_char.c;
                 let pos = &pos_char.pos;
-                let next_char = iter
-                    .peek()
-                    .map_or('\0', |x| match x {
-                        Fragment::Char(pc) => pc.c,
-                        _ => '\0',
-                    });
+                let next_char = iter.peek().map_or('\0', |x| match x {
+                    Fragment::Char(pc) => pc.c,
+                    _ => '\0',
+                });
 
                 if c == '.' && curr_token.parse::<i32>().is_ok() {
                     // decimal point in a float

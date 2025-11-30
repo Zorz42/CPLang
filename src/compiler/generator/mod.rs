@@ -1,7 +1,7 @@
 use crate::compiler::generator::default_operators::init_default_operators;
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel, IR,
+    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
+    IRType, IRTypeLabel, IRVariableLabel,
 };
 use std::collections::HashMap;
 
@@ -55,15 +55,14 @@ int main(){
 
 fn gen_primitive_type(typ: IRPrimitiveType) -> String {
     match typ {
-        IRPrimitiveType::I32 |
-        IRPrimitiveType::Bool => "int",
+        IRPrimitiveType::I32 | IRPrimitiveType::Bool => "int",
         IRPrimitiveType::I64 => "long",
         IRPrimitiveType::F32 => "float",
         IRPrimitiveType::F64 => "double",
         IRPrimitiveType::String => "char*",
         IRPrimitiveType::Void => "void",
     }
-        .to_owned()
+    .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -124,8 +123,7 @@ fn gen_variable_label(func: IRVariableLabel) -> String {
 fn type_to_printf_format(typ: &IRType) -> &'static str {
     match typ {
         IRType::Primitive(typ) => match typ {
-            IRPrimitiveType::I32 |
-            IRPrimitiveType::I64 => "ld",
+            IRPrimitiveType::I32 | IRPrimitiveType::I64 => "ld",
             IRPrimitiveType::F32 => "f",
             IRPrimitiveType::F64 => "lf",
             IRPrimitiveType::Bool => "d",
@@ -257,9 +255,10 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
                     format!("printf(\"%{}\",{});", type_to_printf_format(&typ), gen_expression(ctx, expr))
                 }
             }
-            IRStatement::Return { return_value } => {
-                return_value.map_or_else(|| "return;".to_string(), |return_value| format!("return {};", gen_expression(ctx, return_value)))
-            }
+            IRStatement::Return { return_value } => return_value.map_or_else(
+                || "return;".to_string(),
+                |return_value| format!("return {};", gen_expression(ctx, return_value)),
+            ),
             IRStatement::Assignment { assign_to, value } => {
                 format!("{} = {};", gen_expression(ctx, assign_to), gen_expression(ctx, value))
             }

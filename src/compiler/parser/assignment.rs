@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerResult};
+use crate::compiler::error::{CompilerResult, merge_file_positions};
 use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::tokenizer::{Token, TokenBlock};
@@ -8,9 +8,7 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: &ASTExpr
         let token = block.peek();
         match token {
             (Token::Assign | Token::Increase | Token::Decrease | Token::Increment | Token::Decrement, _) => block.get(),
-            _ => {
-                return Ok(None);
-            }
+            _ => return Ok(None),
         }
     };
 
