@@ -32,7 +32,7 @@ const fn operator_to_ir_operator(operator: ASTOperator) -> IROperator {
 }
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
-    let mut state = Normalizer {
+    let normalizer = Normalizer {
         ir: IR {
             structs: Vec::new(),
             instances: Vec::new(),
@@ -41,13 +41,13 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
             main_function: 0,
             autorefs: Vec::new(),
         },
+        curr_var_label: 0,
+        curr_func_label: 0,
+        curr_field_label: 0,
         type_resolver: TypeResolver::new(),
         variables_name_map: HashMap::new(),
-        curr_var_label: 0,
         functions_name_map: HashMap::new(),
-        curr_func_label: 0,
         fields_name_map: HashMap::new(),
-        curr_field_label: 0,
         curr_func_vars: Vec::new(),
         curr_func_ret_type: 0,
         has_ret_statement: false,
@@ -58,64 +58,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         template_types: HashMap::new(),
     };
 
-    for (sig, block) in ast.functions {
-        let val = state.functions_name_map.entry((sig.name.clone(), sig.args.len())).or_default();
-        val.push((sig, block));
-    }
-
-    for structure in ast.structs {
-        let name = structure.name.clone();
-        let (ir_struct, type_hints) = state.normalize_struct(structure);
-        let label = state.ir.structs.len() as IRStructLabel;
-        state.structs_type_hints.push(type_hints);
-        state.structs_name_map.insert(name, label);
-        state.ir.structs.push(ir_struct);
-    }
-
-    for (key, val) in &state.functions_name_map {
-        if key.0 == transform_function_name("main".to_string()) && key.1 != 0 {
-            return Err(CompilerError {
-                message: "main function cannot have arguments".to_string(),
-                position: Some(val[0].0.args[0].2.clone()),
-            });
-        }
-    }
-
-    if let Some(mut vec) = state.functions_name_map.get(&(transform_function_name("main".to_string()), 0)).cloned() {
-        if vec.len() != 1 {
-            return Err(CompilerError {
-                message: "Multiple main functions found".to_string(),
-                position: None,
-            });
-        }
-
-        let (sig, block) = vec.pop().unwrap();
-
-        state.ir.main_function = state.normalize_function(sig, block, Vec::new())?;
-    } else {
-        return Err(CompilerError {
-            message: "No main function found".to_string(),
-            position: None,
-        });
-    }
-
-    (state.ir.types, state.ir.autorefs) = state.type_resolver.gather_types()?;
-
-    let main_ret = state.ir.instances[state.ir.main_function].ret_type;
-    let main_ret = state.ir.types[main_ret].clone();
-
-    if main_ret != IRType::Primitive(IRPrimitiveType::Void) {
-        return Err(CompilerError {
-            message: "Main function should not return any value".to_string(),
-            position: None,
-        });
-    }
-
-    // so that functions are in right order
-    // if func0 is used inside func1 it should appear above func1 in generated c code
-    state.ir.instances.reverse();
-
-    Ok(state.ir)
+    normalizer.normalize_ast(ast)
 }
 
 struct Normalizer {
@@ -159,6 +102,73 @@ impl Normalizer {
         let label = self.new_field_label();
         self.fields_name_map.insert(name.to_string(), label);
         label
+    }
+
+    fn normalize_ast(mut self, ast: Ast) -> CompilerResult<IR> {
+        // add all functions into the map
+        for (sig, block) in ast.functions {
+            let val = self.functions_name_map.entry((sig.name.clone(), sig.args.len())).or_default();
+            val.push((sig, block));
+        }
+
+        // normalize all structs
+        for structure in ast.structs {
+            let name = structure.name.clone();
+            let (ir_struct, type_hints) = self.normalize_struct(structure);
+            let label = self.ir.structs.len() as IRStructLabel;
+            self.structs_type_hints.push(type_hints);
+            self.structs_name_map.insert(name, label);
+            self.ir.structs.push(ir_struct);
+        }
+
+        // check that there is one main function with zero arguments and find it
+        let main_name = transform_function_name("main".to_string());
+        for (key, val) in &self.functions_name_map {
+            if key.0 == main_name && key.1 != 0 {
+                return Err(CompilerError {
+                    message: "main function cannot have arguments".to_string(),
+                    position: Some(val[0].0.args[0].2.clone()),
+                });
+            }
+        }
+        if let Some(mut vec) = self.functions_name_map.get(&(transform_function_name("main".to_string()), 0)).cloned() {
+            if vec.len() != 1 {
+                return Err(CompilerError {
+                    message: "Multiple main functions found".to_string(),
+                    position: None,
+                });
+            }
+
+            let (sig, block) = vec.pop().unwrap();
+
+            // normalize the main function (which recursively normalizes every instance that is used within
+            // this is where vast majority of the work happens
+            self.ir.main_function = self.normalize_function(sig, block, Vec::new())?;
+        } else {
+            return Err(CompilerError {
+                message: "No main function found".to_string(),
+                position: None,
+            });
+        }
+
+        // type deducer works alongside normalizer in the end we want to gather all types (which should be known by now)
+        (self.ir.types, self.ir.autorefs) = self.type_resolver.gather_types()?;
+
+        // check that main has no return value
+        let main_ret = self.ir.instances[self.ir.main_function].ret_type;
+        let main_ret = self.ir.types[main_ret].clone();
+        if main_ret != IRType::Primitive(IRPrimitiveType::Void) {
+            return Err(CompilerError {
+                message: "Main function should not return any value".to_string(),
+                position: None,
+            });
+        }
+
+        // so that functions are in right order, since labels are generated in increasing order
+        // if func0 is used inside func1 it should appear above func1 in generated c code
+        self.ir.instances.reverse();
+
+        Ok(self.ir)
     }
 
     fn normalize_struct(&mut self, structure: ASTStructDeclaration) -> (IRStruct, Vec<ASTType>) {
@@ -252,6 +262,7 @@ impl Normalizer {
                     false,
                 )
             }
+
             ASTExpression::Float(x, _) => {
                 self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::F32)?;
                 (
@@ -261,6 +272,7 @@ impl Normalizer {
                     false,
                 )
             }
+
             ASTExpression::String(x, _) => {
                 self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::String)?;
                 (
@@ -270,10 +282,12 @@ impl Normalizer {
                     false,
                 )
             }
+
             ASTExpression::Boolean(x, _) => {
                 self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::Bool)?;
                 (IRExpression::Constant { constant: IRConstant::Bool(x) }, false)
             }
+
             ASTExpression::Variable(name, pos) => {
                 let label = *if let Some(label) = self.variables_name_map.get(&name) {
                     label
@@ -287,6 +301,7 @@ impl Normalizer {
                 self.type_resolver.hint_equal(&self.ir, type_label, var_type_label)?;
                 (IRExpression::Variable { variable_label: label }, true)
             }
+
             ASTExpression::Reference { expression, pos } => {
                 let (expression, type_label2, is_phys) = self.normalize_expression(*expression)?;
 
@@ -305,6 +320,7 @@ impl Normalizer {
                     false,
                 )
             }
+
             ASTExpression::Dereference { expression, pos: _ } => {
                 let (expression, type_label2, _is_phys) = self.normalize_expression(*expression)?;
                 self.type_resolver.hint_is_ref(&self.ir, type_label, type_label2)?;
@@ -315,6 +331,7 @@ impl Normalizer {
                     true,
                 )
             }
+
             ASTExpression::FunctionCall { name, arguments, pos } => {
                 let mut expr_types = Vec::new();
                 let mut function_arguments = Vec::new();
@@ -337,6 +354,7 @@ impl Normalizer {
                     false,
                 )
             }
+
             ASTExpression::StructInitialization { name, fields, pos: _ } => {
                 let struct_label = self.structs_name_map[&name];
                 let type_hints = self.structs_type_hints[struct_label].clone();
@@ -360,6 +378,7 @@ impl Normalizer {
 
                 (struct_expr, false)
             }
+
             ASTExpression::FieldAccess { expression, field_name, pos } => {
                 let (expression, type_label2, _is_phys) = self.normalize_expression(*expression)?;
                 let Some(&field_label) = self.fields_name_map.get(&field_name) else {
@@ -377,10 +396,9 @@ impl Normalizer {
                     true,
                 )
             }
-            ASTExpression::MethodCall { .. } => {
-                // should be eliminated by lowerer
-                unreachable!()
-            }
+
+            ASTExpression::MethodCall { .. } => unreachable!("ASTExpression::MethodCall should be eliminated by lowerer"),
+
             ASTExpression::BinaryOperation {
                 expression1,
                 operator,
@@ -402,6 +420,7 @@ impl Normalizer {
                     false,
                 )
             }
+
             ASTExpression::AutoRef { expression } => {
                 let (expression, type_label1, _is_phys) = self.normalize_expression(*expression)?;
                 let autoref_label = self.type_resolver.new_autoref_label(type_label, type_label1);
@@ -578,10 +597,14 @@ impl Normalizer {
         const RECURSION_LIMIT: i32 = 100;
         assert_eq!(arg_types.len(), sign.args.len());
 
+        // check if function has been already normalized
+        // this not only improves performance and makes generated code smaller,
+        // it also enables recursion
         if let Some(label) = self.check_instance_cache(&sign.name, &arg_types) {
             return Ok(label);
         }
 
+        // backup and override values that are needed by instance normalizing
         let prev_vars = self.variables_name_map.clone();
         let prev_func_vars = self.curr_func_vars.clone();
         let prev_func_ret_type = self.curr_func_ret_type;
@@ -602,7 +625,6 @@ impl Normalizer {
         self.curr_func_vars = Vec::new();
         self.curr_func_ret_type = self.type_resolver.new_type_label(sign.pos);
         self.has_ret_statement = false;
-
         let label = self.curr_func_label;
         self.curr_func_label += 1;
 
