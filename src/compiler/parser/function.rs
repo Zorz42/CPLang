@@ -85,12 +85,32 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
 }
 
 // this function is called, when function name is already consumed
-pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock, ident: String, ident_pos: FilePosition) -> CompilerResult<(ASTFunctionCall, FilePosition)> {
-    let (Token::ParenthesisBlock(mut call_block), call_block_pos) = block.get() else {
-        unreachable!()
-    };
+pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<(ASTFunctionCall, FilePosition)>> {
+    let (ident, mut template_block, mut call_block, pos) =
+        if let Token::Identifier(_) = block.peek_nth(0).0 &&
+            let Token::BracketBlock(_) = block.peek_nth(1).0 &&
+            let Token::ParenthesisBlock(_) = block.peek_nth(2).0 {
+            // collect tokens if they match
+            let (Token::Identifier(ident), pos1) = block.get() else { unreachable!() };
+            let (Token::BracketBlock(template_block), pos2) = block.get() else { unreachable!() };
+            let (Token::ParenthesisBlock(call_block), pos3) = block.get() else { unreachable!() };
 
-    let pos = merge_file_positions(ident_pos, call_block_pos);
+            let pos = merge_file_positions(merge_file_positions(pos1, pos2), pos3);
+
+            (ident, template_block, call_block, pos)
+        } else if let Token::Identifier(_) = block.peek_nth(0).0 &&
+            let Token::ParenthesisBlock(_) = block.peek_nth(1).0 {
+            // collect tokens if they match
+            let (Token::Identifier(ident), pos1) = block.get() else { unreachable!() };
+            let (Token::ParenthesisBlock(call_block), pos2) = block.get() else { unreachable!() };
+
+            let pos = merge_file_positions(pos1, pos2);
+            let template_block = TokenBlock::new(Vec::new());
+
+            (ident, template_block, call_block, pos)
+        } else {
+            return Ok(None);
+        };
 
     let mut args = Vec::new();
 
@@ -99,10 +119,18 @@ pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
         args.push(expr);
     }
 
-    Ok((ASTFunctionCall {
+    let mut template_args = Vec::new();
+
+    while template_block.has_tokens() {
+        let typ = parse_type(&mut template_block)?;
+        template_args.push(typ);
+    }
+
+    Ok(Some((ASTFunctionCall {
         name: ident,
         arguments: args,
-    }, pos))
+        template_arguments: template_args,
+    }, pos)))
 }
 
 pub fn parse_return_statement(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<ASTStatement>> {

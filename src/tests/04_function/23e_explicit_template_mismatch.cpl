@@ -1,4 +1,4 @@
-//OUT=60 60 60 60
+//ERR 7 10 7 40
 
 test[A B C] a: A b: B c: C
     ret a + b + c

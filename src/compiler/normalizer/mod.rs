@@ -199,11 +199,12 @@ impl Normalizer {
 
     fn find_matching_function(
         &mut self,
-        function_name: String,
-        function_arguments: Vec<IRTypeLabel>,
+        function_name: &str,
+        function_arguments: &Vec<IRTypeLabel>,
+        template_arguments: &Vec<IRTypeLabel>,
         pos: FilePosition,
     ) -> CompilerResult<(ASTFunctionSignature, ASTBlock)> {
-        let Some(candidates) = self.functions_name_map.get(&(function_name.clone(), function_arguments.len())).cloned() else {
+        let Some(candidates) = self.functions_name_map.get(&(function_name.to_string(), function_arguments.len())).cloned() else {
             return Err(CompilerError {
                 message: format!("Function {} does not exist.", &function_name[1..]),
                 position: Some(pos),
@@ -213,6 +214,10 @@ impl Normalizer {
         let mut matching = Vec::new();
 
         for (sign, block) in candidates {
+            if template_arguments.len() > sign.template.len() {
+                continue;
+            }
+
             let old_resolver = self.type_resolver.clone();
             let old_template_types = self.template_types.clone();
             self.template_types.clear();
@@ -222,11 +227,16 @@ impl Normalizer {
                 self.template_types.insert(template_arg, self.type_resolver.new_type_label(pos));
             }
 
-            for ((_, hint, _), typ) in sign.args.iter().zip(function_arguments.iter()) {
+            for (typ, (arg_name, _pos)) in template_arguments.iter().zip(&sign.template) {
+                self.type_resolver.hint_equal(&self.ir, *typ, self.template_types[arg_name])?;
+            }
+
+            for ((_, hint, _), typ) in sign.args.iter().zip(function_arguments) {
                 let hint_typ = self.normalize_type(hint.clone())?;
 
                 if self.type_resolver.hint_equal(&self.ir, *typ, hint_typ).is_err() {
                     ok = false;
+                    break;
                 }
             }
 
@@ -344,20 +354,27 @@ impl Normalizer {
             ASTExpression::FunctionCall { call, pos } => {
                 let mut expr_types = Vec::new();
                 let mut function_arguments = Vec::new();
+                let mut template_types = Vec::new();
+
+                for typ in call.template_arguments {
+                    let typ = self.normalize_type(typ)?;
+                    template_types.push(typ);
+                }
+
                 for expr in call.arguments {
                     let (expr, type_label, _is_phys) = self.normalize_expression(expr)?;
                     expr_types.push(type_label);
                     function_arguments.push(expr);
                 }
 
-                let (sig, block) = self.find_matching_function(call.name, expr_types.clone(), pos)?;
-                let function_label = self.normalize_function(sig, block, expr_types)?;
-                let ret_type = self.ir.instances[function_label].ret_type;
+                let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos)?;
+                let instance_label = self.normalize_function(sig, block, expr_types)?;
+                let ret_type = self.ir.instances[instance_label].ret_type;
                 self.type_resolver.hint_equal(&self.ir, ret_type, type_label)?;
 
                 (
                     IRExpression::InstanceCall {
-                        instance_label: function_label,
+                        instance_label,
                         instance_arguments: function_arguments,
                     },
                     ValuePhysicality::Temporary,

@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerResult, FilePosition, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
 use crate::compiler::preprocessor::{Fragment, PosChar};
 
 /*
@@ -135,6 +135,15 @@ impl TokenBlock {
 
     pub fn peek(&self) -> &(Token, FilePosition) {
         self.tokens.last().unwrap_or(&LAST_TOKEN)
+    }
+
+    // peek_nth(0) == peek()
+    pub fn peek_nth(&self, n: usize) -> &(Token, FilePosition) {
+        if n < self.tokens.len() {
+            self.tokens.get(self.tokens.len() - 1 - n).unwrap_or(&LAST_TOKEN)
+        } else {
+            &LAST_TOKEN
+        }
     }
 
     pub fn get(&mut self) -> (Token, FilePosition) {

@@ -6,6 +6,14 @@ use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
 fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<ASTExpression> {
+    // check for function call first
+    if let Some((call, pos)) = parse_function_call(structs, block)? {
+        return Ok(ASTExpression::FunctionCall {
+            call,
+            pos,
+        });
+    }
+
     let mut res = match block.get() {
         (Token::Constant(constant), pos) => match constant {
             Constant::Integer(int) => ASTExpression::Integer(int, pos),
@@ -14,15 +22,8 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
             Constant::Boolean(boolean) => ASTExpression::Boolean(boolean, pos),
         },
         (Token::Identifier(identifier), pos) => {
-            // we need to know if this is a function call, a struct instantiation or a variable
-            if let Token::ParenthesisBlock(_) = block.peek().0 {
-                let (func_call, call_pos) = parse_function_call(structs, block, identifier, pos)?;
-
-                ASTExpression::FunctionCall {
-                    call: func_call,
-                    pos: call_pos,
-                }
-            } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
+            // we need to know if this is a struct instantiation or a variable
+            if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 parse_struct_instantiation(structs, block, struct_declaration, pos, identifier)?
             } else {
                 ASTExpression::Variable(identifier.clone(), pos)
@@ -57,29 +58,28 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
 
     while Token::Dot == block.peek().0 {
         block.get();
-        match block.get() {
-            (Token::Identifier(identifier), pos) => {
-                if let Token::ParenthesisBlock(_) = block.peek().0 {
-                    let (func_call, call_pos) = parse_function_call(structs, block, identifier, pos)?;
 
-                    res = ASTExpression::MethodCall {
-                        expression: Box::new(res),
-                        pos: call_pos,
-                        call: func_call,
-                    };
-                } else {
-                    res = ASTExpression::FieldAccess {
+        res = if let Some((call, pos)) = parse_function_call(structs, block)? {
+            ASTExpression::MethodCall {
+                expression: Box::new(res),
+                pos,
+                call,
+            }
+        } else {
+            match block.get() {
+                (Token::Identifier(identifier), pos) => {
+                    ASTExpression::FieldAccess {
                         expression: Box::new(res),
                         field_name: identifier,
                         pos: pos.clone(),
-                    };
+                    }
                 }
-            }
-            (_, pos) => {
-                return Err(CompilerError {
-                    message: "Expected identifier after dot".to_owned(),
-                    position: Some(pos),
-                });
+                (_, pos) => {
+                    return Err(CompilerError {
+                        message: "Expected identifier after dot".to_owned(),
+                        position: Some(pos),
+                    });
+                }
             }
         }
     }

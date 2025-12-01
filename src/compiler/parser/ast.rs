@@ -10,6 +10,7 @@ pub struct Ast {
 pub struct ASTFunctionCall {
     pub name: String,
     pub arguments: Vec<ASTExpression>,
+    pub template_arguments: Vec<ASTType>,
 }
 
 #[rustfmt::skip]
