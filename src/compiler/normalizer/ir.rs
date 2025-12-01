@@ -19,6 +19,11 @@ pub struct IR {
     pub main_function: IRInstanceLabel,
 }
 
+pub enum BuiltinFunction {
+    Alloc,
+    Index,
+}
+
 #[derive(Clone, Eq, Hash, PartialEq)]
 pub enum IRPrimitiveType {
     I32,

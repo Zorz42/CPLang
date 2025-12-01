@@ -1,0 +1,7 @@
+//ERR 2 0 2 14
+
+_builtin_error x
+    ret x
+
+main
+    out "ok"

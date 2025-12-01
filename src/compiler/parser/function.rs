@@ -1,4 +1,5 @@
-use crate::compiler::error::{CompilerError, CompilerResult, FilePosition, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
+use crate::compiler::normalizer::builtin_functions::is_builtin;
 use crate::compiler::parser::ast::{ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::typed::parse_type;
@@ -24,6 +25,13 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
                 position: Some(pos),
             });
         }
+    }
+
+    if is_builtin(&res_signature.name) {
+        return Err(CompilerError {
+            message: "You cannot declare a builtin function".to_string(),
+            position: Some(res_signature.pos),
+        });
     }
 
     // check for template declaration

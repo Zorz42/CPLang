@@ -15,6 +15,7 @@ mod dsu;
 pub mod ir;
 mod ir_debug;
 mod type_resolver;
+pub mod builtin_functions;
 
 #[derive(PartialEq, Eq)]
 enum ValuePhysicality {

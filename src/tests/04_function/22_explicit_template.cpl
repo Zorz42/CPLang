@@ -1,0 +1,17 @@
+//OUT=60 60 60 60
+
+test[A B C] a: A b: B c: C
+    ret a + b + c
+
+test2[T] a: T b: T c: T
+    ret a + b + c
+
+test3[Tmp] a: Tmp b c: Tmp
+    ret a + b + c
+
+test4[T] a: T b c: i32
+    ret a + b + c
+
+
+main
+    out "{test[i32 i32 i32](10 20 30)} {test2[i32](10 20 30)} {test3[i32](10 20 30)} {test4[i32](10 20 30)}"
