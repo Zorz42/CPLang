@@ -341,16 +341,16 @@ impl Normalizer {
                 )
             }
 
-            ASTExpression::FunctionCall { name, arguments, pos } => {
+            ASTExpression::FunctionCall { call, pos } => {
                 let mut expr_types = Vec::new();
                 let mut function_arguments = Vec::new();
-                for expr in arguments {
+                for expr in call.arguments {
                     let (expr, type_label, _is_phys) = self.normalize_expression(expr)?;
                     expr_types.push(type_label);
                     function_arguments.push(expr);
                 }
 
-                let (sig, block) = self.find_matching_function(name, expr_types.clone(), pos)?;
+                let (sig, block) = self.find_matching_function(call.name, expr_types.clone(), pos)?;
                 let function_label = self.normalize_function(sig, block, expr_types)?;
                 let ret_type = self.ir.instances[function_label].ret_type;
                 self.type_resolver.hint_equal(&self.ir, ret_type, type_label)?;

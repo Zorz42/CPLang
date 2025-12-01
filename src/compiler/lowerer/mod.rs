@@ -89,10 +89,10 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
             *expression = lower_expression(*expression);
             ASTExpression::Reference { expression, pos }
         }
-        ASTExpression::FunctionCall { name, arguments, pos } => {
-            let arguments = arguments.into_iter().map(lower_expression).collect();
-            let name = transform_function_name(name);
-            ASTExpression::FunctionCall { name, arguments, pos }
+        ASTExpression::FunctionCall { mut call, pos } => {
+            call.arguments = call.arguments.into_iter().map(lower_expression).collect();
+            call.name = transform_function_name(call.name);
+            ASTExpression::FunctionCall { call, pos }
         }
         ASTExpression::StructInitialization { name, fields, pos } => {
             let fields = fields.into_iter().map(lower_expression).collect();
@@ -112,17 +112,16 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
         ASTExpression::MethodCall {
             expression,
             pos,
-            method_name,
-            arguments,
+            mut call,
         } => {
-            let mut arguments: Vec<ASTExpression> = arguments.into_iter().map(lower_expression).collect();
+            call.arguments = call.arguments.into_iter().map(lower_expression).collect();
             let expression = ASTExpression::AutoRef {
                 expression: Box::new(lower_expression(*expression)),
             };
-            arguments.insert(0, expression);
-            let name = transform_method_name(method_name);
+            call.arguments.insert(0, expression);
+            call.name = transform_method_name(call.name);
 
-            ASTExpression::FunctionCall { name, arguments, pos }
+            ASTExpression::FunctionCall { call, pos }
         }
         ASTExpression::Dereference { mut expression, pos } => {
             *expression = lower_expression(*expression);

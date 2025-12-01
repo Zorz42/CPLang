@@ -1,0 +1,8 @@
+//OUT=60
+
+test[A B C] a: A b: B c: C
+    ret a + b + c
+
+
+main
+    out "{test[i32](10 20 30)}"

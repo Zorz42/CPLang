@@ -1,5 +1,6 @@
-use crate::compiler::error::{CompilerError, CompilerResult, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
 use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStructDeclaration};
+use crate::compiler::parser::function::parse_function_call;
 use crate::compiler::parser::structure::parse_struct_instantiation;
 use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
 
@@ -15,21 +16,11 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
         (Token::Identifier(identifier), pos) => {
             // we need to know if this is a function call, a struct instantiation or a variable
             if let Token::ParenthesisBlock(_) = block.peek().0 {
-                let (Token::ParenthesisBlock(mut call_block), call_block_pos) = block.get() else {
-                    unreachable!()
-                };
-
-                let mut args = Vec::new();
-
-                while call_block.has_tokens() {
-                    let expr = parse_expression(structs, &mut call_block)?;
-                    args.push(expr);
-                }
+                let (func_call, call_pos) = parse_function_call(structs, block, identifier, pos)?;
 
                 ASTExpression::FunctionCall {
-                    name: identifier.clone(),
-                    arguments: args,
-                    pos: merge_file_positions(pos, call_block_pos),
+                    call: func_call,
+                    pos: call_pos,
                 }
             } else if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 parse_struct_instantiation(structs, block, struct_declaration, pos, identifier)?
@@ -67,28 +58,19 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
     while Token::Dot == block.peek().0 {
         block.get();
         match block.get() {
-            (Token::Identifier(s), pos) => {
+            (Token::Identifier(identifier), pos) => {
                 if let Token::ParenthesisBlock(_) = block.peek().0 {
-                    let mut args = Vec::new();
+                    let (func_call, call_pos) = parse_function_call(structs, block, identifier, pos)?;
 
-                    let (Token::ParenthesisBlock(mut call_block), block_pos) = block.get() else {
-                        unreachable!()
-                    };
-
-                    while call_block.has_tokens() {
-                        let expr = parse_expression(structs, &mut call_block)?;
-                        args.push(expr);
-                    }
                     res = ASTExpression::MethodCall {
                         expression: Box::new(res),
-                        pos: merge_file_positions(pos, block_pos),
-                        method_name: s.clone(),
-                        arguments: args,
+                        pos: call_pos,
+                        call: func_call,
                     };
                 } else {
                     res = ASTExpression::FieldAccess {
                         expression: Box::new(res),
-                        field_name: s.clone(),
+                        field_name: identifier,
                         pos: pos.clone(),
                     };
                 }

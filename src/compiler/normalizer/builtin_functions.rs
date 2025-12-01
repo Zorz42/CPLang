@@ -1,3 +1,3 @@
-pub fn is_builtin(name: &String) -> bool {
+pub fn is_builtin(name: &str) -> bool {
     name.starts_with("_builtin")
 }

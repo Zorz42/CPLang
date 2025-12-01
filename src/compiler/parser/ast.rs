@@ -6,6 +6,12 @@ pub struct Ast {
     pub structs: Vec<ASTStructDeclaration>,
 }
 
+#[derive(Debug, Clone)]
+pub struct ASTFunctionCall {
+    pub name: String,
+    pub arguments: Vec<ASTExpression>,
+}
+
 #[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub enum ASTStatement {
@@ -85,8 +91,7 @@ pub enum ASTExpression {
         pos: FilePosition,
     },
     FunctionCall {
-        name: String,
-        arguments: Vec<ASTExpression>,
+        call: ASTFunctionCall,
         pos: FilePosition,
     },
     StructInitialization {
@@ -101,8 +106,7 @@ pub enum ASTExpression {
     },
     MethodCall {
         expression: Box<ASTExpression>,
-        method_name: String,
-        arguments: Vec<ASTExpression>,
+        call: ASTFunctionCall,
         pos: FilePosition,
     },
     Dereference {

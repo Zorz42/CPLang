@@ -1,6 +1,6 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::builtin_functions::is_builtin;
-use crate::compiler::parser::ast::{ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType};
+use crate::compiler::parser::ast::{ASTFunctionCall, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::typed::parse_type;
 use crate::compiler::tokenizer::{Token, TokenBlock};
@@ -82,6 +82,27 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
     }
 
     Ok((res_signature, res_block))
+}
+
+// this function is called, when function name is already consumed
+pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock, ident: String, ident_pos: FilePosition) -> CompilerResult<(ASTFunctionCall, FilePosition)> {
+    let (Token::ParenthesisBlock(mut call_block), call_block_pos) = block.get() else {
+        unreachable!()
+    };
+
+    let pos = merge_file_positions(ident_pos, call_block_pos);
+
+    let mut args = Vec::new();
+
+    while call_block.has_tokens() {
+        let expr = parse_expression(structs, &mut call_block)?;
+        args.push(expr);
+    }
+
+    Ok((ASTFunctionCall {
+        name: ident,
+        arguments: args,
+    }, pos))
 }
 
 pub fn parse_return_statement(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<ASTStatement>> {
