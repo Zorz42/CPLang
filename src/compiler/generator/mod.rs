@@ -1,8 +1,5 @@
 use crate::compiler::generator::default_operators::init_default_operators;
-use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel, IR,
-};
+use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR};
 use std::collections::HashMap;
 
 mod default_operators;
@@ -135,6 +132,18 @@ fn type_to_printf_format(typ: &IRType) -> &'static str {
     }
 }
 
+fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> String {
+    match call {
+        BuiltinFunctionCall::Alloc { typ, num } => {
+            let typ = ctx.types[typ].clone();
+            format!("malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
+        }
+        BuiltinFunctionCall::Index { arr_type: _, arr, idx } => {
+            format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx))
+        }
+    }
+}
+
 fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> String {
     match expression {
         IRExpression::BinaryOperation {
@@ -184,9 +193,7 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
 
             format!("{}({})", gen_function_label(function_label), args_code)
         }
-        IRExpression::BuiltinFunctionCall(call) => {
-            todo!()
-        }
+        IRExpression::BuiltinFunctionCall(call) => gen_builtin_call(ctx, call),
         IRExpression::FieldAccess { expression, field_label } => {
             format!("{}.{}", gen_expression(ctx, *expression), gen_field_name(field_label))
         }

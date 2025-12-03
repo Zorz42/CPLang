@@ -5,4 +5,4 @@ main
     _builtin_index(a 0) = 1
     _builtin_index(a 1) = 532
     _builtin_index(a 2) = 12
-    out "{_builtin_index(a,0)} {_builtin_index(a,1)} {_builtin_index(a,2)}"
+    out "{_builtin_index(a 0)} {_builtin_index(a 1)} {_builtin_index(a 2)}"
