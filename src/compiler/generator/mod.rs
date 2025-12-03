@@ -138,7 +138,7 @@ fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> St
             let typ = ctx.types[typ].clone();
             format!("malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
         }
-        BuiltinFunctionCall::Index { arr_type: _, arr, idx } => {
+        BuiltinFunctionCall::Index { arr, idx } => {
             format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx))
         }
     }

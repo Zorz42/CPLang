@@ -7,15 +7,6 @@ pub fn is_builtin(name: &str) -> bool {
     name.starts_with("_builtin")
 }
 
-impl BuiltinFunctionCall {
-    pub fn get_return_type(&self) -> IRTypeLabel {
-        match self {
-            BuiltinFunctionCall::Alloc { typ, .. } => typ,
-            BuiltinFunctionCall::Index { arr_type, .. } => arr_type,
-        }.clone()
-    }
-}
-
 impl Normalizer {
     pub fn is_builtin_function(function_name: &String) -> bool {
         function_name == &transform_function_name("_builtin_alloc".to_string()) ||
@@ -36,14 +27,14 @@ impl Normalizer {
                 if function_arguments.len() != 1 {
                     return Err(CompilerError {
                         message: format!("Alloc function takes exactly 1 argument, not {}", function_arguments.len()),
-                        position: Some(call_pos.clone()),
+                        position: Some(call_pos),
                     });
                 }
 
                 if template_types.len() > 1 {
                     return Err(CompilerError {
                         message: format!("Alloc function takes at most 1 template argument, not {}", template_types.len()),
-                        position: Some(call_pos.clone()),
+                        position: Some(call_pos),
                     });
                 }
 
@@ -67,14 +58,14 @@ impl Normalizer {
                 if function_arguments.len() != 2 {
                     return Err(CompilerError {
                         message: format!("Index function takes exactly 2 arguments, not {}", function_arguments.len()),
-                        position: Some(call_pos.clone()),
+                        position: Some(call_pos),
                     });
                 }
 
-                if template_types.len() > 0 {
+                if !template_types.is_empty() {
                     return Err(CompilerError {
                         message: format!("Index function takes no template arguments, got {}", template_types.len()),
-                        position: Some(call_pos.clone()),
+                        position: Some(call_pos),
                     });
                 }
 
@@ -87,7 +78,6 @@ impl Normalizer {
                 self.type_resolver.hint_is_ref(&self.ir, arr_type, expr_types[0])?;
 
                 Ok((BuiltinFunctionCall::Index {
-                    arr_type,
                     arr: Box::new(arr_expr),
                     idx: Box::new(index_expr),
                 }, ValuePhysicality::Physical, arr_type))

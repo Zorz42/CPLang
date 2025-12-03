@@ -200,8 +200,8 @@ impl Normalizer {
     fn find_matching_function(
         &mut self,
         function_name: &str,
-        function_arguments: &Vec<IRTypeLabel>,
-        template_arguments: &Vec<IRTypeLabel>,
+        function_arguments: &[IRTypeLabel],
+        template_arguments: &[IRTypeLabel],
         pos: FilePosition,
     ) -> CompilerResult<(ASTFunctionSignature, ASTBlock)> {
         let Some(candidates) = self.functions_name_map.get(&(function_name.to_string(), function_arguments.len())).cloned() else {

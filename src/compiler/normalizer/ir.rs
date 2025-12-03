@@ -26,7 +26,6 @@ pub enum BuiltinFunctionCall {
         num: Box<IRExpression>,
     },
     Index {
-        arr_type: IRTypeLabel,
         arr: Box<IRExpression>,
         idx: Box<IRExpression>,
     },
