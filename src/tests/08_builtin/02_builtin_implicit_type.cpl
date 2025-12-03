@@ -1,8 +1,8 @@
 //OUT=1 532 12
 
 main
-    a = _builtin_alloc[i32](3)
+    a = _builtin_alloc(3)
     _builtin_index(a 0) = 1
     _builtin_index(a 1) = 532
     _builtin_index(a 2) = 12
-    out "{_builtin_index(a,0)} {_builtin_index(a,1)} {_builtin_index(a,2)}"
+    out "{_builtin_index(a 0)} {_builtin_index(a 1)} {_builtin_index(a 2)}"

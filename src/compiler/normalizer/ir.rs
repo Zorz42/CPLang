@@ -19,9 +19,17 @@ pub struct IR {
     pub main_function: IRInstanceLabel,
 }
 
-pub enum BuiltinFunction {
-    Alloc,
-    Index,
+#[derive(Debug)]
+pub enum BuiltinFunctionCall {
+    Alloc {
+        typ: IRTypeLabel,
+        num: Box<IRExpression>,
+    },
+    Index {
+        arr_type: IRTypeLabel,
+        arr: Box<IRExpression>,
+        idx: Box<IRExpression>,
+    },
 }
 
 #[derive(Clone, Eq, Hash, PartialEq)]
@@ -81,6 +89,7 @@ pub enum IRExpression {
         instance_label: IRInstanceLabel,
         instance_arguments: Vec<IRExpression>,
     },
+    BuiltinFunctionCall(BuiltinFunctionCall),
     FieldAccess {
         expression: Box<IRExpression>,
         field_label: IRFieldLabel,

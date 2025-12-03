@@ -367,18 +367,29 @@ impl Normalizer {
                     function_arguments.push(expr);
                 }
 
-                let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos)?;
-                let instance_label = self.normalize_function(sig, block, expr_types)?;
-                let ret_type = self.ir.instances[instance_label].ret_type;
-                self.type_resolver.hint_equal(&self.ir, ret_type, type_label)?;
+                if Self::is_builtin_function(&call.name) {
+                    let (call, physicality, return_type) = self.get_builtin_call(call.name, expr_types, function_arguments, template_types, pos)?;
+                    self.type_resolver.hint_equal(&self.ir, return_type, type_label)?;
+                    (
+                        IRExpression::BuiltinFunctionCall(
+                            call
+                        ),
+                        physicality,
+                    )
+                } else {
+                    let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos)?;
+                    let instance_label = self.normalize_function(sig, block, expr_types)?;
+                    let ret_type = self.ir.instances[instance_label].ret_type;
+                    self.type_resolver.hint_equal(&self.ir, ret_type, type_label)?;
 
-                (
-                    IRExpression::InstanceCall {
-                        instance_label,
-                        instance_arguments: function_arguments,
-                    },
-                    ValuePhysicality::Temporary,
-                )
+                    (
+                        IRExpression::InstanceCall {
+                            instance_label,
+                            instance_arguments: function_arguments,
+                        },
+                        ValuePhysicality::Temporary,
+                    )
+                }
             }
 
             ASTExpression::StructInitialization { name, fields, pos: _ } => {
