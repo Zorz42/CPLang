@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::default_operator_map::setup_operator_map;
 use crate::compiler::normalizer::dsu::Dsu;
-use crate::compiler::normalizer::ir::{IR, IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel};
+use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
 use std::collections::{HashMap, VecDeque};
 use std::ops::Add;
 
@@ -42,13 +42,12 @@ pub struct Node {
 impl Add for Node {
     type Output = Self;
 
-    fn add(mut self, rhs: Self) -> Self::Output {
+    fn add(mut self, mut rhs: Self) -> Self::Output {
         assert_eq!(self.typ, rhs.typ);
         assert_eq!(self.ref_depth, rhs.ref_depth);
 
-        for i in rhs.neighbours {
-            self.neighbours.push(i);
-        }
+        self.neighbours.append(&mut rhs.neighbours);
+        self.ref_neighbours.append(&mut rhs.ref_neighbours);
         self
     }
 }
