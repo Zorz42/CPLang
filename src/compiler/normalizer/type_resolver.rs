@@ -2,14 +2,12 @@ use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::default_operator_map::setup_operator_map;
 use crate::compiler::normalizer::dsu::Dsu;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::mem::swap;
 use std::ops::Add;
 
 #[derive(Clone)]
 enum Conn {
-    // node = arg1
-    Is(IRTypeLabel),
-
     // node + arg1 = arg3 (+ is arg2)
     Operator(IRTypeLabel, IROperator, IRTypeLabel),
 
@@ -34,36 +32,52 @@ fn deref_type(mut ir_type: IRType) -> (IRType, i32) {
 #[derive(Default, Clone)]
 pub struct Node {
     neighbours: Vec<Conn>,
-    ref_neighbours: Vec<(IRTypeLabel, i32)>,
-    typ: Option<IRType>,
-    ref_depth: Option<i32>,
+    ref_depth: i32,
 }
 
 impl Add for Node {
     type Output = Self;
 
     fn add(mut self, mut rhs: Self) -> Self::Output {
-        assert_eq!(self.typ, rhs.typ);
-        assert_eq!(self.ref_depth, rhs.ref_depth);
-
         self.neighbours.append(&mut rhs.neighbours);
-        self.ref_neighbours.append(&mut rhs.ref_neighbours);
         self
     }
 }
 
-impl Node {
-    fn get_ir_type(&self) -> Option<IRType> {
-        let mut typ = self.typ.clone()?;
-        let dep = self.ref_depth?;
-        if dep < 0 {
-            return None;
-        }
+#[derive(Default, Clone)]
+pub struct TypeNode {
+    typ: Option<IRType>,
+    // stores all reference values of nodes
+    // (representative, ref_depth) -> node
+    // if two nodes have the same representative and ref_depth (within type component),
+    // they are the same exact type and should be merged
+    ref_map: HashMap<(IRTypeLabel, i32), IRTypeLabel>,
+}
 
-        for _ in 0..dep {
-            typ = IRType::Reference(Box::new(typ));
+impl Add for TypeNode {
+    type Output = Self;
+
+    fn add(mut self, mut rhs: Self) -> Self::Output {
+        assert_eq!(self.typ, rhs.typ);
+        if !rhs.ref_map.is_empty() {
+            swap(&mut rhs.ref_map, &mut self.ref_map);
         }
-        Some(typ)
+        assert!(rhs.ref_map.is_empty());
+        self
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct RefNode {
+    nodes: Vec<IRTypeLabel>,
+}
+
+impl Add for RefNode {
+    type Output = Self;
+
+    fn add(mut self, mut rhs: Self) -> Self::Output {
+        self.nodes.append(&mut rhs.nodes);
+        self
     }
 }
 
@@ -73,23 +87,44 @@ pub struct TypeResolver {
     operator_map: HashMap<(IRType, IROperator, IRType), IRType>,
     queue: VecDeque<IRTypeLabel>,
     auto_ref_pairs: Vec<(IRTypeLabel, IRTypeLabel)>,
-    types_dsu: Dsu<Node>,
+    // two labels are in the same component if they have exactly the same type
+    dsu: Dsu<Node>,
+    // two labels are in the same component if they have the same type (up to reference)
+    type_dsu: Dsu<TypeNode>,
+    // two labels are in the same component if they have dependant reference count
+    ref_dsu: Dsu<RefNode>,
+    // component that has fixed ref value (when you set concrete ref value)
+    fixed_ref_component: usize,
+    // already known types (up to reference) can be merged if they are the same
+    type_map: HashMap<IRType, IRTypeLabel>,
 }
 
 impl TypeResolver {
     pub fn new() -> Self {
-        Self {
+        let mut res = Self {
             type_positions: Vec::new(),
             operator_map: setup_operator_map(),
             queue: VecDeque::new(),
             auto_ref_pairs: Vec::new(),
-            types_dsu: Dsu::new(),
-        }
+            dsu: Dsu::new(),
+            type_dsu: Dsu::new(),
+            ref_dsu: Dsu::new(),
+            fixed_ref_component: 0,
+            type_map: HashMap::new(),
+        };
+        let fixed = res.new_type_label(FilePosition::unknown());
+        res.fixed_ref_component = fixed;
+        res.type_dsu.get(res.fixed_ref_component).typ = Some(IRType::Primitive(IRPrimitiveType::Void));
+        res
     }
 
     pub fn new_type_label(&mut self, pos: FilePosition) -> IRTypeLabel {
-        let res = self.types_dsu.len() as IRTypeLabel;
-        self.types_dsu.add();
+        let res = self.dsu.len() as IRTypeLabel;
+        self.dsu.add();
+        self.type_dsu.add();
+        self.type_dsu.get(res).ref_map.insert((res, 0), res);
+        self.ref_dsu.add();
+        self.ref_dsu.get(res).nodes.push(res);
         self.type_positions.push(pos);
         res
     }
@@ -100,53 +135,58 @@ impl TypeResolver {
         res
     }
 
-    fn try_set_type(&mut self, label: IRTypeLabel, typ: IRType) -> CompilerResult<()> {
-        if self.types_dsu.get(label).typ.is_some() && self.types_dsu.get(label).typ.as_ref() != Some(&typ) {
+    fn get_ir_type(&mut self, label: IRTypeLabel) -> Option<IRType> {
+        let mut typ = self.type_dsu.get(label).typ.clone()?;
+        let dep = self.dsu.get(label).ref_depth;
+        if dep < 0 || !self.ref_is_fixed(label) {
+            return None;
+        }
+
+        for _ in 0..dep {
+            typ = IRType::Reference(Box::new(typ));
+        }
+        Some(typ)
+    }
+
+    fn ref_is_fixed(&mut self, label: IRTypeLabel) -> bool {
+        self.ref_dsu.get_repr(self.fixed_ref_component) == self.ref_dsu.get_repr(label)
+    }
+
+    fn set_type(&mut self, label: IRTypeLabel, typ: IRType) -> CompilerResult<()> {
+        if self.type_dsu.get(label).typ.is_some() && self.type_dsu.get(label).typ.as_ref() != Some(&typ) {
             return Err(CompilerError {
                 message: format!(
                     "This cannot be of type {:?} and {:?} at the same time",
-                    self.types_dsu.get(label).typ.as_ref().unwrap(),
+                    self.type_dsu.get(label).typ.as_ref().unwrap(),
                     typ
                 ),
                 position: Some(self.type_positions[label].clone()),
             });
         }
-        if self.types_dsu.get(label).typ.is_none() {
-            self.types_dsu.get(label).typ = Some(typ);
-            self.queue.push_back(label);
+        if self.type_dsu.get(label).typ.is_none() {
+            if let Some(label2) = self.type_map.get(&typ) {
+                self.merge_type(label, *label2)?;
+            } else {
+                self.type_map.insert(typ.clone(), label);
+                self.type_dsu.get(label).typ = Some(typ);
+                self.queue.push_back(label);
+            }
         }
         Ok(())
     }
 
-    fn try_set_ref(&mut self, label: IRTypeLabel, ref_val: i32) -> CompilerResult<()> {
-        if self.types_dsu.get(label).ref_depth.is_some() && self.types_dsu.get(label).ref_depth != Some(ref_val) {
-            return Err(CompilerError {
-                message: format!(
-                    "This cannot be {}-time reference and {}-time reference at the same time",
-                    self.types_dsu.get(label).ref_depth.as_ref().unwrap(),
-                    ref_val
-                ),
-                position: Some(self.type_positions[label].clone()),
-            });
-        }
-        if self.types_dsu.get(label).ref_depth.is_none() {
-            self.types_dsu.get(label).ref_depth = Some(ref_val);
-            self.queue.push_back(label);
-        }
-        Ok(())
+    fn set_ref(&mut self, label: IRTypeLabel, ref_val: i32) -> CompilerResult<()> {
+        self.merge_ref(self.fixed_ref_component, label, ref_val)
     }
 
     fn run_queue(&mut self, ir: &IR) -> CompilerResult<()> {
         while let Some(node) = self.queue.pop_front() {
             // loop for type deduction
-            if let Some(node_type) = self.types_dsu.get(node).typ.clone() {
-                'neighbour_loop: for ne in self.types_dsu.get(node).neighbours.clone() {
+            if let Some(node_type) = self.type_dsu.get(node).typ.clone() {
+                'neighbour_loop: for ne in self.dsu.get(node).neighbours.clone() {
                     match ne {
-                        Conn::Is(ne) => {
-                            self.try_set_type(ne, node_type.clone())?;
-                        }
                         Conn::Operator(ne, op, typ2) => {
-                            if let Some(node_type2) = self.types_dsu.get(typ2).typ.clone() {
+                            if let Some(node_type2) = self.type_dsu.get(typ2).typ.clone() {
                                 let Some(ir_type) = self.operator_map.get(&(node_type.clone(), op, node_type2.clone())).cloned() else {
                                     return Err(CompilerError {
                                         message: format!("Operator {op:?} is not defined for {node_type2:?} and {node_type:?}"),
@@ -154,8 +194,8 @@ impl TypeResolver {
                                     });
                                 };
                                 let (ir_type, ref_depth) = deref_type(ir_type);
-                                self.try_set_type(ne, ir_type)?;
-                                self.try_set_ref(ne, ref_depth)?;
+                                self.set_type(ne, ir_type)?;
+                                self.set_ref(ne, ref_depth)?;
                             }
                         }
                         Conn::Struct(typ, structure, args) => {
@@ -169,8 +209,8 @@ impl TypeResolver {
 
                                 for (typ_label, typ) in args.into_iter().zip(args2) {
                                     let (typ, ref_depth) = deref_type(typ);
-                                    self.try_set_type(typ_label, typ)?;
-                                    self.try_set_ref(typ_label, ref_depth)?;
+                                    self.set_type(typ_label, typ)?;
+                                    self.set_ref(typ_label, ref_depth)?;
                                 }
 
                                 continue 'neighbour_loop;
@@ -179,7 +219,7 @@ impl TypeResolver {
                             // only deduce type when all arguments are known
                             let mut ir_args = Vec::new();
                             for arg in args {
-                                if let Some(typ) = self.types_dsu.get(arg).get_ir_type() {
+                                if let Some(typ) = self.get_ir_type(arg) {
                                     ir_args.push(typ);
                                 } else {
                                     continue 'neighbour_loop;
@@ -187,16 +227,16 @@ impl TypeResolver {
                             }
 
                             let ir_type = IRType::Struct(structure, ir_args);
-                            self.try_set_type(typ, ir_type)?;
+                            self.set_type(typ, ir_type)?;
                         }
                         Conn::IsField(typ, field) => {
-                            let (struct_label, struct_args) = match &self.types_dsu.get(node).typ {
+                            let (struct_label, struct_args) = match &self.type_dsu.get(node).typ {
                                 Some(IRType::Struct(label, args)) => (*label, args),
                                 _ => {
                                     return Err(CompilerError {
                                         message: format!(
                                             "Cannot access field since this is not a struct but has type {:?}",
-                                            self.types_dsu.get(node).typ.as_ref().unwrap()
+                                            self.type_dsu.get(node).typ.as_ref().unwrap()
                                         ),
                                         position: Some(self.type_positions[node].clone()),
                                     });
@@ -213,18 +253,18 @@ impl TypeResolver {
                             let ir_type = struct_args[field_idx].clone();
                             let (ir_type, ref_depth) = deref_type(ir_type);
 
-                            self.try_set_type(typ, ir_type)?;
-                            self.try_set_ref(typ, ref_depth)?;
+                            self.set_type(typ, ir_type)?;
+                            self.set_ref(typ, ref_depth)?;
                         }
                     }
                 }
             }
 
-            if self.types_dsu.get(node).typ.is_none() {
+            if self.type_dsu.get(node).typ.is_none() {
                 // if the type is struct, save its fields (if they exist).
                 let mut struct_fields: Option<(IRStructLabel, Vec<IRTypeLabel>)> = None;
 
-                for ne in self.types_dsu.get(node).neighbours.clone() {
+                for ne in self.dsu.get(node).neighbours.clone() {
                     if let Conn::Struct(typ, structure, args) = ne
                         && self.are_equal(typ, node)
                     {
@@ -248,7 +288,7 @@ impl TypeResolver {
                     }
                 }
 
-                for ne in self.types_dsu.get(node).neighbours.clone() {
+                for ne in self.dsu.get(node).neighbours.clone() {
                     if let Conn::IsField(typ, field) = ne {
                         if let Some(typ2) = fields.get(&field) {
                             self.merge(typ, *typ2)?;
@@ -263,7 +303,7 @@ impl TypeResolver {
                     let mut arg_types = Vec::new();
 
                     for arg in &args {
-                        if let Some(typ) = &self.types_dsu.get(*arg).typ {
+                        if let Some(typ) = &self.type_dsu.get(*arg).typ {
                             arg_types.push(typ.clone());
                         } else {
                             break;
@@ -271,15 +311,8 @@ impl TypeResolver {
                     }
 
                     if arg_types.len() == args.len() {
-                        self.types_dsu.get(node).typ = Some(IRType::Struct(structure, arg_types));
+                        self.type_dsu.get(node).typ = Some(IRType::Struct(structure, arg_types));
                     }
-                }
-            }
-
-            // loop for ref deduction
-            if let Some(node_ref) = self.types_dsu.get(node).ref_depth {
-                for (ne, delta) in self.types_dsu.get(node).ref_neighbours.clone() {
-                    self.try_set_ref(ne, node_ref + delta)?;
                 }
             }
         }
@@ -288,8 +321,15 @@ impl TypeResolver {
     }
 
     fn merge(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
-        let mut typ1 = self.types_dsu.get(label1).typ.clone();
-        let mut typ2 = self.types_dsu.get(label2).typ.clone();
+        self.merge_type(label1, label2)?;
+        self.merge_ref(label1, label2, 0)?;
+
+        Ok(())
+    }
+
+    fn merge_type(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
+        let mut typ1 = self.type_dsu.get(label1).typ.clone();
+        let mut typ2 = self.type_dsu.get(label2).typ.clone();
 
         if typ1.is_none() {
             typ1 = typ2.clone();
@@ -302,41 +342,90 @@ impl TypeResolver {
             });
         }
 
-        self.types_dsu.get(label1).typ = typ1;
-        self.types_dsu.get(label2).typ = typ2;
+        self.type_dsu.get(label1).typ = typ1;
+        self.type_dsu.get(label2).typ = typ2;
 
-        let mut ref1 = self.types_dsu.get(label1).ref_depth;
-        let mut ref2 = self.types_dsu.get(label2).ref_depth;
-
-        if ref1.is_none() {
-            ref1 = ref2;
-        } else if ref2.is_none() {
-            ref2 = ref1;
-        } else if ref1 != ref2 {
-            return Err(CompilerError {
-                message: format!(
-                    "This expression cannot be {:?}-time and {:?}-time reference at the same time.",
-                    ref1.unwrap(),
-                    ref2.unwrap()
-                ),
-                position: Some(self.type_positions[label1].clone()),
-            });
+        let mut ref_map = HashMap::new();
+        swap(&mut ref_map, &mut self.type_dsu.get(label1).ref_map);
+        for (key, label) in ref_map {
+            if let Some(other_label) = self.type_dsu.get(label2).ref_map.get(&key).cloned() {
+                self.dsu.merge(label, other_label);
+                self.queue.push_back(label);
+            } else {
+                self.type_dsu.get(label2).ref_map.insert(key, label);
+            }
         }
 
-        self.types_dsu.get(label1).ref_depth = ref1;
-        self.types_dsu.get(label2).ref_depth = ref2;
-
-        if self.types_dsu.merge(label1, label2) {
+        if self.type_dsu.merge(label1, label2) {
             self.queue.push_back(label1);
+            self.queue.push_back(label2);
         }
 
         Ok(())
     }
 
+    // label2 has offset more references than label1
+    fn merge_ref(&mut self, label1: IRTypeLabel, label2: IRTypeLabel, offset: i32) -> CompilerResult<()> {
+        if self.ref_dsu.get_repr(label1) == self.ref_dsu.get_repr(label2) {
+            // already merged, just check if there is no contradiction
+            if self.dsu.get(label1).ref_depth + offset != self.dsu.get(label2).ref_depth {
+                return Err(CompilerError {
+                    message: format!(
+                        "This cannot be {}-time reference and {}-time reference at the same time",
+                        self.dsu.get(label2).ref_depth - offset,
+                        self.dsu.get(label1).ref_depth
+                    ),
+                    position: Some(self.type_positions[label1].clone()),
+                });
+            }
+            return Ok(());
+        }
+
+        let mut all_nodes = self.ref_dsu.get(label1).nodes.clone();
+        all_nodes.append(&mut self.ref_dsu.get(label2).nodes.clone());
+
+        for node in all_nodes {
+            let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
+            self.type_dsu.get(node).ref_map.remove(&key);
+        }
+
+        let offset = offset + self.dsu.get(label1).ref_depth - self.dsu.get(label2).ref_depth;
+        let (to_modify, modify_offset) = if self.ref_is_fixed(label2) {
+            (self.ref_dsu.get(label1).nodes.clone(), -offset)
+        } else {
+            (self.ref_dsu.get(label2).nodes.clone(), offset)
+        };
+
+        let mut updated_nodes = HashSet::new();
+        for node in to_modify {
+            let repr = self.dsu.get_repr(node);
+            if updated_nodes.contains(&repr) {
+                continue;
+            }
+            updated_nodes.insert(repr);
+
+            self.dsu.get(node).ref_depth += modify_offset;
+        }
+
+        self.ref_dsu.merge(label1, label2);
+
+        all_nodes = self.ref_dsu.get(label1).nodes.clone();
+        for node in all_nodes {
+            let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
+            if let Some(label) = self.type_dsu.get(node).ref_map.get(&key) {
+                self.dsu.merge(*label, node);
+                self.queue.push_back(node);
+            } else {
+                self.type_dsu.get(node).ref_map.insert(key, node);
+            }
+        }
+        Ok(())
+    }
+
     pub fn hint_is(&mut self, ir: &IR, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
         let ir_type = IRType::Primitive(typ);
-        self.try_set_type(label, ir_type)?;
-        self.try_set_ref(label, 0)?;
+        self.set_type(label, ir_type)?;
+        self.set_ref(label, 0)?;
 
         self.run_queue(ir)?;
         Ok(())
@@ -353,11 +442,11 @@ impl TypeResolver {
     }
 
     pub fn hint_operator(&mut self, ir: &IR, label1: IRTypeLabel, label2: IRTypeLabel, operator: IROperator, res_label: IRTypeLabel) -> CompilerResult<()> {
-        self.types_dsu.get(label1).neighbours.push(Conn::Operator(res_label, operator, label2));
-        self.types_dsu.get(label2).neighbours.push(Conn::Operator(res_label, operator, label1));
+        self.dsu.get(label1).neighbours.push(Conn::Operator(res_label, operator, label2));
+        self.dsu.get(label2).neighbours.push(Conn::Operator(res_label, operator, label1));
 
-        self.try_set_ref(label1, 0)?;
-        self.try_set_ref(label2, 0)?;
+        self.set_ref(label1, 0)?;
+        self.set_ref(label2, 0)?;
 
         self.queue.push_back(label1);
         self.queue.push_back(label2);
@@ -367,11 +456,9 @@ impl TypeResolver {
     }
 
     pub fn hint_is_ref(&mut self, ir: &IR, phys_label: IRTypeLabel, ref_label: IRTypeLabel) -> CompilerResult<()> {
-        self.types_dsu.get(phys_label).neighbours.push(Conn::Is(ref_label));
-        self.types_dsu.get(ref_label).neighbours.push(Conn::Is(phys_label));
+        self.merge_type(phys_label, ref_label)?;
 
-        self.types_dsu.get(ref_label).ref_neighbours.push((phys_label, -1));
-        self.types_dsu.get(phys_label).ref_neighbours.push((ref_label, 1));
+        self.merge_ref(phys_label, ref_label, 1)?;
 
         self.queue.push_back(phys_label);
         self.queue.push_back(ref_label);
@@ -382,36 +469,32 @@ impl TypeResolver {
 
     pub fn hint_struct(&mut self, ir: &IR, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
         for field_type in &fields {
-            self.types_dsu
+            self.dsu
                 .get(*field_type)
                 .neighbours
                 .push(Conn::Struct(res_label, struct_label, fields.clone()));
             self.queue.push_back(*field_type);
         }
-        self.types_dsu.get(res_label).neighbours.push(Conn::Struct(res_label, struct_label, fields));
+        self.dsu.get(res_label).neighbours.push(Conn::Struct(res_label, struct_label, fields));
         self.queue.push_back(res_label);
-        self.try_set_ref(res_label, 0)?;
+        self.set_ref(res_label, 0)?;
 
         self.run_queue(ir)?;
         Ok(())
     }
 
     pub fn hint_is_field(&mut self, ir: &IR, res_label: IRTypeLabel, struct_label: IRTypeLabel, field_label: IRFieldLabel) -> CompilerResult<()> {
-        self.types_dsu.get(struct_label).neighbours.push(Conn::IsField(res_label, field_label));
-        self.try_set_ref(struct_label, 0)?;
+        self.dsu.get(struct_label).neighbours.push(Conn::IsField(res_label, field_label));
         self.queue.push_back(struct_label);
         self.queue.push_back(res_label);
+        self.set_ref(struct_label, 0)?;
 
         self.run_queue(ir)?;
         Ok(())
     }
 
     pub fn hint_autoref(&mut self, ir: &IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
-        self.types_dsu.get(label1).neighbours.push(Conn::Is(label2));
-        self.types_dsu.get(label2).neighbours.push(Conn::Is(label1));
-
-        self.queue.push_back(label1);
-        self.queue.push_back(label2);
+        self.merge_type(label1, label2)?;
 
         self.run_queue(ir)?;
         Ok(())
@@ -421,19 +504,19 @@ impl TypeResolver {
         let mut types = Vec::new();
         let mut autorefs = vec![0; self.auto_ref_pairs.len()];
 
-        for (i, (type1, type2)) in self.auto_ref_pairs.into_iter().enumerate() {
-            autorefs[i] = self.types_dsu.get(type1).ref_depth.unwrap() - self.types_dsu.get(type2).ref_depth.unwrap();
+        for (i, (type1, type2)) in self.auto_ref_pairs.iter().enumerate() {
+            autorefs[i] = self.dsu.get(*type1).ref_depth - self.dsu.get(*type2).ref_depth;
         }
 
-        for i in 0..self.types_dsu.len() {
-            let Some(typ) = self.types_dsu.get(i).get_ir_type() else {
+        for i in 0..self.dsu.len() {
+            let Some(typ) = self.get_ir_type(i) else {
                 return Err(CompilerError {
                     message: "Could not deduce this expression's type".to_string(),
                     position: Some(self.type_positions[i].clone()),
                 });
             };
 
-            let ref_depth = self.types_dsu.get(i).ref_depth.unwrap();
+            let ref_depth = self.dsu.get(i).ref_depth;
 
             if ref_depth < 0 {
                 let pos = self.type_positions[i].clone();
@@ -449,21 +532,7 @@ impl TypeResolver {
         Ok((types, autorefs))
     }
 
-    // false positive
-    #[allow(clippy::clone_on_copy)]
     pub fn are_equal(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> bool {
-        if self.types_dsu.get_repr(label1) == self.types_dsu.get_repr(label2) {
-            return true;
-        }
-
-        if self.types_dsu.get(label1).typ.is_some()
-            && self.types_dsu.get(label2).ref_depth.is_some()
-            && self.types_dsu.get(label1).typ.clone() == self.types_dsu.get(label2).typ
-            && self.types_dsu.get(label1).ref_depth.clone() == self.types_dsu.get(label2).ref_depth
-        {
-            return true;
-        }
-
-        false
+        self.dsu.get_repr(label1) == self.dsu.get_repr(label2)
     }
 }
