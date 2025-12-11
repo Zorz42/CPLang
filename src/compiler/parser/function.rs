@@ -2,6 +2,7 @@ use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult
 use crate::compiler::normalizer::builtin_functions::is_builtin;
 use crate::compiler::parser::ast::{ASTFunctionCall, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::expression::parse_expression;
+use crate::compiler::parser::template::parse_declaration_template;
 use crate::compiler::parser::typed::parse_type;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
@@ -34,21 +35,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
         });
     }
 
-    // check for template declaration
-    if let (Token::BracketBlock(_), _pos) = block.peek() {
-        let Token::BracketBlock(bracket_block) = block.get().0 else { unreachable!() };
-
-        for (token, token_pos) in bracket_block.into_iter() {
-            if let Token::Identifier(name) = token {
-                res_signature.template.push((name, token_pos));
-            } else {
-                return Err(CompilerError {
-                    message: "Unexpected token, expected identifier".to_string(),
-                    position: Some(token_pos),
-                });
-            }
-        }
-    }
+    res_signature.template = parse_declaration_template(block)?;
 
     loop {
         let (arg, arg_pos) = match block.get() {

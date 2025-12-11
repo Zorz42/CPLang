@@ -42,25 +42,11 @@ fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let input = std::fs::read_to_string(input_file).unwrap();
 
     let fragment_block = preprocess(&input)?;
-
-    //println!("{:?}", fragment_block);
-
     let program_block = tokenize_fragments(&fragment_block.fragments)?;
-
-    //println!("{:?}", program_block);
-
     let ast = parse_tokens(program_block)?;
     let ast = lower_ast(ast);
-
-    //println!("{:?}", ast);
-
     let ir = normalize_ast(ast)?;
-
-    //println!("{:?}", ir);
-
     let code = generate_code(ir);
-
-    //println!("{code}");
 
     std::fs::write(output_file, code).unwrap();
 

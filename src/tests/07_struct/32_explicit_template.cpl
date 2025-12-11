@@ -1,0 +1,10 @@
+//OUT=ok
+
+struct Obj[T]
+    x: T
+    y: T
+    z: string
+
+main
+    a = Obj[i32] x 10 y 20 z "ok"
+    out "{a.z}"

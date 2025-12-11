@@ -1,8 +1,9 @@
-use crate::compiler::error::{CompilerError, CompilerResult, FilePosition, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::function::parse_function_declaration;
+use crate::compiler::parser::template::{parse_declaration_template, parse_template_instantiation};
 use crate::compiler::parser::typed::parse_type;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 use std::collections::HashMap;
@@ -24,6 +25,8 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
             });
         }
     };
+
+    let template = parse_declaration_template(block)?;
 
     let mut block = match block.get() {
         (Token::BraceBlock(block), _) => block,
@@ -66,7 +69,7 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
         }
     }
 
-    Ok(Some(ASTStructDeclaration { name, fields, methods }))
+    Ok(Some(ASTStructDeclaration { name, fields, template, methods }))
 }
 
 pub fn parse_struct_instantiation(
@@ -76,6 +79,8 @@ pub fn parse_struct_instantiation(
     mut pos: FilePosition,
     identifier: String,
 ) -> CompilerResult<ASTExpression> {
+    let template_arguments = parse_template_instantiation(block)?;
+
     let mut fields = HashMap::new();
     let mut fields_left = struct_declaration.fields.len();
 
@@ -122,6 +127,7 @@ pub fn parse_struct_instantiation(
     Ok(ASTExpression::StructInitialization {
         name: identifier,
         fields: fields_res,
+        template_arguments,
         pos,
     })
 }

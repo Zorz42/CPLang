@@ -19,7 +19,8 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
             let block = block.clone();
 
             sign.name = transform_method_name(sign.name);
-            let typ = ASTType::Reference(Box::new(ASTType::Identifier(structure.name.clone(), sign.pos.clone())), sign.pos.clone());
+            // TODO: methods should have access to struct templates
+            let typ = ASTType::Reference(Box::new(ASTType::Identifier(structure.name.clone(), sign.pos.clone(), Vec::new())), sign.pos.clone());
             sign.args.insert(0, ("self".to_string(), typ, sign.pos.clone()));
             let block = lower_block(block);
 
@@ -94,9 +95,9 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
             call.name = transform_function_name(call.name);
             ASTExpression::FunctionCall { call, pos }
         }
-        ASTExpression::StructInitialization { name, fields, pos } => {
+        ASTExpression::StructInitialization { name, fields, pos, template_arguments } => {
             let fields = fields.into_iter().map(lower_expression).collect();
-            ASTExpression::StructInitialization { name, fields, pos }
+            ASTExpression::StructInitialization { name, fields, pos, template_arguments }
         }
         ASTExpression::FieldAccess {
             mut expression,

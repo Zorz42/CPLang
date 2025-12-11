@@ -1,0 +1,10 @@
+//ERR -1 -1 -1 -1
+
+struct Obj[T]
+    x: T
+    y: T
+    z: string
+
+main
+    a = Obj x 10 y "not ok" z "ok"
+    out "{a.z}"

@@ -99,6 +99,7 @@ pub enum ASTExpression {
         name: String,
         fields: Vec<ASTExpression>,
         pos: FilePosition,
+        template_arguments: Vec<ASTType>,
     },
     FieldAccess {
         expression: Box<ASTExpression>,
@@ -158,6 +159,7 @@ pub struct ASTStructDeclaration {
     pub name: String,
     pub fields: Vec<(String, ASTType)>,
     pub methods: Vec<(ASTFunctionSignature, ASTBlock)>,
+    pub template: Vec<(String, FilePosition)>,
 }
 
 #[derive(Debug, Clone)]
@@ -176,13 +178,13 @@ pub enum ASTType {
     Any(FilePosition),
     Primitive(ASTPrimitiveType, FilePosition),
     Reference(Box<ASTType>, FilePosition),
-    Identifier(String, FilePosition),
+    Identifier(String, FilePosition, Vec<ASTType>),
 }
 
 impl ASTType {
     pub fn get_pos(&self) -> FilePosition {
         match self {
-            Self::Any(pos) | Self::Primitive(_, pos) | Self::Reference(_, pos) | Self::Identifier(_, pos) => pos.clone(),
+            Self::Any(pos) | Self::Primitive(_, pos) | Self::Reference(_, pos) | Self::Identifier(_, pos, _) => pos.clone(),
         }
     }
 }

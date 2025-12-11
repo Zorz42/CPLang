@@ -392,7 +392,7 @@ impl Normalizer {
                 }
             }
 
-            ASTExpression::StructInitialization { name, fields, pos: _ } => {
+            ASTExpression::StructInitialization { name, fields, template_arguments, pos: _ } => {
                 let struct_label = self.structs_name_map[&name];
                 let type_hints = self.structs_type_hints[struct_label].clone();
 
@@ -496,7 +496,7 @@ impl Normalizer {
                 let typ = Self::primitive_type_to_ir_type(typ);
                 self.type_resolver.hint_is(&self.ir, type_label, typ)?;
             }
-            ASTType::Identifier(name, pos) => {
+            ASTType::Identifier(name, pos, template_args) => {
                 if let Some(label) = self.template_types.get(&name).copied() {
                     // identifier is a template value
                     self.type_resolver.hint_equal(&self.ir, label, type_label)?;
