@@ -348,7 +348,7 @@ impl TypeResolver {
         let mut ref_map = HashMap::new();
         swap(&mut ref_map, &mut self.type_dsu.get(label1).ref_map);
         for (key, label) in ref_map {
-            if let Some(other_label) = self.type_dsu.get(label2).ref_map.get(&key).cloned() {
+            if let Some(other_label) = self.type_dsu.get(label2).ref_map.get(&key).copied() {
                 self.dsu.merge(label, other_label);
                 self.queue.push_back(label);
             } else {
