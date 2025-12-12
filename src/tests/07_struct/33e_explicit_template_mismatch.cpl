@@ -1,4 +1,4 @@
-//OUT=ok
+//ERR 8 19 8 27
 
 struct Obj[T]
     x: T

@@ -9,6 +9,7 @@ use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
 };
 use std::collections::HashMap;
+use std::mem::swap;
 
 mod default_operator_map;
 mod dsu;
@@ -62,6 +63,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         structs_name_map: HashMap::new(),
         instance_cache: HashMap::new(),
         structs_type_hints: Vec::new(),
+        structs_templates: Vec::new(),
         template_types: HashMap::new(),
     };
 
@@ -84,6 +86,7 @@ struct Normalizer {
     depth: i32,
     structs_name_map: HashMap<String, IRStructLabel>,
     structs_type_hints: Vec<Vec<ASTType>>,
+    structs_templates: Vec<Vec<(String, FilePosition)>>,
     instance_cache: HashMap<String, Vec<(Vec<IRTypeLabel>, IRInstanceLabel)>>,
     template_types: HashMap<String, IRTypeLabel>,
 }
@@ -121,9 +124,10 @@ impl Normalizer {
         // normalize all structs
         for structure in ast.structs {
             let name = structure.name.clone();
-            let (ir_struct, type_hints) = self.normalize_struct(structure);
+            let (ir_struct, type_hints, template) = self.normalize_struct(structure);
             let label = self.ir.structs.len() as IRStructLabel;
             self.structs_type_hints.push(type_hints);
+            self.structs_templates.push(template);
             self.structs_name_map.insert(name, label);
             self.ir.structs.push(ir_struct);
         }
@@ -178,7 +182,7 @@ impl Normalizer {
         Ok(self.ir)
     }
 
-    fn normalize_struct(&mut self, structure: ASTStructDeclaration) -> (IRStruct, Vec<ASTType>) {
+    fn normalize_struct(&mut self, structure: ASTStructDeclaration) -> (IRStruct, Vec<ASTType>, Vec<(String, FilePosition)>) {
         let mut ir_struct = IRStruct { fields: Vec::new() };
         let mut type_hints = Vec::new();
 
@@ -194,7 +198,38 @@ impl Normalizer {
             type_hints.push(field_type);
         }
 
-        (ir_struct, type_hints)
+        (ir_struct, type_hints, structure.template)
+    }
+
+    fn gen_struct_field_types(&mut self, struct_label: IRStructLabel, template_args: Vec<(IRTypeLabel, FilePosition)>) -> CompilerResult<Vec<IRTypeLabel>> {
+        let mut field_types = Vec::new();
+        let mut old_template_types = HashMap::new();
+        swap(&mut old_template_types, &mut self.template_types);
+        let struct_template_names = self.structs_templates[struct_label].clone();
+        let struct_fields = self.structs_type_hints[struct_label].clone();
+
+        if template_args.len() > struct_template_names.len() {
+            return Err(CompilerError {
+                message: "Too many template arguments".to_string(),
+                position: Some(template_args[struct_template_names.len()].1.clone()),
+            });
+        }
+
+        for (i, (name, pos)) in struct_template_names.into_iter().enumerate() {
+            let type_label = if let Some((type_label, _)) = template_args.get(i) {
+                *type_label
+            } else {
+                self.type_resolver.new_type_label(pos)
+            };
+            self.template_types.insert(name, type_label);
+        }
+
+        for field in struct_fields {
+            field_types.push(self.normalize_type(field)?);
+        }
+
+        swap(&mut old_template_types, &mut self.template_types);
+        Ok(field_types)
     }
 
     fn find_matching_function(
@@ -371,9 +406,7 @@ impl Normalizer {
                     let (call, physicality, return_type) = self.get_builtin_call(call.name, expr_types, function_arguments, template_types, pos)?;
                     self.type_resolver.hint_equal(&self.ir, return_type, type_label)?;
                     (
-                        IRExpression::BuiltinFunctionCall(
-                            call
-                        ),
+                        IRExpression::BuiltinFunctionCall(call),
                         physicality,
                     )
                 } else {
@@ -394,24 +427,28 @@ impl Normalizer {
 
             ASTExpression::StructInitialization { name, fields, template_arguments, pos: _ } => {
                 let struct_label = self.structs_name_map[&name];
-                let type_hints = self.structs_type_hints[struct_label].clone();
+                let mut template_args_labels = Vec::new();
+
+                for arg in template_arguments {
+                    let pos = arg.get_pos();
+                    template_args_labels.push((self.normalize_type(arg)?, pos));
+                }
+
+                let field_type_labels = self.gen_struct_field_types(struct_label, template_args_labels)?;
 
                 let mut field_values = Vec::new();
-                let mut fields_type_labels = Vec::new();
-                for (arg, field_type) in fields.into_iter().zip(type_hints) {
+                for (arg, field_type_label) in fields.into_iter().zip(field_type_labels.iter()) {
                     let (expr, typ, _is_phys) = self.normalize_expression(arg)?;
                     field_values.push(expr);
-                    fields_type_labels.push(typ);
-                    let type_hint = self.normalize_type(field_type)?;
-                    self.type_resolver.hint_equal(&self.ir, typ, type_hint)?;
+                    self.type_resolver.hint_equal(&self.ir, typ, *field_type_label)?;
                 }
 
                 let struct_expr = IRExpression::StructInitialization {
                     struct_label,
-                    fields_type_labels: fields_type_labels.clone(),
+                    fields_type_labels: field_type_labels.clone(),
                     field_values,
                 };
-                self.type_resolver.hint_struct(&self.ir, type_label, struct_label, fields_type_labels)?;
+                self.type_resolver.hint_struct(&self.ir, type_label, struct_label, field_type_labels)?;
 
                 (struct_expr, ValuePhysicality::Temporary)
             }

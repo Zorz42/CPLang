@@ -11,5 +11,5 @@ make_tuple[A B] a: A b: B
     ret Tuple[A B] first a second b
 
 main
-    a = make_tuple 10 "ok"
-    out "{a.first} {a.second}"
+    a = make_tuple(Box x 10 Box x "ok")
+    out "{a.first.x} {a.second.x}"
