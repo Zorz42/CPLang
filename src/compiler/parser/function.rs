@@ -12,6 +12,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
         args: Vec::new(),
         template: Vec::new(),
         pos: FilePosition::unknown(),
+        num_template_args: 0,
     };
     let res_block;
 
@@ -36,6 +37,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
     }
 
     res_signature.template = parse_declaration_template(block)?;
+    res_signature.num_template_args = res_signature.template.len();
 
     loop {
         let (arg, arg_pos) = match block.get() {
@@ -71,7 +73,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
     Ok((res_signature, res_block))
 }
 
-// this function is called, when function name is already consumed
+// this function is called when function name is already consumed
 pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<(ASTFunctionCall, FilePosition)>> {
     let (ident, mut template_block, mut call_block, pos) =
         if let Token::Identifier(_) = block.peek_nth(0).0 &&

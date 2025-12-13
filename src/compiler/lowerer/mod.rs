@@ -19,8 +19,10 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
             let block = block.clone();
 
             sign.name = transform_method_name(sign.name);
-            // TODO: methods should have access to struct templates
-            let typ = ASTType::Reference(Box::new(ASTType::Identifier(structure.name.clone(), sign.pos.clone(), Vec::new())), sign.pos.clone());
+            let mut struct_template = structure.template.clone();
+            let struct_template_types = struct_template.clone().into_iter().map(|(name, pos)| ASTType::Identifier(name, pos, Vec::new())).collect::<Vec<_>>();
+            sign.template.append(&mut struct_template);
+            let typ = ASTType::Reference(Box::new(ASTType::Identifier(structure.name.clone(), sign.pos.clone(), struct_template_types)), sign.pos.clone());
             sign.args.insert(0, ("self".to_string(), typ, sign.pos.clone()));
             let block = lower_block(block);
 

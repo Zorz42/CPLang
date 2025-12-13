@@ -1,0 +1,27 @@
+//OUT=10
+
+struct Vec
+    size
+    vec
+
+    fn index i
+        ret &_builtin_index(self.vec i)
+
+new_vec size
+    ret Vec size size vec _builtin_alloc(size)
+
+new_vec
+    ret new_vec(0)
+
+struct Box[T]
+    x: T
+
+    fn to_vec
+        vec = new_vec(1)
+        :vec.index(0) = self.x
+        ret vec
+
+main
+    box = Box x 10
+    box.to_vec()
+    out "{:box.index(0)}"

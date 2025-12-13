@@ -504,6 +504,11 @@ impl TypeResolver {
         let mut types = Vec::new();
         let mut autorefs = vec![0; self.auto_ref_pairs.len()];
 
+        for i in 0..self.dsu.len() {
+            print!("{} {:?} | ", self.dsu.get(i).ref_depth, self.type_dsu.get(i).typ);
+        }
+        println!();
+
         for (i, (type1, type2)) in self.auto_ref_pairs.iter().enumerate() {
             autorefs[i] = self.dsu.get(*type1).ref_depth - self.dsu.get(*type2).ref_depth;
         }

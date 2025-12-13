@@ -1,0 +1,8 @@
+//OUT=compiles
+
+new_vec[T] size: i32
+    ret _builtin_alloc[T](size)
+
+main
+    vec = new_vec[i32](10)
+    out "compiles"

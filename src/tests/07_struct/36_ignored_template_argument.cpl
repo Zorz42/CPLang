@@ -1,0 +1,10 @@
+//OUT=ok
+
+struct Box[T]
+    fn get
+        0
+
+main
+    vec = Box
+    vec.get()
+    out "ok"

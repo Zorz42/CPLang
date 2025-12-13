@@ -154,7 +154,7 @@ impl Normalizer {
 
             // normalize the main function (which recursively normalizes every instance that is used within
             // this is where vast majority of the work happens
-            self.ir.main_function = self.normalize_function(sig, block, Vec::new())?;
+            self.ir.main_function = self.normalize_function(sig, block, Vec::new(), Vec::new())?;
         } else {
             return Err(CompilerError {
                 message: "No main function found".to_string(),
@@ -411,7 +411,7 @@ impl Normalizer {
                     )
                 } else {
                     let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos)?;
-                    let instance_label = self.normalize_function(sig, block, expr_types)?;
+                    let instance_label = self.normalize_function(sig, block, expr_types, template_types)?;
                     let ret_type = self.ir.instances[instance_label].ret_type;
                     self.type_resolver.hint_equal(&self.ir, ret_type, type_label)?;
 
@@ -667,7 +667,7 @@ impl Normalizer {
         None
     }
 
-    fn normalize_function(&mut self, sign: ASTFunctionSignature, block: ASTBlock, arg_types: Vec<IRTypeLabel>) -> CompilerResult<IRInstanceLabel> {
+    fn normalize_function(&mut self, sign: ASTFunctionSignature, block: ASTBlock, arg_types: Vec<IRTypeLabel>, template_types: Vec<IRTypeLabel>) -> CompilerResult<IRInstanceLabel> {
         const RECURSION_LIMIT: i32 = 100;
         assert_eq!(arg_types.len(), sign.args.len());
 
@@ -702,8 +702,13 @@ impl Normalizer {
         let label = self.curr_func_label;
         self.curr_func_label += 1;
 
-        for (template_arg, pos) in sign.template {
-            self.template_types.insert(template_arg, self.type_resolver.new_type_label(pos));
+        for (idx, (template_arg, pos)) in sign.template.into_iter().enumerate() {
+            let typ = if let Some(template_arg) = template_types.get(idx) {
+                *template_arg
+            } else {
+                self.type_resolver.new_type_label(pos)
+            };
+            self.template_types.insert(template_arg, typ);
         }
 
         let mut arguments = Vec::new();
