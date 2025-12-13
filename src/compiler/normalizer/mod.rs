@@ -201,22 +201,28 @@ impl Normalizer {
         (ir_struct, type_hints, structure.template)
     }
 
-    fn gen_struct_field_types(&mut self, struct_label: IRStructLabel, template_args: Vec<(IRTypeLabel, FilePosition)>) -> CompilerResult<Vec<IRTypeLabel>> {
+    fn gen_struct_field_types(&mut self, struct_label: IRStructLabel, template_args: Vec<ASTType>) -> CompilerResult<Vec<IRTypeLabel>> {
+        let mut template_arg_labels = Vec::new();
+        for arg in template_args {
+            let pos = arg.get_pos();
+            template_arg_labels.push((self.normalize_type(arg)?, pos));
+        }
+
         let mut field_types = Vec::new();
         let mut old_template_types = HashMap::new();
         swap(&mut old_template_types, &mut self.template_types);
         let struct_template_names = self.structs_templates[struct_label].clone();
         let struct_fields = self.structs_type_hints[struct_label].clone();
 
-        if template_args.len() > struct_template_names.len() {
+        if template_arg_labels.len() > struct_template_names.len() {
             return Err(CompilerError {
                 message: "Too many template arguments".to_string(),
-                position: Some(template_args[struct_template_names.len()].1.clone()),
+                position: Some(template_arg_labels[struct_template_names.len()].1.clone()),
             });
         }
 
         for (i, (name, pos)) in struct_template_names.into_iter().enumerate() {
-            let type_label = if let Some((type_label, _)) = template_args.get(i) {
+            let type_label = if let Some((type_label, _)) = template_arg_labels.get(i) {
                 *type_label
             } else {
                 self.type_resolver.new_type_label(pos)
@@ -391,6 +397,7 @@ impl Normalizer {
                 let mut function_arguments = Vec::new();
                 let mut template_types = Vec::new();
 
+                let num_template_arguments = call.template_arguments.len();
                 for typ in call.template_arguments {
                     let typ = self.normalize_type(typ)?;
                     template_types.push(typ);
@@ -410,7 +417,15 @@ impl Normalizer {
                         physicality,
                     )
                 } else {
-                    let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos)?;
+                    let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos.clone())?;
+
+                    if num_template_arguments > sig.num_template_args {
+                        return Err(CompilerError {
+                            message: format!("Too many template arguments. Got {} expected at most {}", num_template_arguments, sig.num_template_args),
+                            position: Some(pos),
+                        });
+                    }
+
                     let instance_label = self.normalize_function(sig, block, expr_types, template_types)?;
                     let ret_type = self.ir.instances[instance_label].ret_type;
                     self.type_resolver.hint_equal(&self.ir, ret_type, type_label)?;
@@ -427,14 +442,8 @@ impl Normalizer {
 
             ASTExpression::StructInitialization { name, fields, template_arguments, pos: _ } => {
                 let struct_label = self.structs_name_map[&name];
-                let mut template_args_labels = Vec::new();
 
-                for arg in template_arguments {
-                    let pos = arg.get_pos();
-                    template_args_labels.push((self.normalize_type(arg)?, pos));
-                }
-
-                let field_type_labels = self.gen_struct_field_types(struct_label, template_args_labels)?;
+                let field_type_labels = self.gen_struct_field_types(struct_label, template_arguments)?;
 
                 let mut field_values = Vec::new();
                 for (arg, field_type_label) in fields.into_iter().zip(field_type_labels.iter()) {
@@ -536,13 +545,16 @@ impl Normalizer {
             ASTType::Identifier(name, pos, template_args) => {
                 if let Some(label) = self.template_types.get(&name).copied() {
                     // identifier is a template value
+                    if !template_args.is_empty() {
+                        return Err(CompilerError {
+                            message: "Template value cannot have template arguments".to_string(),
+                            position: Some(pos),
+                        });
+                    }
                     self.type_resolver.hint_equal(&self.ir, label, type_label)?;
                 } else if let Some(struct_label) = self.structs_name_map.get(&name).copied() {
                     // identifier is a concrete struct
-                    let mut args = Vec::new();
-                    for _ in &self.ir.structs[struct_label].fields {
-                        args.push(self.type_resolver.new_type_label(pos.clone()));
-                    }
+                    let args = self.gen_struct_field_types(struct_label, template_args)?;
 
                     self.type_resolver.hint_struct(&self.ir, type_label, struct_label, args)?;
                 } else {

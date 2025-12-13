@@ -2,7 +2,7 @@
 #[allow(clippy::module_inception)]
 mod tests {
     use crate::compiler::compile;
-    use crate::compiler::error::FilePosition;
+    use crate::compiler::error::{display_error, FilePosition};
     use std::hash::Hasher;
     use std::thread::sleep;
     use std::time::Duration;
@@ -53,6 +53,7 @@ mod tests {
             let res = compile(test_file, &c_file);
 
             if let Err(e) = res {
+                display_error(&e, &binding);
                 if let Some(pos) = e.position {
                     assert_eq!(
                         pos,

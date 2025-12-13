@@ -7,7 +7,7 @@ struct Tuple[A B]
     first: Box[A]
     second: Box[B]
 
-make_tuple[A B] a: A b: B
+make_tuple[A B] a: Box[A] b: Box[B]
     ret Tuple[A B] first a second b
 
 main

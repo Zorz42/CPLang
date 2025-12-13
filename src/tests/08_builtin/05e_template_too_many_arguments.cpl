@@ -1,11 +1,14 @@
-//ERR -1 -1 -1 -1
+//ERR 14 9 14 26
 
 struct Vec[T]
     size: i32
-    vec: [T]
+    vec: &T
 
     fn index[T2] i: i32
-        ret &_builtin_index[T](self.vec i)
+        ret &_builtin_index(self.vec i)
+
+new_vec size: i32
+    ret Vec size size vec _builtin_alloc(size)
 
 main
     vec = new_vec(10)
