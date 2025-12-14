@@ -69,7 +69,7 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
         }
     }
 
-    Ok(Some(ASTStructDeclaration { name, fields, template, methods }))
+    Ok(Some(ASTStructDeclaration { name, fields, methods, template }))
 }
 
 pub fn parse_struct_instantiation(

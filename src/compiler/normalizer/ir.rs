@@ -46,8 +46,8 @@ pub enum IRPrimitiveType {
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum IRType {
     Primitive(IRPrimitiveType),
-    Reference(Box<IRType>),
-    Struct(IRStructLabel, Vec<IRType>),
+    Reference(Box<Self>),
+    Struct(IRStructLabel, Vec<Self>),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -77,9 +77,9 @@ pub enum IRConstant {
 pub enum IRExpression {
     BinaryOperation {
         operator: IROperator,
-        expression1: Box<IRExpression>,
+        expression1: Box<Self>,
         type1_label: IRTypeLabel,
-        expression2: Box<IRExpression>,
+        expression2: Box<Self>,
         type2_label: IRTypeLabel,
     },
     Constant {
@@ -87,30 +87,30 @@ pub enum IRExpression {
     },
     InstanceCall {
         instance_label: IRInstanceLabel,
-        instance_arguments: Vec<IRExpression>,
+        instance_arguments: Vec<Self>,
     },
     BuiltinFunctionCall(BuiltinFunctionCall),
     FieldAccess {
-        expression: Box<IRExpression>,
+        expression: Box<Self>,
         field_label: IRFieldLabel,
     },
     Dereference {
-        expression: Box<IRExpression>,
+        expression: Box<Self>,
     },
     StructInitialization {
         struct_label: IRStructLabel,
         fields_type_labels: Vec<IRTypeLabel>,
-        field_values: Vec<IRExpression>,
+        field_values: Vec<Self>,
     },
     Reference {
-        expression: Box<IRExpression>,
+        expression: Box<Self>,
     },
     Variable {
         variable_label: IRVariableLabel,
     },
     AutoRef {
         autoref_label: IRAutoRefLabel,
-        expression: Box<IRExpression>,
+        expression: Box<Self>,
     },
 }
 

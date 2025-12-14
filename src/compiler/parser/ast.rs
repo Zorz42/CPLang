@@ -88,7 +88,7 @@ pub enum ASTExpression {
     Boolean(bool, FilePosition),
     Variable(String, FilePosition),
     Reference {
-        expression: Box<ASTExpression>,
+        expression: Box<Self>,
         pos: FilePosition,
     },
     FunctionCall {
@@ -97,32 +97,32 @@ pub enum ASTExpression {
     },
     StructInitialization {
         name: String,
-        fields: Vec<ASTExpression>,
+        fields: Vec<Self>,
         pos: FilePosition,
         template_arguments: Vec<ASTType>,
     },
     FieldAccess {
-        expression: Box<ASTExpression>,
+        expression: Box<Self>,
         field_name: String,
         pos: FilePosition,
     },
     MethodCall {
-        expression: Box<ASTExpression>,
+        expression: Box<Self>,
         call: ASTFunctionCall,
         pos: FilePosition,
     },
     Dereference {
-        expression: Box<ASTExpression>,
+        expression: Box<Self>,
         pos: FilePosition,
     },
     BinaryOperation {
-        expression1: Box<ASTExpression>,
+        expression1: Box<Self>,
         operator: ASTOperator,
-        expression2: Box<ASTExpression>,
+        expression2: Box<Self>,
         pos: FilePosition,
     },
     AutoRef {
-        expression: Box<ASTExpression>,
+        expression: Box<Self>,
     },
 }
 
@@ -179,8 +179,8 @@ pub enum ASTPrimitiveType {
 pub enum ASTType {
     Any(FilePosition),
     Primitive(ASTPrimitiveType, FilePosition),
-    Reference(Box<ASTType>, FilePosition),
-    Identifier(String, FilePosition, Vec<ASTType>),
+    Reference(Box<Self>, FilePosition),
+    Identifier(String, FilePosition, Vec<Self>),
 }
 
 impl ASTType {

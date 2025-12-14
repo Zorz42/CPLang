@@ -336,6 +336,7 @@ impl TypeResolver {
         } else if typ2.is_none() {
             typ2 = typ1.clone();
         } else if typ1 != typ2 {
+            #[allow(clippy::unnecessary_unwrap)]
             return Err(CompilerError {
                 message: format!("This expression cannot be {:?} and {:?} at the same time.", typ1.unwrap(), typ2.unwrap()),
                 position: Some(self.type_positions[label1].clone()),
