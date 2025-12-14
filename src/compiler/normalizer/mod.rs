@@ -44,7 +44,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         ir: IR {
             structs: Vec::new(),
             instances: Vec::new(),
-            types: Vec::new(),
+            types: HashMap::new(),
             variable_types: Vec::new(),
             main_function: 0,
             autorefs: Vec::new(),
@@ -65,6 +65,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         structs_type_hints: Vec::new(),
         structs_templates: Vec::new(),
         template_types: HashMap::new(),
+        relevant_types: Vec::new(),
     };
 
     normalizer.normalize_ast(ast)
@@ -89,6 +90,7 @@ struct Normalizer {
     structs_templates: Vec<Vec<(String, FilePosition)>>,
     instance_cache: HashMap<String, Vec<(Vec<IRTypeLabel>, IRInstanceLabel)>>,
     template_types: HashMap<String, IRTypeLabel>,
+    relevant_types: Vec<IRTypeLabel>,
 }
 
 impl Normalizer {
@@ -163,11 +165,11 @@ impl Normalizer {
         }
 
         // type deducer works alongside normalizer in the end we want to gather all types (which should be known by now)
-        (self.ir.types, self.ir.autorefs) = self.type_resolver.gather_types()?;
+        (self.ir.types, self.ir.autorefs) = self.type_resolver.gather_types(self.relevant_types)?;
 
         // check that main has no return value
         let main_ret = self.ir.instances[self.ir.main_function].ret_type;
-        let main_ret = self.ir.types[main_ret].clone();
+        let main_ret = self.ir.types[&main_ret].clone();
         if main_ret != IRType::Primitive(IRPrimitiveType::Void) {
             return Err(CompilerError {
                 message: "Main function should not return any value".to_string(),
@@ -450,6 +452,7 @@ impl Normalizer {
                     let (expr, typ, _is_phys) = self.normalize_expression(arg)?;
                     field_values.push(expr);
                     self.type_resolver.hint_equal(&self.ir, typ, *field_type_label)?;
+                    self.relevant_types.push(*field_type_label);
                 }
 
                 let struct_expr = IRExpression::StructInitialization {
@@ -490,6 +493,8 @@ impl Normalizer {
             } => {
                 let (expression1, type1_label, _is_phys) = self.normalize_expression(*expression1)?;
                 let (expression2, type2_label, _is_phys) = self.normalize_expression(*expression2)?;
+                self.relevant_types.push(type1_label);
+                self.relevant_types.push(type2_label);
                 let operator = operator_to_ir_operator(operator);
                 self.type_resolver.hint_operator(&self.ir, type1_label, type2_label, operator, type_label)?;
                 (
@@ -585,7 +590,9 @@ impl Normalizer {
                     {
                         let label = self.new_var(name);
                         self.curr_func_vars.push(label);
-                        self.ir.variable_types.push(self.type_resolver.new_type_label(pos.clone()));
+                        let type_label = self.type_resolver.new_type_label(pos.clone());
+                        self.ir.variable_types.push(type_label);
+                        self.relevant_types.push(type_label);
                     }
 
                     let (assign_to, type_label1, is_phys) = self.normalize_expression(assign_to)?;
@@ -617,6 +624,7 @@ impl Normalizer {
                     vals.push(ASTExpression::String("\n".to_string(), FilePosition::unknown()));
                     for val in vals {
                         let (expr, type_label, _is_phys) = self.normalize_expression(val)?;
+                        self.relevant_types.push(type_label);
                         res.statements.push(IRStatement::Print { expr, type_label });
                     }
                 }
@@ -690,11 +698,16 @@ impl Normalizer {
             return Ok(label);
         }
 
+        for type_label in &arg_types {
+            self.relevant_types.push(*type_label);
+        }
+
         // backup and override values that are needed by instance normalizing
-        let prev_vars = self.variables_name_map.clone();
         let prev_func_vars = self.curr_func_vars.clone();
         let prev_func_ret_type = self.curr_func_ret_type;
         let prev_has_ret_statement = self.has_ret_statement;
+        let mut old_variables_name_map = HashMap::new();
+        swap(&mut old_variables_name_map, &mut self.variables_name_map);
 
         if self.depth == RECURSION_LIMIT {
             return Err(CompilerError {
@@ -710,6 +723,7 @@ impl Normalizer {
         self.depth += 1;
         self.curr_func_vars = Vec::new();
         self.curr_func_ret_type = self.type_resolver.new_type_label(sign.pos);
+        self.relevant_types.push(self.curr_func_ret_type);
         self.has_ret_statement = false;
         let label = self.curr_func_label;
         self.curr_func_label += 1;
@@ -753,11 +767,11 @@ impl Normalizer {
             self.type_resolver.hint_is(&self.ir, self.curr_func_ret_type, IRPrimitiveType::Void)?;
         }
 
-        self.variables_name_map = prev_vars;
         self.curr_func_vars = prev_func_vars;
         self.curr_func_ret_type = prev_func_ret_type;
         self.has_ret_statement = prev_has_ret_statement;
         self.template_types.clear();
+        swap(&mut old_variables_name_map, &mut self.variables_name_map);
         self.depth -= 1;
 
         Ok(label)

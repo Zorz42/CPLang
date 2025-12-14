@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 // Function is a generic function. When you call it, it is reduced into
@@ -13,7 +14,7 @@ pub type IRAutoRefLabel = usize;
 pub struct IR {
     pub structs: Vec<IRStruct>,
     pub instances: Vec<IRInstance>,
-    pub types: Vec<IRType>,
+    pub types: HashMap<IRTypeLabel, IRType>,
     pub variable_types: Vec<IRTypeLabel>,
     pub autorefs: Vec<i32>,
     pub main_function: IRInstanceLabel,

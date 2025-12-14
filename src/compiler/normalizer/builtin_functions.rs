@@ -48,6 +48,7 @@ impl Normalizer {
                 if let Some(template_typ) = template_types.first() {
                     self.type_resolver.hint_equal(&self.ir, typ, *template_typ)?;
                 }
+                self.relevant_types.push(typ);
 
                 Ok((BuiltinFunctionCall::Alloc {
                     typ,

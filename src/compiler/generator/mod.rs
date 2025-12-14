@@ -10,7 +10,7 @@ Generator converts IR into raw C code. Could be easily replaced with any other l
 
 #[allow(clippy::type_complexity)]
 struct GeneratorContext {
-    types: Vec<IRType>,
+    types: HashMap<IRTypeLabel, IRType>,
     var_types: Vec<IRTypeLabel>,
     operators: HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>>,
     structs: Vec<IRStruct>,
@@ -135,7 +135,7 @@ fn type_to_printf_format(typ: &IRType) -> &'static str {
 fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> String {
     match call {
         BuiltinFunctionCall::Alloc { typ, num } => {
-            let typ = ctx.types[typ].clone();
+            let typ = ctx.types[&typ].clone();
             format!("malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
         }
         BuiltinFunctionCall::Index { arr, idx } => {
@@ -155,8 +155,8 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
         } => {
             let code1 = gen_expression(ctx, *expression1);
             let code2 = gen_expression(ctx, *expression2);
-            let typ1 = ctx.types[type1_label].clone();
-            let typ2 = ctx.types[type2_label].clone();
+            let typ1 = ctx.types[&type1_label].clone();
+            let typ2 = ctx.types[&type2_label].clone();
             format!("({})", ctx.operators[&(typ1, operator, typ2)](code1, code2))
         }
         IRExpression::Constant { constant } => match constant {
@@ -203,7 +203,7 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
             fields_type_labels,
             field_values,
         } => {
-            let fields_type_labels = fields_type_labels.into_iter().map(|x| ctx.types[x].clone()).collect();
+            let fields_type_labels = fields_type_labels.into_iter().map(|x| ctx.types[&x].clone()).collect();
             let c_label = ctx.c_structs[&(struct_label, fields_type_labels)];
             let mut code = format!("({})", gen_struct_name(c_label));
             code += "{";
@@ -258,7 +258,7 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
             }
             IRStatement::Expression { expr } => format!("{};", gen_expression(ctx, expr)),
             IRStatement::Print { expr, type_label } => {
-                let typ = ctx.types[type_label].clone();
+                let typ = ctx.types[&type_label].clone();
                 if typ == IRType::Primitive(IRPrimitiveType::Void) {
                     String::new()
                 } else {
@@ -288,7 +288,7 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
 fn gen_function(ctx: &mut GeneratorContext, func: IRInstance) -> String {
     let mut args = String::new();
     for arg in func.arguments {
-        let typ = ctx.types[ctx.var_types[arg]].clone();
+        let typ = ctx.types[&ctx.var_types[arg]].clone();
         args += &format!("{} {},", gen_type(ctx, typ), gen_variable_label(arg));
     }
     // pop the last "," if it exists
@@ -296,14 +296,14 @@ fn gen_function(ctx: &mut GeneratorContext, func: IRInstance) -> String {
 
     let mut code = format!(
         "{} {}({})",
-        gen_type(ctx, ctx.types[func.ret_type].clone()),
+        gen_type(ctx, ctx.types[&func.ret_type].clone()),
         gen_function_label(func.label),
         args
     );
 
     let mut vars_code = String::new();
     for var in func.variables {
-        let typ = ctx.types[ctx.var_types[var]].clone();
+        let typ = ctx.types[&ctx.var_types[var]].clone();
         vars_code += &format!("{} {};", gen_type(ctx, typ), gen_variable_label(var));
     }
     if !vars_code.is_empty() {

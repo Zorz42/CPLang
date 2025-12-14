@@ -53,15 +53,15 @@ mod tests {
             let res = compile(test_file, &c_file);
 
             if let Err(e) = res {
-                display_error(&e, &binding);
-                if let Some(pos) = e.position {
-                    assert_eq!(
-                        pos,
-                        FilePosition {
-                            first_pos: (line_start as usize, column_start as usize),
-                            last_pos: (line_end as usize, column_end as usize),
-                        }
-                    );
+                if let Some(pos) = e.position.clone() {
+                    let correct_pos = FilePosition {
+                        first_pos: (line_start as usize, column_start as usize),
+                        last_pos: (line_end as usize, column_end as usize),
+                    };
+                    if pos != correct_pos {
+                        display_error(&e, &binding);
+                        assert_eq!(pos, correct_pos);
+                    }
                 } else if line_start != -1 {
                     panic!("Expected error position, but got None");
                 }
@@ -73,7 +73,10 @@ mod tests {
             let mut expected_output = stripped.to_string();
             expected_output.push('\n');
 
-            compile(test_file, &c_file).unwrap();
+            if let Err(e) = compile(test_file, &c_file) {
+                display_error(&e, &binding);
+                panic!("compilation error")
+            }
             let exec_file = compile_gcc(&c_file);
 
             let mut fails = 0;

@@ -500,8 +500,8 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn gather_types(mut self) -> CompilerResult<(Vec<IRType>, Vec<i32>)> {
-        let mut types = Vec::new();
+    pub fn gather_types(mut self, needed_types: Vec<IRTypeLabel>) -> CompilerResult<(HashMap<IRTypeLabel, IRType>, Vec<i32>)> {
+        let mut types = HashMap::new();
         let mut autorefs = vec![0; self.auto_ref_pairs.len()];
 
         /*for i in 0..self.dsu.len() {
@@ -513,25 +513,25 @@ impl TypeResolver {
             autorefs[i] = self.dsu.get(*type1).ref_depth - self.dsu.get(*type2).ref_depth;
         }
 
-        for i in 0..self.dsu.len() {
-            let Some(typ) = self.get_ir_type(i) else {
+        for type_label in needed_types {
+            let Some(typ) = self.get_ir_type(type_label) else {
                 return Err(CompilerError {
                     message: "Could not deduce this expression's type".to_string(),
-                    position: Some(self.type_positions[i].clone()),
+                    position: Some(self.type_positions[type_label].clone()),
                 });
             };
 
-            let ref_depth = self.dsu.get(i).ref_depth;
+            let ref_depth = self.dsu.get(type_label).ref_depth;
 
             if ref_depth < 0 {
-                let pos = self.type_positions[i].clone();
+                let pos = self.type_positions[type_label].clone();
                 return Err(CompilerError {
                     message: "This has type of a dereferenced non-reference".to_string(),
                     position: Some(pos),
                 });
             }
 
-            types.push(typ);
+            types.insert(type_label, typ);
         }
 
         Ok((types, autorefs))

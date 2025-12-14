@@ -23,5 +23,5 @@ struct Box[T]
 
 main
     box = Box x 10
-    box.to_vec()
-    out "{:box.index(0)}"
+    vec = box.to_vec()
+    out "{:vec.index(0)}"
