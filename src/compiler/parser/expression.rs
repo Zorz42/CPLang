@@ -1,5 +1,5 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
-use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStructDeclaration};
+use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTOperator, ASTStructDeclaration};
 use crate::compiler::parser::function::parse_function_call;
 use crate::compiler::parser::structure::parse_struct_instantiation;
 use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
@@ -8,44 +8,35 @@ use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
 fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<ASTExpression> {
     // check for function call first
     if let Some((call, pos)) = parse_function_call(structs, block)? {
-        return Ok(ASTExpression::FunctionCall {
-            call,
-            pos,
-        });
+        return Ok(ASTExpression::no_hint(ASTExpressionKind::FunctionCall(call), pos));
     }
 
     let mut res = match block.get() {
         (Token::Constant(constant), pos) => match constant {
-            Constant::Integer(int) => ASTExpression::Integer(int, pos),
-            Constant::Float(float) => ASTExpression::Float(float, pos),
-            Constant::String(string) => ASTExpression::String(string.iter().map(|x| x.c).collect(), pos),
-            Constant::Boolean(boolean) => ASTExpression::Boolean(boolean, pos),
+            Constant::Integer(int) => ASTExpression::no_hint(ASTExpressionKind::Integer(int), pos),
+            Constant::Float(float) => ASTExpression::no_hint(ASTExpressionKind::Float(float), pos),
+            Constant::String(string) => ASTExpression::no_hint(ASTExpressionKind::String(string.iter().map(|x| x.c).collect()), pos),
+            Constant::Boolean(boolean) => ASTExpression::no_hint(ASTExpressionKind::Boolean(boolean), pos),
         },
         (Token::Identifier(identifier), pos) => {
             // we need to know if this is a struct instantiation or a variable
             if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 parse_struct_instantiation(structs, block, struct_declaration, pos, identifier)?
             } else {
-                ASTExpression::Variable(identifier.clone(), pos)
+                ASTExpression::no_hint(ASTExpressionKind::Variable(identifier.clone()), pos)
             }
         }
         (Token::Reference, _) => {
             let res = parse_value(structs, block)?;
-            let pos = res.get_pos();
+            let pos = res.pos.clone();
 
-            ASTExpression::Reference {
-                expression: Box::new(res),
-                pos,
-            }
+            ASTExpression::no_hint(ASTExpressionKind::Reference(Box::new(res)), pos)
         }
         (Token::Colon, _) => {
             let res = parse_value(structs, block)?;
-            let pos = res.get_pos();
+            let pos = res.pos.clone();
 
-            ASTExpression::Dereference {
-                expression: Box::new(res),
-                pos,
-            }
+            ASTExpression::no_hint(ASTExpressionKind::Dereference(Box::new(res)), pos)
         }
         (Token::ParenthesisBlock(mut block), _) => parse_expression(structs, &mut block)?,
         (_, pos) => {
@@ -60,19 +51,17 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
         block.get();
 
         res = if let Some((call, pos)) = parse_function_call(structs, block)? {
-            ASTExpression::MethodCall {
+            ASTExpression::no_hint(ASTExpressionKind::MethodCall {
                 expression: Box::new(res),
-                pos,
                 call,
-            }
+            }, pos)
         } else {
             match block.get() {
                 (Token::Identifier(identifier), pos) => {
-                    ASTExpression::FieldAccess {
+                    ASTExpression::no_hint(ASTExpressionKind::FieldAccess {
                         expression: Box::new(res),
                         field_name: identifier,
-                        pos: pos.clone(),
-                    }
+                    }, pos.clone())
                 }
                 (_, pos) => {
                     return Err(CompilerError {
@@ -143,15 +132,14 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
                 let expression1 = vals.remove(i);
                 let expression2 = vals.remove(i);
                 let operator = ops.remove(i);
-                let pos = merge_file_positions(expression1.get_pos(), expression2.get_pos());
+                let pos = merge_file_positions(expression1.pos.clone(), expression2.pos.clone());
                 vals.insert(
                     i,
-                    ASTExpression::BinaryOperation {
+                    ASTExpression::no_hint(ASTExpressionKind::BinaryOperation {
                         expression1: Box::new(expression1),
                         operator,
                         expression2: Box::new(expression2),
-                        pos,
-                    },
+                    }, pos),
                 );
             } else {
                 break;

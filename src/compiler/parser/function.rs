@@ -133,7 +133,7 @@ pub fn parse_return_statement(structs: &Vec<ASTStructDeclaration>, block: &mut T
     }
 
     let expression = parse_expression(structs, block)?;
-    let pos2 = expression.get_pos();
+    let pos2 = expression.pos.clone();
     Ok(Some(ASTStatement::Return {
         return_value: Some(expression),
         pos: merge_file_positions(pos1, pos2),

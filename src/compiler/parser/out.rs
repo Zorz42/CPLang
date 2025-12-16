@@ -1,8 +1,8 @@
-use crate::compiler::error::{CompilerError, CompilerResult, FilePosition, merge_file_positions};
-use crate::compiler::parser::ast::{ASTExpression, ASTStatement, ASTStructDeclaration};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
+use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
-use crate::compiler::preprocessor::{Fragment, PosChar, parse_blocks};
-use crate::compiler::tokenizer::{Constant, Token, TokenBlock, tokenize_fragments};
+use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
+use crate::compiler::tokenizer::{tokenize_fragments, Constant, Token, TokenBlock};
 
 fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>, pos: FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
@@ -50,7 +50,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
         } else if pc.c == '{' {
             in_format = true;
             if !curr.is_empty() {
-                res.push(ASTExpression::String(curr, FilePosition::unknown()));
+                res.push(ASTExpression::no_hint(ASTExpressionKind::String(curr), FilePosition::unknown()));
             }
             curr = String::new();
             format_pos = pc.pos.clone();
@@ -70,7 +70,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
     }
 
     if !curr.is_empty() {
-        res.push(ASTExpression::String(curr, FilePosition::unknown()));
+        res.push(ASTExpression::no_hint(ASTExpressionKind::String(curr), FilePosition::unknown()));
     }
     Ok(res)
 }

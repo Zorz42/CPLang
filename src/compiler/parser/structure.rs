@@ -1,5 +1,5 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
-use crate::compiler::parser::ast::{ASTExpression, ASTStructDeclaration, ASTType};
+use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::function::parse_function_declaration;
@@ -105,7 +105,7 @@ pub fn parse_struct_instantiation(
         };
 
         let expr = parse_expression(structs, block)?;
-        let expr_pos = expr.get_pos();
+        let expr_pos = expr.pos.clone();
 
         if fields.contains_key(&field_name) {
             return Err(CompilerError {
@@ -124,10 +124,14 @@ pub fn parse_struct_instantiation(
         fields_res.push(fields[field_name].clone());
     }
 
-    Ok(ASTExpression::StructInitialization {
-        name: identifier,
-        fields: fields_res,
-        template_arguments,
-        pos,
-    })
+    Ok(
+        ASTExpression::no_hint(
+            ASTExpressionKind::StructInitialization {
+                name: identifier,
+                fields: fields_res,
+                template_arguments,
+            },
+            pos,
+        )
+    )
 }

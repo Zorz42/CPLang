@@ -1,5 +1,5 @@
 use crate::compiler::error::FilePosition;
-use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTOperator, ASTStatement, ASTType, Ast};
+use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTExpressionKind, ASTOperator, ASTStatement, ASTType, Ast};
 // Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
 pub fn lower_ast(mut ast: Ast) -> Ast {
@@ -49,31 +49,25 @@ pub fn transform_method_name(name: String) -> String {
  */
 fn gen_op_block(pos: FilePosition, operator: ASTOperator, assign_to: ASTExpression, value: ASTExpression) -> ASTStatement {
     let var_name = "$tmp".to_string();
+    let var_expr = ASTExpression::no_hint(
+        ASTExpressionKind::Variable(var_name.clone()),
+        pos.clone(),
+    );
     ASTStatement::Block {
         block: ASTBlock {
             children: vec![
                 ASTStatement::Assignment {
-                    assign_to: ASTExpression::Variable(var_name.clone(), pos.clone()),
-                    value: ASTExpression::Reference {
-                        expression: Box::new(assign_to),
-                        pos: pos.clone(),
-                    },
+                    assign_to: var_expr.clone(),
+                    value: ASTExpression::no_hint(ASTExpressionKind::Reference(Box::new(assign_to)), pos.clone()),
                     pos: pos.clone(),
                 },
                 ASTStatement::Assignment {
-                    assign_to: ASTExpression::Dereference {
-                        expression: Box::new(ASTExpression::Variable(var_name.clone(), pos.clone())),
-                        pos: pos.clone(),
-                    },
-                    value: ASTExpression::BinaryOperation {
-                        expression1: Box::new(ASTExpression::Dereference {
-                            expression: Box::new(ASTExpression::Variable(var_name, pos.clone())),
-                            pos: pos.clone(),
-                        }),
+                    assign_to: ASTExpression::no_hint(ASTExpressionKind::Dereference(Box::new(var_expr.clone())), pos.clone()),
+                    value: ASTExpression::no_hint(ASTExpressionKind::BinaryOperation {
+                        expression1: Box::new(ASTExpression::no_hint(ASTExpressionKind::Dereference(Box::new(var_expr.clone())), pos.clone())),
                         operator,
                         expression2: Box::new(value),
-                        pos: pos.clone(),
-                    },
+                    }, pos.clone()),
                     pos,
                 },
             ],
@@ -82,72 +76,71 @@ fn gen_op_block(pos: FilePosition, operator: ASTOperator, assign_to: ASTExpressi
 }
 
 fn lower_expression(expression: ASTExpression) -> ASTExpression {
-    match expression {
-        ASTExpression::Integer(_, _)
-        | ASTExpression::Float(_, _)
-        | ASTExpression::String(_, _)
-        | ASTExpression::Boolean(_, _)
-        | ASTExpression::Variable(_, _) => expression,
-        ASTExpression::Reference { mut expression, pos } => {
+    let pos = expression.pos;
+    match expression.kind {
+        ASTExpressionKind::Integer(_)
+        | ASTExpressionKind::Float(_)
+        | ASTExpressionKind::String(_)
+        | ASTExpressionKind::Boolean(_)
+        | ASTExpressionKind::Variable(_) =>
+            ASTExpression {
+                kind: expression.kind,
+                pos,
+                type_hint: expression.type_hint,
+            },
+        ASTExpressionKind::Reference(mut expression) => {
             *expression = lower_expression(*expression);
-            ASTExpression::Reference { expression, pos }
+            ASTExpression::no_hint(ASTExpressionKind::Reference(expression), pos)
         }
-        ASTExpression::FunctionCall { mut call, pos } => {
+        ASTExpressionKind::FunctionCall(mut call) => {
             call.arguments = call.arguments.into_iter().map(lower_expression).collect();
             call.name = transform_function_name(call.name);
-            ASTExpression::FunctionCall { call, pos }
+            ASTExpression::no_hint(ASTExpressionKind::FunctionCall(call), pos)
         }
-        ASTExpression::StructInitialization { name, fields, pos, template_arguments } => {
+        ASTExpressionKind::StructInitialization { name, fields, template_arguments } => {
             let fields = fields.into_iter().map(lower_expression).collect();
-            ASTExpression::StructInitialization { name, fields, pos, template_arguments }
+            ASTExpression::no_hint(ASTExpressionKind::StructInitialization { name, fields, template_arguments }, pos)
         }
-        ASTExpression::FieldAccess {
+        ASTExpressionKind::FieldAccess {
             mut expression,
             field_name,
-            pos,
         } => {
             // auto deref struct so that you can easily access fields of a reference
-            *expression = ASTExpression::AutoRef {
-                expression: Box::new(lower_expression(*expression)),
-            };
-            ASTExpression::FieldAccess { expression, field_name, pos }
+            let expr_pos = expression.pos.clone();
+            *expression = ASTExpression::no_hint(ASTExpressionKind::AutoRef(Box::new(lower_expression(*expression))), expr_pos);
+            ASTExpression::no_hint(ASTExpressionKind::FieldAccess { expression, field_name }, pos)
         }
-        ASTExpression::MethodCall {
+        ASTExpressionKind::MethodCall {
             expression,
-            pos,
             mut call,
         } => {
             call.arguments = call.arguments.into_iter().map(lower_expression).collect();
-            let expression = ASTExpression::AutoRef {
-                expression: Box::new(lower_expression(*expression)),
-            };
+            let expression = ASTExpression::no_hint(ASTExpressionKind::AutoRef(Box::new(lower_expression(*expression))), pos.clone());
             call.arguments.insert(0, expression);
             call.name = transform_method_name(call.name);
 
-            ASTExpression::FunctionCall { call, pos }
+            ASTExpression::no_hint(ASTExpressionKind::FunctionCall(call), pos)
         }
-        ASTExpression::Dereference { mut expression, pos } => {
+        ASTExpressionKind::Dereference(mut expression) => {
             *expression = lower_expression(*expression);
-            ASTExpression::Dereference { expression, pos }
+            ASTExpression::no_hint(ASTExpressionKind::Dereference(expression), pos)
         }
-        ASTExpression::BinaryOperation {
+        ASTExpressionKind::BinaryOperation {
             mut expression1,
             operator,
             mut expression2,
-            pos,
         } => {
             *expression1 = lower_expression(*expression1);
             *expression2 = lower_expression(*expression2);
-            ASTExpression::BinaryOperation {
+            ASTExpression::no_hint(ASTExpressionKind::BinaryOperation {
                 expression1,
                 operator,
                 expression2,
-                pos,
-            }
+            }, pos)
         }
-        ASTExpression::AutoRef { mut expression } => {
+        ASTExpressionKind::AutoRef(mut expression) => {
             *expression = lower_expression(*expression);
-            ASTExpression::AutoRef { expression }
+            ASTExpression::no_hint(ASTExpressionKind::AutoRef(expression), pos.clone())
         }
     }
 }
@@ -163,22 +156,19 @@ fn lower_statement(statement: ASTStatement) -> ASTStatement {
             assign_to,
             value,
             operator,
-            pos,
         } => {
-            let block = gen_op_block(pos, operator, assign_to, value);
+            let block = gen_op_block(value.pos.clone(), operator, assign_to, value);
             lower_statement(block)
         }
         ASTStatement::AssignmentIncrement { assign_to, pos } => lower_statement(ASTStatement::AssignmentOperator {
             assign_to,
-            value: ASTExpression::Integer(1, pos.clone()),
+            value: ASTExpression::no_hint(ASTExpressionKind::Integer(1), pos),
             operator: ASTOperator::Plus,
-            pos,
         }),
         ASTStatement::AssignmentDecrement { assign_to, pos } => lower_statement(ASTStatement::AssignmentOperator {
             assign_to,
-            value: ASTExpression::Integer(1, pos.clone()),
+            value: ASTExpression::no_hint(ASTExpressionKind::Integer(1), pos),
             operator: ASTOperator::Minus,
-            pos,
         }),
         ASTStatement::Block { mut block } => {
             block.children = block.children.into_iter().map(lower_statement).collect();

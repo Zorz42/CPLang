@@ -32,7 +32,6 @@ pub enum ASTStatement {
         assign_to: ASTExpression,
         value: ASTExpression,
         operator: ASTOperator,
-        pos: FilePosition,
     },
     AssignmentIncrement {
         assign_to: ASTExpression,
@@ -79,71 +78,53 @@ pub enum ASTOperator {
     Minus,
 }
 
-#[rustfmt::skip]
 #[derive(Debug, Clone)]
-pub enum ASTExpression {
-    Integer(i32, FilePosition),
-    Float(f32, FilePosition),
-    String(String, FilePosition),
-    Boolean(bool, FilePosition),
-    Variable(String, FilePosition),
-    Reference {
-        expression: Box<Self>,
-        pos: FilePosition,
-    },
-    FunctionCall {
-        call: ASTFunctionCall,
-        pos: FilePosition,
-    },
-    StructInitialization {
-        name: String,
-        fields: Vec<Self>,
-        pos: FilePosition,
-        template_arguments: Vec<ASTType>,
-    },
-    FieldAccess {
-        expression: Box<Self>,
-        field_name: String,
-        pos: FilePosition,
-    },
-    MethodCall {
-        expression: Box<Self>,
-        call: ASTFunctionCall,
-        pos: FilePosition,
-    },
-    Dereference {
-        expression: Box<Self>,
-        pos: FilePosition,
-    },
-    BinaryOperation {
-        expression1: Box<Self>,
-        operator: ASTOperator,
-        expression2: Box<Self>,
-        pos: FilePosition,
-    },
-    AutoRef {
-        expression: Box<Self>,
-    },
+pub struct ASTExpression {
+    pub kind: ASTExpressionKind,
+    pub pos: FilePosition,
+    pub type_hint: ASTType,
 }
 
 impl ASTExpression {
-    pub fn get_pos(&self) -> FilePosition {
-        match self {
-            Self::Integer(_, pos)
-            | Self::Float(_, pos)
-            | Self::String(_, pos)
-            | Self::Boolean(_, pos)
-            | Self::Variable(_, pos)
-            | Self::Reference { pos, .. }
-            | Self::FunctionCall { pos, .. }
-            | Self::StructInitialization { pos, .. }
-            | Self::FieldAccess { pos, .. }
-            | Self::MethodCall { pos, .. }
-            | Self::Dereference { pos, .. }
-            | Self::BinaryOperation { pos, .. } => pos.clone(),
-            Self::AutoRef { expression } => expression.get_pos(),
+    pub fn no_hint(kind: ASTExpressionKind, pos: FilePosition) -> Self {
+        Self {
+            kind,
+            type_hint: ASTType::Any(pos.clone()),
+            pos,
         }
     }
+}
+
+#[rustfmt::skip]
+#[derive(Debug, Clone)]
+pub enum ASTExpressionKind {
+    Integer(i32),
+    Float(f32),
+    String(String),
+    Boolean(bool),
+    Variable(String),
+    Reference(Box<ASTExpression>),
+    FunctionCall(ASTFunctionCall),
+    StructInitialization {
+        name: String,
+        fields: Vec<ASTExpression>,
+        template_arguments: Vec<ASTType>,
+    },
+    FieldAccess {
+        expression: Box<ASTExpression>,
+        field_name: String,
+    },
+    MethodCall {
+        expression: Box<ASTExpression>,
+        call: ASTFunctionCall,
+    },
+    Dereference(Box<ASTExpression>),
+    BinaryOperation {
+        expression1: Box<ASTExpression>,
+        operator: ASTOperator,
+        expression2: Box<ASTExpression>,
+    },
+    AutoRef(Box<ASTExpression>),
 }
 
 #[derive(Debug, Clone)]
