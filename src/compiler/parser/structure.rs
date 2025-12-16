@@ -1,10 +1,10 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
-use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStructDeclaration, ASTType};
+use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStructDeclaration};
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::function::parse_function_declaration;
 use crate::compiler::parser::template::{parse_declaration_template, parse_template_instantiation};
-use crate::compiler::parser::typed::parse_type;
+use crate::compiler::parser::typed::parse_type_hint;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 use std::collections::HashMap;
 
@@ -46,12 +46,7 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
     while block.has_tokens() {
         match block.get() {
             (Token::Identifier(name), _) => {
-                let type_hint = if Token::Colon == block.peek().0 {
-                    block.get();
-                    parse_type(&mut block)?
-                } else {
-                    ASTType::Any(FilePosition::unknown())
-                };
+                let type_hint = parse_type_hint(&mut block)?;
 
                 fields.push((name.clone(), type_hint));
             }

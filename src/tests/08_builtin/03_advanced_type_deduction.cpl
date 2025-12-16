@@ -15,5 +15,5 @@ new_vec
 
 main
     vec = new_vec(10)
-    :vec.index(0) = 10
-    out "{:vec.index(0)}"
+    |vec.index(0) = 10
+    out "{|vec.index(0)}"

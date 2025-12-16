@@ -2,6 +2,7 @@ use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult
 use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTOperator, ASTStructDeclaration};
 use crate::compiler::parser::function::parse_function_call;
 use crate::compiler::parser::structure::parse_struct_instantiation;
+use crate::compiler::parser::typed::parse_type_hint;
 use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
@@ -32,7 +33,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
 
             ASTExpression::no_hint(ASTExpressionKind::Reference(Box::new(res)), pos)
         }
-        (Token::Colon, _) => {
+        (Token::Pipe, _) => {
             let res = parse_value(structs, block)?;
             let pos = res.pos.clone();
 
@@ -72,6 +73,8 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
             }
         }
     }
+
+    res.type_hint = parse_type_hint(block)?;
 
     Ok(res)
 }

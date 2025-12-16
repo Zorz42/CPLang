@@ -3,5 +3,5 @@
 main
     a = 10
     ref_a = &a
-    :ref_a = 20
-    out "{a} {:ref_a}"
+    |ref_a = 20
+    out "{a} {|ref_a}"

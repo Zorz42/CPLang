@@ -12,5 +12,5 @@ new_vec size: i32
 
 main
     vec = new_vec(10)
-    :vec.index[i32 i32](0) = 10
-    out "{:vec.index(0)}"
+    |vec.index[i32 i32](0) = 10
+    out "{|vec.index(0)}"

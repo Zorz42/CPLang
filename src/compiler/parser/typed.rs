@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTPrimitiveType, ASTType};
 use crate::compiler::parser::template::parse_template_instantiation;
 use crate::compiler::tokenizer::{Token, TokenBlock};
@@ -26,4 +26,15 @@ pub fn parse_type(block: &mut TokenBlock) -> CompilerResult<ASTType> {
             position: Some(pos),
         }),
     }
+}
+
+pub fn parse_type_hint(block: &mut TokenBlock) -> CompilerResult<ASTType> {
+    Ok(match block.peek() {
+        (Token::Colon, _pos) => {
+            // type hint
+            block.get();
+            parse_type(block)?
+        }
+        _ => ASTType::Any(FilePosition::unknown()),
+    })
 }

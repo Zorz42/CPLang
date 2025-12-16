@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerError, CompilerResult, FilePosition, merge_file_positions};
+use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use std::cmp::Ordering;
 
 /*

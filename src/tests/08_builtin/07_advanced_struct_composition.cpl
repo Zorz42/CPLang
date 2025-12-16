@@ -18,10 +18,10 @@ struct Box[T]
 
     fn to_vec
         vec = new_vec(1)
-        :vec.index(0) = self.x
+        |vec.index(0) = self.x
         ret vec
 
 main
     box = Box x 10
     vec = box.to_vec()
-    out "{:vec.index(0)}"
+    out "{|vec.index(0)}"

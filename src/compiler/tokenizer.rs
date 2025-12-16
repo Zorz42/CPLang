@@ -54,6 +54,7 @@ pub enum Token {
     Decrement,
     Colon,
     QuestionMark,
+    Pipe,
 }
 
 fn str_to_keyword(s: &str) -> Option<Token> {
@@ -91,6 +92,7 @@ const fn symbol_from_char(c: char) -> Option<Token> {
         '.' => Some(Token::Dot),
         ':' => Some(Token::Colon),
         '?' => Some(Token::QuestionMark),
+        '|' => Some(Token::Pipe),
         _ => None,
     }
 }

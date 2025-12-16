@@ -1,9 +1,9 @@
 use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::builtin_functions::is_builtin;
-use crate::compiler::parser::ast::{ASTFunctionCall, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType};
+use crate::compiler::parser::ast::{ASTFunctionCall, ASTFunctionSignature, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::template::parse_declaration_template;
-use crate::compiler::parser::typed::parse_type;
+use crate::compiler::parser::typed::{parse_type, parse_type_hint};
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
 pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(ASTFunctionSignature, TokenBlock)> {
@@ -57,15 +57,8 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
             }
         };
 
-        let type_hint = match block.peek() {
-            (Token::Colon, _pos) => {
-                // type hint
-                let pos = block.get().1;
-                res_signature.pos = merge_file_positions(res_signature.pos, pos);
-                parse_type(block)?
-            }
-            _ => ASTType::Any(arg_pos.clone()),
-        };
+        let type_hint = parse_type_hint(block)?;
+        res_signature.pos = merge_file_positions(res_signature.pos, type_hint.get_pos());
 
         res_signature.args.push((arg, type_hint, arg_pos));
     }
