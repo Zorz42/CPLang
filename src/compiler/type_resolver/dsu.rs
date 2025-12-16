@@ -1,4 +1,4 @@
-use crate::compiler::normalizer::dsu::NodeType::HasParent;
+use crate::compiler::type_resolver::dsu::NodeType::HasParent;
 use std::mem::swap;
 use std::ops::Add;
 
@@ -14,7 +14,7 @@ pub struct Dsu<T: Add + Default> {
     value: Vec<T>,
 }
 
-impl<T: Add<Output = T> + Default> Dsu<T> {
+impl<T: Add<Output=T> + Default> Dsu<T> {
     pub const fn new() -> Self {
         Self {
             parent: Vec::new(),

@@ -4,18 +4,15 @@ use crate::compiler::normalizer::ir::{
     IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
     IRTypeLabel, IRVariableLabel, IR,
 };
-use crate::compiler::normalizer::type_resolver::TypeResolver;
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
 };
+use crate::compiler::type_resolver::TypeResolver;
 use std::collections::HashMap;
 use std::mem::swap;
 
-mod default_operator_map;
-mod dsu;
 pub mod ir;
 mod ir_debug;
-mod type_resolver;
 pub mod builtin_functions;
 
 #[derive(PartialEq, Eq)]

@@ -1,10 +1,13 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::default_operator_map::setup_operator_map;
-use crate::compiler::normalizer::dsu::Dsu;
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
+use crate::compiler::type_resolver::default_operator_map::setup_operator_map;
+use crate::compiler::type_resolver::dsu::Dsu;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem::swap;
 use std::ops::Add;
+
+pub mod default_operator_map;
+pub mod dsu;
 
 #[derive(Clone)]
 enum Conn {

@@ -27,6 +27,7 @@ mod normalizer;
 mod parser;
 mod preprocessor;
 mod tokenizer;
+mod type_resolver;
 /*
 The compiler works in the following steps:
 1. Preprocessing: The input source code is preprocessed to parse strings, comments, indentation and parses bracket/brace/parenthesis structure.
