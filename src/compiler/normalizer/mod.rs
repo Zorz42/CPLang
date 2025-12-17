@@ -306,6 +306,8 @@ impl Normalizer {
     fn normalize_expression(&mut self, expression: ASTExpression) -> CompilerResult<(IRExpression, IRTypeLabel, ValuePhysicality)> {
         let pos = expression.pos;
         let type_label = self.type_resolver.new_type_label(pos.clone());
+        let type_hint = self.normalize_type(expression.type_hint)?;
+        self.type_resolver.hint_equal(&self.ir, type_label, type_hint)?;
 
         let (expr, is_phys) = match expression.kind {
             ASTExpressionKind::Integer(x) => {
