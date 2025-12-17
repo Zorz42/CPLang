@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use std::cmp::Ordering;
 
 /*
@@ -29,7 +29,7 @@ pub enum Fragment {
 }
 
 // A character with its position in the file
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PosChar {
     pub(crate) c: char,
     pub(crate) pos: FilePosition,
@@ -48,11 +48,11 @@ pub struct FragmentBlock {
 }
 
 impl Fragment {
-    pub fn get_position(&self) -> FilePosition {
+    pub const fn get_position(&self) -> FilePosition {
         match self {
-            Self::String(_s, pos) => pos.clone(),
-            Self::Char(pc) => pc.pos.clone(),
-            Self::BraceBlock(b) | Self::BracketBlock(b) | Self::ParenthesisBlock(b) => b.position.clone(),
+            Self::String(_s, pos) => *pos,
+            Self::Char(pc) => pc.pos,
+            Self::BraceBlock(b) | Self::BracketBlock(b) | Self::ParenthesisBlock(b) => b.position,
         }
     }
 }
@@ -62,7 +62,7 @@ impl FragmentBlock {
         let mut position = FilePosition::unknown();
         for fragment in &fragments {
             let fragment_pos = fragment.get_position();
-            position = merge_file_positions(position, fragment_pos);
+            position = position + fragment_pos;
         }
         Self { fragments, position }
     }
@@ -104,10 +104,10 @@ fn tabs_to_spaces(input: &Vec<PosChar>) -> Vec<PosChar> {
     for pos_char in input {
         if pos_char.c == '\t' {
             for _ in 0..4 {
-                res.push(PosChar::new(' ', pos_char.pos.clone()));
+                res.push(PosChar::new(' ', pos_char.pos));
             }
         } else {
-            res.push(pos_char.clone());
+            res.push(*pos_char);
         }
     }
     res
@@ -157,11 +157,11 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
     // ignore indentation and line breaks for now
     let mut chars = input.iter().peekable();
     while let Some(pos_char) = chars.next() {
-        match location.clone() {
+        match &location {
             Location::Code => {
                 if pos_char.c == '"' {
                     location = Location::String;
-                    string_quote_position = Some(pos_char.pos.clone());
+                    string_quote_position = Some(pos_char.pos);
                     current_string = Vec::new();
                 } else if pos_char.c == '/' {
                     if let Some(next_char) = chars.peek() {
@@ -170,22 +170,22 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                             chars.next();
                         } else if next_char.c == '*' {
                             location = Location::MultiLineComment(1);
-                            multiline_comment_start_positions.push(pos_char.pos.clone());
+                            multiline_comment_start_positions.push(pos_char.pos);
                             chars.next();
-                            res.push(Fragment::Char(PosChar::new(' ', pos_char.pos.clone())));
+                            res.push(Fragment::Char(PosChar::new(' ', pos_char.pos)));
                         } else {
-                            res.push(Fragment::Char(pos_char.clone()));
+                            res.push(Fragment::Char(*pos_char));
                         }
                     } else {
-                        res.push(Fragment::Char(pos_char.clone()));
+                        res.push(Fragment::Char(*pos_char));
                     }
                 } else {
-                    res.push(Fragment::Char(pos_char.clone()));
+                    res.push(Fragment::Char(*pos_char));
                 }
             }
             Location::String => {
                 if pos_char.c == '"' {
-                    let pos = merge_file_positions(string_quote_position.clone().unwrap(), pos_char.pos.clone());
+                    let pos = string_quote_position.unwrap() + pos_char.pos;
                     res.push(Fragment::String(current_string.clone(), pos));
                     location = Location::Code;
                 }
@@ -195,10 +195,10 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                     && next_char.c == '"'
                 {
                     // remove the \
-                    current_string.push((*next_char).clone());
+                    current_string.push(**next_char);
                     chars.next();
                 } else {
-                    current_string.push(pos_char.clone());
+                    current_string.push(*pos_char);
                 }
             }
             Location::SingleLineComment => {
@@ -225,7 +225,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                     && next_char.c == '*'
                 {
                     location = Location::MultiLineComment(depth + 1);
-                    multiline_comment_start_positions.push(pos_char.pos.clone());
+                    multiline_comment_start_positions.push(pos_char.pos);
                     chars.next();
                 }
             }
@@ -234,21 +234,21 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
 
     match &location {
         Location::String => {
-            let start_pos = &string_quote_position.unwrap();
-            let end_pos = &input.last().unwrap().pos;
+            let start_pos = string_quote_position.unwrap();
+            let end_pos = input.last().unwrap().pos;
 
             return Err(CompilerError {
                 message: "Unclosed string literal".to_string(),
-                position: Some(merge_file_positions(start_pos.clone(), end_pos.clone())),
+                position: Some(start_pos + end_pos),
             });
         }
         Location::MultiLineComment(_) => {
-            let start_pos = &multiline_comment_start_positions.pop().unwrap();
-            let end_pos = &input.last().unwrap().pos;
+            let start_pos = multiline_comment_start_positions.pop().unwrap();
+            let end_pos = input.last().unwrap().pos;
 
             return Err(CompilerError {
                 message: "Unclosed multiline comment".to_string(),
-                position: Some(merge_file_positions(start_pos.clone(), end_pos.clone())),
+                position: Some(start_pos + end_pos),
             });
         }
         _ => {}
@@ -268,9 +268,9 @@ pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<Fr
             }
             Fragment::Char(PosChar { c: '(', .. } | PosChar { c: '[', .. } | PosChar { c: '{', .. }) => {
                 let (opening_char, opening_pos) = match &input[*idx] {
-                    Fragment::Char(PosChar { c: '(', pos }) => ('(', pos),
-                    Fragment::Char(PosChar { c: '[', pos }) => ('[', pos),
-                    Fragment::Char(PosChar { c: '{', pos }) => ('{', pos),
+                    Fragment::Char(PosChar { c: '(', pos }) => ('(', *pos),
+                    Fragment::Char(PosChar { c: '[', pos }) => ('[', *pos),
+                    Fragment::Char(PosChar { c: '{', pos }) => ('{', *pos),
                     _ => unreachable!(),
                 };
 
@@ -285,18 +285,18 @@ pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<Fr
 
                 let mut fragment_block = parse_blocks(input, idx)?;
 
-                fragment_block.position = merge_file_positions(fragment_block.position, opening_pos.clone());
+                fragment_block.position = fragment_block.position + opening_pos;
 
                 // expect closing char
                 if *idx >= input.len() {
                     return Err(CompilerError {
                         message: format!("Unclosed {opening_char}"),
-                        position: Some(opening_pos.clone()),
+                        position: Some(opening_pos),
                     });
                 }
                 match &input[*idx] {
                     Fragment::Char(PosChar { c, pos: closing_pos }) if *c == closing_char => {
-                        fragment_block.position = merge_file_positions(fragment_block.position, closing_pos.clone());
+                        fragment_block.position = fragment_block.position + *closing_pos;
                         *idx += 1; // consume closing char
                         let fragment = match opening_char {
                             '(' => Fragment::ParenthesisBlock(fragment_block),
@@ -374,17 +374,17 @@ fn parse_indentation(input: &FragmentBlock) -> CompilerResult<FragmentBlock> {
         let leading_spaces = line.iter().take_while(|i| matches!(i, Fragment::Char(PosChar { c: ' ', pos: _ }))).count();
         if leading_spaces % 4 != 0 {
             let first_char_pos = match line[0] {
-                Fragment::Char(ref pc) => &pc.pos,
+                Fragment::Char(ref pc) => pc.pos,
                 _ => panic!(),
             };
             let last_char_pos = match line[leading_spaces - 1] {
-                Fragment::Char(ref pc) => &pc.pos,
+                Fragment::Char(ref pc) => pc.pos,
                 _ => panic!(),
             };
 
             return Err(CompilerError {
                 message: format!("Indentation must have a multiple of 4 spaces, found {leading_spaces} spaces"),
-                position: Some(merge_file_positions(first_char_pos.clone(), last_char_pos.clone())),
+                position: Some(first_char_pos + last_char_pos),
             });
         }
 

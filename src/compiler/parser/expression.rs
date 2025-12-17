@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult};
+use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTOperator, ASTStructDeclaration};
 use crate::compiler::parser::function::parse_function_call;
 use crate::compiler::parser::structure::parse_struct_instantiation;
@@ -29,13 +29,13 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
         }
         (Token::Reference, _) => {
             let res = parse_value(structs, block)?;
-            let pos = res.pos.clone();
+            let pos = res.pos;
 
             ASTExpression::no_hint(ASTExpressionKind::Reference(Box::new(res)), pos)
         }
         (Token::Pipe, _) => {
             let res = parse_value(structs, block)?;
-            let pos = res.pos.clone();
+            let pos = res.pos;
 
             ASTExpression::no_hint(ASTExpressionKind::Dereference(Box::new(res)), pos)
         }
@@ -62,7 +62,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                     ASTExpression::no_hint(ASTExpressionKind::FieldAccess {
                         expression: Box::new(res),
                         field_name: identifier,
-                    }, pos.clone())
+                    }, pos)
                 }
                 (_, pos) => {
                     return Err(CompilerError {
@@ -135,7 +135,7 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
                 let expression1 = vals.remove(i);
                 let expression2 = vals.remove(i);
                 let operator = ops.remove(i);
-                let pos = merge_file_positions(expression1.pos.clone(), expression2.pos.clone());
+                let pos = expression1.pos + expression2.pos;
                 vals.insert(
                     i,
                     ASTExpression::no_hint(ASTExpressionKind::BinaryOperation {

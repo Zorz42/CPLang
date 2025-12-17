@@ -163,7 +163,7 @@ impl TypeResolver {
                     self.type_dsu.get(label).typ.as_ref().unwrap(),
                     typ
                 ),
-                position: Some(self.type_positions[label].clone()),
+                position: Some(self.type_positions[label]),
             });
         }
         if self.type_dsu.get(label).typ.is_none() {
@@ -193,7 +193,7 @@ impl TypeResolver {
                                 let Some(ir_type) = self.operator_map.get(&(node_type.clone(), op, node_type2.clone())).cloned() else {
                                     return Err(CompilerError {
                                         message: format!("Operator {op:?} is not defined for {node_type2:?} and {node_type:?}"),
-                                        position: Some(self.type_positions[ne].clone()),
+                                        position: Some(self.type_positions[ne]),
                                     });
                                 };
                                 let (ir_type, ref_depth) = deref_type(ir_type);
@@ -206,7 +206,7 @@ impl TypeResolver {
                                 let IRType::Struct(_, args2) = node_type.clone() else {
                                     return Err(CompilerError {
                                         message: format!("This cannot be a struct and {node_type:?} at the same time."),
-                                        position: Some(self.type_positions[node].clone()),
+                                        position: Some(self.type_positions[node]),
                                     });
                                 };
 
@@ -241,7 +241,7 @@ impl TypeResolver {
                                             "Cannot access field since this is not a struct but has type {:?}",
                                             self.type_dsu.get(node).typ.as_ref().unwrap()
                                         ),
-                                        position: Some(self.type_positions[node].clone()),
+                                        position: Some(self.type_positions[node]),
                                     });
                                 }
                             };
@@ -342,7 +342,7 @@ impl TypeResolver {
             #[allow(clippy::unnecessary_unwrap)]
             return Err(CompilerError {
                 message: format!("This expression cannot be {:?} and {:?} at the same time.", typ1.unwrap(), typ2.unwrap()),
-                position: Some(self.type_positions[label1].clone()),
+                position: Some(self.type_positions[label1]),
             });
         }
 
@@ -379,7 +379,7 @@ impl TypeResolver {
                         self.dsu.get(label2).ref_depth - offset,
                         self.dsu.get(label1).ref_depth
                     ),
-                    position: Some(self.type_positions[label1].clone()),
+                    position: Some(self.type_positions[label1]),
                 });
             }
             return Ok(());
@@ -521,14 +521,14 @@ impl TypeResolver {
             let Some(typ) = self.get_ir_type(type_label) else {
                 return Err(CompilerError {
                     message: "Could not deduce this expression's type".to_string(),
-                    position: Some(self.type_positions[type_label].clone()),
+                    position: Some(self.type_positions[type_label]),
                 });
             };
 
             let ref_depth = self.dsu.get(type_label).ref_depth;
 
             if ref_depth < 0 {
-                let pos = self.type_positions[type_label].clone();
+                let pos = self.type_positions[type_label];
                 return Err(CompilerError {
                     message: "This has type of a dereferenced non-reference".to_string(),
                     position: Some(pos),

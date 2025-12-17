@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::builtin_functions::is_builtin;
 use crate::compiler::parser::ast::{ASTFunctionCall, ASTFunctionSignature, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
@@ -19,7 +19,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
     match block.get() {
         (Token::Identifier(name), pos) => {
             res_signature.name = name;
-            res_signature.pos = merge_file_positions(res_signature.pos, pos);
+            res_signature.pos = res_signature.pos + pos;
         }
         (_, pos) => {
             return Err(CompilerError {
@@ -46,7 +46,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
                 break;
             }
             (Token::Identifier(arg), pos) => {
-                res_signature.pos = merge_file_positions(res_signature.pos, pos.clone());
+                res_signature.pos = res_signature.pos + pos;
                 (arg, pos)
             }
             (_, pos) => {
@@ -58,7 +58,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
         };
 
         let type_hint = parse_type_hint(block)?;
-        res_signature.pos = merge_file_positions(res_signature.pos, type_hint.get_pos());
+        res_signature.pos = res_signature.pos + type_hint.get_pos();
 
         res_signature.args.push((arg, type_hint, arg_pos));
     }
@@ -77,7 +77,7 @@ pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
             let (Token::BracketBlock(template_block), pos2) = block.get() else { unreachable!() };
             let (Token::ParenthesisBlock(call_block), pos3) = block.get() else { unreachable!() };
 
-            let pos = merge_file_positions(merge_file_positions(pos1, pos2), pos3);
+            let pos = pos1 + pos2 + pos3;
 
             (ident, template_block, call_block, pos)
         } else if let Token::Identifier(_) = block.peek_nth(0).0 &&
@@ -86,7 +86,7 @@ pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
             let (Token::Identifier(ident), pos1) = block.get() else { unreachable!() };
             let (Token::ParenthesisBlock(call_block), pos2) = block.get() else { unreachable!() };
 
-            let pos = merge_file_positions(pos1, pos2);
+            let pos = pos1 + pos2;
             let template_block = TokenBlock::new(Vec::new());
 
             (ident, template_block, call_block, pos)
@@ -126,9 +126,9 @@ pub fn parse_return_statement(structs: &Vec<ASTStructDeclaration>, block: &mut T
     }
 
     let expression = parse_expression(structs, block)?;
-    let pos2 = expression.pos.clone();
+    let pos2 = expression.pos;
     Ok(Some(ASTStatement::Return {
         return_value: Some(expression),
-        pos: merge_file_positions(pos1, pos2),
+        pos: pos1 + pos2,
     }))
 }

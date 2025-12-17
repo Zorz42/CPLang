@@ -86,10 +86,10 @@ pub struct ASTExpression {
 }
 
 impl ASTExpression {
-    pub fn no_hint(kind: ASTExpressionKind, pos: FilePosition) -> Self {
+    pub const fn no_hint(kind: ASTExpressionKind, pos: FilePosition) -> Self {
         Self {
             kind,
-            type_hint: ASTType::Any(pos.clone()),
+            type_hint: ASTType::Any(pos),
             pos,
         }
     }
@@ -165,9 +165,9 @@ pub enum ASTType {
 }
 
 impl ASTType {
-    pub fn get_pos(&self) -> FilePosition {
+    pub const fn get_pos(&self) -> FilePosition {
         match self {
-            Self::Any(pos) | Self::Primitive(_, pos) | Self::Reference(_, pos) | Self::Identifier(_, pos, _) => pos.clone(),
+            Self::Any(pos) | Self::Primitive(_, pos) | Self::Reference(_, pos) | Self::Identifier(_, pos, _) => *pos,
         }
     }
 }

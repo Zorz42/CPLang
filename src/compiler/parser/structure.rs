@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStructDeclaration};
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::expression::parse_expression;
@@ -100,7 +100,7 @@ pub fn parse_struct_instantiation(
         };
 
         let expr = parse_expression(structs, block)?;
-        let expr_pos = expr.pos.clone();
+        let expr_pos = expr.pos;
 
         if fields.contains_key(&field_name) {
             return Err(CompilerError {
@@ -110,7 +110,7 @@ pub fn parse_struct_instantiation(
         }
 
         fields.insert(field_name, expr);
-        pos = merge_file_positions(pos, expr_pos);
+        pos = pos + expr_pos;
         fields_left -= 1;
     }
 

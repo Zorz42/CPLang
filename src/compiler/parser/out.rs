@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerError, CompilerResult, FilePosition};
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
@@ -37,7 +37,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
                 if token_block.has_tokens() {
                     return Err(CompilerError {
                         message: "There are multiple expressions in one format string".to_string(),
-                        position: Some(merge_file_positions(format_pos, end_pos)),
+                        position: Some(format_pos + end_pos),
                     });
                 }
 
@@ -53,7 +53,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
                 res.push(ASTExpression::no_hint(ASTExpressionKind::String(curr), FilePosition::unknown()));
             }
             curr = String::new();
-            format_pos = pc.pos.clone();
+            format_pos = pc.pos;
         } else {
             curr.push(pc.c);
         }
@@ -65,7 +65,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
         };
         return Err(CompilerError {
             message: "Expected } to close format string".to_string(),
-            position: Some(merge_file_positions(format_pos, end_pos)),
+            position: Some(format_pos + end_pos),
         });
     }
 

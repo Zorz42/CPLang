@@ -1,4 +1,4 @@
-use crate::compiler::error::{merge_file_positions, CompilerResult, FilePosition};
+use crate::compiler::error::{CompilerResult, FilePosition};
 use crate::compiler::preprocessor::{Fragment, PosChar};
 
 /*
@@ -189,16 +189,16 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
 
     let new_token = |tokens: &mut Vec<(Token, FilePosition)>, curr_token: &mut String, token_pos: &mut FilePosition| {
         if !curr_token.is_empty() {
-            tokens.push((string_to_token(curr_token), token_pos.clone()));
+            tokens.push((string_to_token(curr_token), *token_pos));
             curr_token.clear();
         }
     };
 
-    let add_to_token = |curr_token: &mut String, token_pos: &mut FilePosition, c: char, pos: &FilePosition| {
+    let add_to_token = |curr_token: &mut String, token_pos: &mut FilePosition, c: char, pos: FilePosition| {
         if curr_token.is_empty() {
-            *token_pos = pos.clone();
+            *token_pos = pos;
         } else {
-            *token_pos = merge_file_positions(token_pos.clone(), pos.clone());
+            *token_pos = *token_pos + pos;
         }
         curr_token.push(c);
     };
@@ -208,7 +208,7 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
         match frag {
             Fragment::String(s, pos) => {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                tokens.push((Token::Constant(Constant::String(s.clone())), pos.clone()));
+                tokens.push((Token::Constant(Constant::String(s.clone())), *pos));
             }
             Fragment::Char(pos_char) => {
                 let c = pos_char.c;
@@ -220,34 +220,34 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
 
                 if c == '.' && curr_token.parse::<i32>().is_ok() {
                     // decimal point in a float
-                    add_to_token(&mut curr_token, &mut token_pos, c, pos);
+                    add_to_token(&mut curr_token, &mut token_pos, c, *pos);
                 } else if let Some(symbol) = symbol_from_two_chars(c, next_char) {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                    tokens.push((symbol, pos.clone()));
+                    tokens.push((symbol, *pos));
                     iter.next();
                 } else if let Some(symbol) = symbol_from_char(c) {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                    tokens.push((symbol, pos.clone()));
+                    tokens.push((symbol, *pos));
                 } else if c == ' ' {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 } else {
-                    add_to_token(&mut curr_token, &mut token_pos, c, pos);
+                    add_to_token(&mut curr_token, &mut token_pos, c, *pos);
                 }
             }
             Fragment::BraceBlock(block) => {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 let token_block = tokenize_fragments(&block.fragments)?;
-                tokens.push((Token::BraceBlock(token_block), block.position.clone()));
+                tokens.push((Token::BraceBlock(token_block), block.position));
             }
             Fragment::BracketBlock(block) => {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 let token_block = tokenize_fragments(&block.fragments)?;
-                tokens.push((Token::BracketBlock(token_block), block.position.clone()));
+                tokens.push((Token::BracketBlock(token_block), block.position));
             }
             Fragment::ParenthesisBlock(block) => {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
                 let token_block = tokenize_fragments(&block.fragments)?;
-                tokens.push((Token::ParenthesisBlock(token_block), block.position.clone()));
+                tokens.push((Token::ParenthesisBlock(token_block), block.position));
             }
         }
     }

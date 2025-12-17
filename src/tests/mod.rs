@@ -53,7 +53,7 @@ mod tests {
             let res = compile(test_file, &c_file);
 
             if let Err(e) = res {
-                if let Some(pos) = e.position.clone() {
+                if let Some(pos) = e.position {
                     let correct_pos = FilePosition {
                         first_pos: (line_start as usize, column_start as usize),
                         last_pos: (line_end as usize, column_end as usize),

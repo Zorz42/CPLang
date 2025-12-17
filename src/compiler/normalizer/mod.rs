@@ -135,7 +135,7 @@ impl Normalizer {
             if key.0 == main_name && key.1 != 0 {
                 return Err(CompilerError {
                     message: "main function cannot have arguments".to_string(),
-                    position: Some(val[0].0.args[0].2.clone()),
+                    position: Some(val[0].0.args[0].2),
                 });
             }
         }
@@ -214,7 +214,7 @@ impl Normalizer {
         if template_arg_labels.len() > struct_template_names.len() {
             return Err(CompilerError {
                 message: "Too many template arguments".to_string(),
-                position: Some(template_arg_labels[struct_template_names.len()].1.clone()),
+                position: Some(template_arg_labels[struct_template_names.len()].1),
             });
         }
 
@@ -305,7 +305,7 @@ impl Normalizer {
 
     fn normalize_expression(&mut self, expression: ASTExpression) -> CompilerResult<(IRExpression, IRTypeLabel, ValuePhysicality)> {
         let pos = expression.pos;
-        let type_label = self.type_resolver.new_type_label(pos.clone());
+        let type_label = self.type_resolver.new_type_label(pos);
         let type_hint = self.normalize_type(expression.type_hint)?;
         self.type_resolver.hint_equal(&self.ir, type_label, type_hint)?;
 
@@ -417,7 +417,7 @@ impl Normalizer {
                         physicality,
                     )
                 } else {
-                    let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos.clone())?;
+                    let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos)?;
 
                     if num_template_arguments > sig.num_template_args {
                         return Err(CompilerError {
@@ -587,7 +587,7 @@ impl Normalizer {
                     {
                         let label = self.new_var(name);
                         self.curr_func_vars.push(label);
-                        let type_label = self.type_resolver.new_type_label(assign_to.pos.clone());
+                        let type_label = self.type_resolver.new_type_label(assign_to.pos);
                         self.ir.variable_types.push(type_label);
                         self.relevant_types.push(type_label);
                     }

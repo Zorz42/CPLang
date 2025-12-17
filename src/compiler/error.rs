@@ -1,5 +1,7 @@
+use std::ops::Add;
+
 // this struct stores file position so the error can be displayed
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FilePosition {
     pub first_pos: (usize, usize),
     pub last_pos: (usize, usize),
@@ -14,16 +16,20 @@ impl FilePosition {
     }
 }
 
-pub fn merge_file_positions(position1: FilePosition, position2: FilePosition) -> FilePosition {
-    if position1 == FilePosition::unknown() {
-        return position2;
-    }
-    if position2 == FilePosition::unknown() {
-        return position1;
-    }
-    FilePosition {
-        first_pos: position1.first_pos.min(position2.first_pos),
-        last_pos: position1.last_pos.max(position2.last_pos),
+impl Add for FilePosition {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        if self == Self::unknown() {
+            return rhs;
+        }
+        if rhs == Self::unknown() {
+            return self;
+        }
+        Self {
+            first_pos: <(usize, usize)>::min(self.first_pos, rhs.first_pos),
+            last_pos: <(usize, usize)>::max(self.last_pos, rhs.last_pos),
+        }
     }
 }
 
