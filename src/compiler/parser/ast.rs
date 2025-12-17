@@ -72,9 +72,9 @@ pub enum ASTOperator {
     Equals,
     NotEquals,
     Greater,
-    Less,
-    GreaterEquals,
-    LessEquals,
+    Lesser,
+    GreaterEq,
+    LesserEq,
     Minus,
 }
 

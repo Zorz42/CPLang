@@ -64,7 +64,7 @@ pub fn setup_operator_map() -> HashMap<(IRType, IROperator, IRType), IRType> {
     operator_map.insert(
         (
             IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::GreaterOrEq,
+            IROperator::GreaterEq,
             IRType::Primitive(IRPrimitiveType::I32),
         ),
         IRType::Primitive(IRPrimitiveType::Bool),
@@ -80,7 +80,7 @@ pub fn setup_operator_map() -> HashMap<(IRType, IROperator, IRType), IRType> {
     operator_map.insert(
         (
             IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::LesserOrEq,
+            IROperator::LesserEq,
             IRType::Primitive(IRPrimitiveType::I32),
         ),
         IRType::Primitive(IRPrimitiveType::Bool),

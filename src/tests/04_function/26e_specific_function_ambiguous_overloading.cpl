@@ -1,0 +1,14 @@
+//ERR -1 -1 -1 -1
+
+func a b
+    0
+
+func a: i32 b
+    out "hello1 {a} {b}"
+
+func a b: i32
+    out "hello2 {a} {b}"
+
+main
+    func("wrong" 0)
+    func(10 20)

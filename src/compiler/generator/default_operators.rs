@@ -74,7 +74,7 @@ pub fn init_default_operators() -> HashMap<(IRType, IROperator, IRType), Box<dyn
     res.insert(
         (
             IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::GreaterOrEq,
+            IROperator::GreaterEq,
             IRType::Primitive(IRPrimitiveType::I32),
         ),
         Box::new(c_greater_or_eq),
@@ -90,7 +90,7 @@ pub fn init_default_operators() -> HashMap<(IRType, IROperator, IRType), Box<dyn
     res.insert(
         (
             IRType::Primitive(IRPrimitiveType::I32),
-            IROperator::LesserOrEq,
+            IROperator::LesserEq,
             IRType::Primitive(IRPrimitiveType::I32),
         ),
         Box::new(c_lesser_or_eq),

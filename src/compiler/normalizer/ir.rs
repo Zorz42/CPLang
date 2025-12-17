@@ -59,9 +59,9 @@ pub enum IROperator {
     Equals,
     NotEquals,
     Greater,
-    GreaterOrEq,
+    GreaterEq,
     Lesser,
-    LesserOrEq,
+    LesserEq,
 }
 
 #[derive(Debug)]

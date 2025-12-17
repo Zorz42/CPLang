@@ -22,16 +22,21 @@ enum ValuePhysicality {
 const fn operator_to_ir_operator(operator: ASTOperator) -> IROperator {
     match operator {
         ASTOperator::Plus => IROperator::Plus,
+        ASTOperator::Minus => IROperator::Minus,
         ASTOperator::Mul => IROperator::Mul,
         ASTOperator::Div => IROperator::Div,
         ASTOperator::Equals => IROperator::Equals,
         ASTOperator::NotEquals => IROperator::NotEquals,
         ASTOperator::Greater => IROperator::Greater,
-        ASTOperator::Less => IROperator::Lesser,
-        ASTOperator::GreaterEquals => IROperator::GreaterOrEq,
-        ASTOperator::LessEquals => IROperator::LesserOrEq,
-        ASTOperator::Minus => IROperator::Minus,
+        ASTOperator::Lesser => IROperator::Lesser,
+        ASTOperator::GreaterEq => IROperator::GreaterEq,
+        ASTOperator::LesserEq => IROperator::LesserEq,
     }
+}
+
+// is func1 more specific than func2 - so every call that satisfies func1 also satisfies func2
+fn is_function_more_specific(func1: &ASTFunctionSignature, func2: &ASTFunctionSignature) -> bool {
+    todo!()
 }
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
