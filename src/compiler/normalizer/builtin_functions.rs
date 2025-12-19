@@ -9,16 +9,17 @@ pub fn is_builtin(name: &str) -> bool {
 
 impl Normalizer {
     pub fn is_builtin_function(function_name: &String) -> bool {
-        function_name == &transform_function_name("_builtin_alloc".to_string()) ||
-            function_name == &transform_function_name("_builtin_index".to_string())
+        function_name == &transform_function_name("_builtin_alloc".to_string()) || function_name == &transform_function_name("_builtin_index".to_string())
     }
 
-    pub fn get_builtin_call(&mut self,
-                            function_name: String,
-                            expr_types: Vec<IRTypeLabel>,
-                            mut function_arguments: Vec<IRExpression>,
-                            template_types: Vec<IRTypeLabel>,
-                            call_pos: FilePosition) -> CompilerResult<(BuiltinFunctionCall, ValuePhysicality, IRTypeLabel)> {
+    pub fn get_builtin_call(
+        &mut self,
+        function_name: String,
+        expr_types: Vec<IRTypeLabel>,
+        mut function_arguments: Vec<IRExpression>,
+        template_types: Vec<IRTypeLabel>,
+        call_pos: FilePosition,
+    ) -> CompilerResult<(BuiltinFunctionCall, ValuePhysicality, IRTypeLabel)> {
         let alloc_label = transform_function_name("_builtin_alloc".to_string());
         let index_label = transform_function_name("_builtin_index".to_string());
 
@@ -50,10 +51,14 @@ impl Normalizer {
                 }
                 self.relevant_types.push(typ);
 
-                Ok((BuiltinFunctionCall::Alloc {
-                    typ,
-                    num: Box::new(function_arguments.pop().unwrap()),
-                }, ValuePhysicality::Temporary, ref_typ))
+                Ok((
+                    BuiltinFunctionCall::Alloc {
+                        typ,
+                        num: Box::new(function_arguments.pop().unwrap()),
+                    },
+                    ValuePhysicality::Temporary,
+                    ref_typ,
+                ))
             }
             label if label == index_label => {
                 if function_arguments.len() != 2 {
@@ -78,10 +83,14 @@ impl Normalizer {
                 self.type_resolver.hint_is(&self.ir, expr_types[1], IRPrimitiveType::I32)?;
                 self.type_resolver.hint_is_ref(&self.ir, arr_type, expr_types[0])?;
 
-                Ok((BuiltinFunctionCall::Index {
-                    arr: Box::new(arr_expr),
-                    idx: Box::new(index_expr),
-                }, ValuePhysicality::Physical, arr_type))
+                Ok((
+                    BuiltinFunctionCall::Index {
+                        arr: Box::new(arr_expr),
+                        idx: Box::new(index_expr),
+                    },
+                    ValuePhysicality::Physical,
+                    arr_type,
+                ))
             }
             _ => unreachable!(),
         }

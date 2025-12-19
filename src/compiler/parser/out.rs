@@ -1,8 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
-use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
-use crate::compiler::tokenizer::{tokenize_fragments, Constant, Token, TokenBlock};
+use crate::compiler::preprocessor::{Fragment, PosChar, parse_blocks};
+use crate::compiler::tokenizer::{Constant, Token, TokenBlock, tokenize_fragments};
 
 fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>, pos: FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();

@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
+use crate::compiler::normalizer::ir::{IR, IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel};
 use crate::compiler::type_resolver::default_operator_map::setup_operator_map;
 use crate::compiler::type_resolver::dsu::Dsu;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -473,10 +473,7 @@ impl TypeResolver {
 
     pub fn hint_struct(&mut self, ir: &IR, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
         for field_type in &fields {
-            self.dsu
-                .get(*field_type)
-                .neighbours
-                .push(Conn::Struct(res_label, struct_label, fields.clone()));
+            self.dsu.get(*field_type).neighbours.push(Conn::Struct(res_label, struct_label, fields.clone()));
             self.queue.push_back(*field_type);
         }
         self.dsu.get(res_label).neighbours.push(Conn::Struct(res_label, struct_label, fields));
@@ -545,6 +542,8 @@ impl TypeResolver {
         self.dsu.get_repr(label1) == self.dsu.get_repr(label2)
     }
 
+    // lets define P(s) as the set of all theoretically possible arrays of types for some array of type labels s
+    // if this function returns true P(set1) == P(set2) definitely holds, else P(set1) == P(set2) might hold or not.
     pub fn compare_sets(&mut self, set1: Vec<IRTypeLabel>, set2: Vec<IRTypeLabel>) -> bool {
         if set1.len() != set2.len() {
             return false;
@@ -557,13 +556,37 @@ impl TypeResolver {
         // mp maps from some element to its component index
         // comps maps from component index to its representative
         let num_comps = comps1.len();
-        for i in 0..num_comps {}
+        for i in 0..num_comps {
+            let data1 = self.dsu.get(comps1[i]).clone();
+            let data2 = self.dsu.get(comps2[i]).clone();
+
+            if data1.ref_depth != data2.ref_depth {
+                return false;
+            }
+
+            if data1.neighbours.len() != data2.neighbours.len() {
+                return false;
+            }
+
+            for (conn1, conn2) in data1.neighbours.into_iter().zip(data2.neighbours) {
+                match (conn1, conn2) {
+                    (Conn::Operator(a1, op1, b1), Conn::Operator(a2, op2, b2)) => unreachable!(),
+                    (Conn::Struct(label1, struct_label1, fields1), Conn::Struct(label2, struct_label2, fields2)) => {}
+                    (Conn::IsField(label1, field1), Conn::IsField(label2, field2)) => unreachable!(),
+                    (_, _) => return false,
+                }
+            }
+        }
 
         true
     }
 }
 
-fn compactify<T: Add<Output=T> + Default>(set1: &Vec<IRTypeLabel>, set2: &Vec<IRTypeLabel>, dsu: &mut Dsu<T>) -> Option<(HashMap<IRTypeLabel, usize>, HashMap<IRTypeLabel, usize>, Vec<usize>, Vec<usize>)> {
+fn compactify<T: Add<Output = T> + Default>(
+    set1: &Vec<IRTypeLabel>,
+    set2: &Vec<IRTypeLabel>,
+    dsu: &mut Dsu<T>,
+) -> Option<(HashMap<IRTypeLabel, usize>, HashMap<IRTypeLabel, usize>, Vec<usize>, Vec<usize>)> {
     let mut mp1 = HashMap::new();
     let mut mp2 = HashMap::new();
     let mut comps1 = Vec::new();

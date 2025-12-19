@@ -1,17 +1,19 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel, IR,
+    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
+    IRType, IRTypeLabel, IRVariableLabel,
 };
-use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast};
+use crate::compiler::parser::ast::{
+    ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
+};
 use crate::compiler::type_resolver::TypeResolver;
 use std::collections::HashMap;
 use std::mem::swap;
 
+pub mod builtin_functions;
 pub mod ir;
 mod ir_debug;
-pub mod builtin_functions;
 
 #[derive(PartialEq, Eq)]
 enum ValuePhysicality {
@@ -347,10 +349,7 @@ impl Normalizer {
 
             ASTExpressionKind::Boolean(x) => {
                 self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::Bool)?;
-                (
-                    IRExpression::Constant { constant: IRConstant::Bool(x) },
-                    ValuePhysicality::Temporary
-                )
+                (IRExpression::Constant { constant: IRConstant::Bool(x) }, ValuePhysicality::Temporary)
             }
 
             ASTExpressionKind::Variable(name) => {
@@ -417,16 +416,16 @@ impl Normalizer {
                 if Self::is_builtin_function(&call.name) {
                     let (call, physicality, return_type) = self.get_builtin_call(call.name, expr_types, function_arguments, template_types, pos)?;
                     self.type_resolver.hint_equal(&self.ir, return_type, type_label)?;
-                    (
-                        IRExpression::BuiltinFunctionCall(call),
-                        physicality,
-                    )
+                    (IRExpression::BuiltinFunctionCall(call), physicality)
                 } else {
                     let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos)?;
 
                     if num_template_arguments > sig.num_template_args {
                         return Err(CompilerError {
-                            message: format!("Too many template arguments. Got {} expected at most {}", num_template_arguments, sig.num_template_args),
+                            message: format!(
+                                "Too many template arguments. Got {} expected at most {}",
+                                num_template_arguments, sig.num_template_args
+                            ),
                             position: Some(pos),
                         });
                     }
@@ -445,7 +444,11 @@ impl Normalizer {
                 }
             }
 
-            ASTExpressionKind::StructInitialization { name, fields, template_arguments } => {
+            ASTExpressionKind::StructInitialization {
+                name,
+                fields,
+                template_arguments,
+            } => {
                 let struct_label = self.structs_name_map[&name];
 
                 let field_type_labels = self.gen_struct_field_types(struct_label, template_arguments)?;
@@ -689,7 +692,13 @@ impl Normalizer {
         None
     }
 
-    fn normalize_function(&mut self, sign: ASTFunctionSignature, block: ASTBlock, arg_types: Vec<IRTypeLabel>, template_types: Vec<IRTypeLabel>) -> CompilerResult<IRInstanceLabel> {
+    fn normalize_function(
+        &mut self,
+        sign: ASTFunctionSignature,
+        block: ASTBlock,
+        arg_types: Vec<IRTypeLabel>,
+        template_types: Vec<IRTypeLabel>,
+    ) -> CompilerResult<IRInstanceLabel> {
         const RECURSION_LIMIT: i32 = 100;
         assert_eq!(arg_types.len(), sign.args.len());
 

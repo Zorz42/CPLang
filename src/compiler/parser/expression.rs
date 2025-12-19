@@ -52,18 +52,22 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
         block.get();
 
         res = if let Some((call, pos)) = parse_function_call(structs, block)? {
-            ASTExpression::no_hint(ASTExpressionKind::MethodCall {
-                expression: Box::new(res),
-                call,
-            }, pos)
+            ASTExpression::no_hint(
+                ASTExpressionKind::MethodCall {
+                    expression: Box::new(res),
+                    call,
+                },
+                pos,
+            )
         } else {
             match block.get() {
-                (Token::Identifier(identifier), pos) => {
-                    ASTExpression::no_hint(ASTExpressionKind::FieldAccess {
+                (Token::Identifier(identifier), pos) => ASTExpression::no_hint(
+                    ASTExpressionKind::FieldAccess {
                         expression: Box::new(res),
                         field_name: identifier,
-                    }, pos)
-                }
+                    },
+                    pos,
+                ),
                 (_, pos) => {
                     return Err(CompilerError {
                         message: "Expected identifier after dot".to_owned(),
@@ -138,11 +142,14 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
                 let pos = expression1.pos + expression2.pos;
                 vals.insert(
                     i,
-                    ASTExpression::no_hint(ASTExpressionKind::BinaryOperation {
-                        expression1: Box::new(expression1),
-                        operator,
-                        expression2: Box::new(expression2),
-                    }, pos),
+                    ASTExpression::no_hint(
+                        ASTExpressionKind::BinaryOperation {
+                            expression1: Box::new(expression1),
+                            operator,
+                            expression2: Box::new(expression2),
+                        },
+                        pos,
+                    ),
                 );
             } else {
                 break;

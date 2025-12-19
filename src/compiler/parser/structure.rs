@@ -64,7 +64,12 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
         }
     }
 
-    Ok(Some(ASTStructDeclaration { name, fields, methods, template }))
+    Ok(Some(ASTStructDeclaration {
+        name,
+        fields,
+        methods,
+        template,
+    }))
 }
 
 pub fn parse_struct_instantiation(
@@ -119,14 +124,12 @@ pub fn parse_struct_instantiation(
         fields_res.push(fields[field_name].clone());
     }
 
-    Ok(
-        ASTExpression::no_hint(
-            ASTExpressionKind::StructInitialization {
-                name: identifier,
-                fields: fields_res,
-                template_arguments,
-            },
-            pos,
-        )
-    )
+    Ok(ASTExpression::no_hint(
+        ASTExpressionKind::StructInitialization {
+            name: identifier,
+            fields: fields_res,
+            template_arguments,
+        },
+        pos,
+    ))
 }

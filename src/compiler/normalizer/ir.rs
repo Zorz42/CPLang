@@ -22,14 +22,8 @@ pub struct IR {
 
 #[derive(Debug)]
 pub enum BuiltinFunctionCall {
-    Alloc {
-        typ: IRTypeLabel,
-        num: Box<IRExpression>,
-    },
-    Index {
-        arr: Box<IRExpression>,
-        idx: Box<IRExpression>,
-    },
+    Alloc { typ: IRTypeLabel, num: Box<IRExpression> },
+    Index { arr: Box<IRExpression>, idx: Box<IRExpression> },
 }
 
 #[derive(Clone, Eq, Hash, PartialEq)]

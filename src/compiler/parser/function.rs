@@ -68,31 +68,38 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
 
 // this function is called when function name is already consumed
 pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<(ASTFunctionCall, FilePosition)>> {
-    let (ident, mut template_block, mut call_block, pos) =
-        if let Token::Identifier(_) = block.peek_nth(0).0 &&
-            let Token::BracketBlock(_) = block.peek_nth(1).0 &&
-            let Token::ParenthesisBlock(_) = block.peek_nth(2).0 {
-            // collect tokens if they match
-            let (Token::Identifier(ident), pos1) = block.get() else { unreachable!() };
-            let (Token::BracketBlock(template_block), pos2) = block.get() else { unreachable!() };
-            let (Token::ParenthesisBlock(call_block), pos3) = block.get() else { unreachable!() };
-
-            let pos = pos1 + pos2 + pos3;
-
-            (ident, template_block, call_block, pos)
-        } else if let Token::Identifier(_) = block.peek_nth(0).0 &&
-            let Token::ParenthesisBlock(_) = block.peek_nth(1).0 {
-            // collect tokens if they match
-            let (Token::Identifier(ident), pos1) = block.get() else { unreachable!() };
-            let (Token::ParenthesisBlock(call_block), pos2) = block.get() else { unreachable!() };
-
-            let pos = pos1 + pos2;
-            let template_block = TokenBlock::new(Vec::new());
-
-            (ident, template_block, call_block, pos)
-        } else {
-            return Ok(None);
+    let (ident, mut template_block, mut call_block, pos) = if let Token::Identifier(_) = block.peek_nth(0).0
+        && let Token::BracketBlock(_) = block.peek_nth(1).0
+        && let Token::ParenthesisBlock(_) = block.peek_nth(2).0
+    {
+        // collect tokens if they match
+        let (Token::Identifier(ident), pos1) = block.get() else { unreachable!() };
+        let (Token::BracketBlock(template_block), pos2) = block.get() else {
+            unreachable!()
         };
+        let (Token::ParenthesisBlock(call_block), pos3) = block.get() else {
+            unreachable!()
+        };
+
+        let pos = pos1 + pos2 + pos3;
+
+        (ident, template_block, call_block, pos)
+    } else if let Token::Identifier(_) = block.peek_nth(0).0
+        && let Token::ParenthesisBlock(_) = block.peek_nth(1).0
+    {
+        // collect tokens if they match
+        let (Token::Identifier(ident), pos1) = block.get() else { unreachable!() };
+        let (Token::ParenthesisBlock(call_block), pos2) = block.get() else {
+            unreachable!()
+        };
+
+        let pos = pos1 + pos2;
+        let template_block = TokenBlock::new(Vec::new());
+
+        (ident, template_block, call_block, pos)
+    } else {
+        return Ok(None);
+    };
 
     let mut args = Vec::new();
 
@@ -108,11 +115,14 @@ pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
         template_args.push(typ);
     }
 
-    Ok(Some((ASTFunctionCall {
-        name: ident,
-        arguments: args,
-        template_arguments: template_args,
-    }, pos)))
+    Ok(Some((
+        ASTFunctionCall {
+            name: ident,
+            arguments: args,
+            template_arguments: template_args,
+        },
+        pos,
+    )))
 }
 
 pub fn parse_return_statement(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<ASTStatement>> {

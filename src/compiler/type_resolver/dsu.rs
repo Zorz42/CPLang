@@ -14,7 +14,7 @@ pub struct Dsu<T: Add + Default> {
     value: Vec<T>,
 }
 
-impl<T: Add<Output=T> + Default> Dsu<T> {
+impl<T: Add<Output = T> + Default> Dsu<T> {
     pub const fn new() -> Self {
         Self {
             parent: Vec::new(),

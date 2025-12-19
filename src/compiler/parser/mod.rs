@@ -13,8 +13,8 @@ pub mod function;
 pub mod out;
 pub mod statement;
 pub mod structure;
-pub mod typed;
 mod template;
+pub mod typed;
 /*
 Parser converts tokens into AST (Abstract Syntax Tree). Here is where all the syntax structure parsing happens.
 Parser still does not know enough about the program to resolve variable/struct/function names or types or anything else.
