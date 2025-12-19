@@ -1,8 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
-    IRType, IRTypeLabel, IRVariableLabel,
+    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
+    IRTypeLabel, IRVariableLabel, IR,
 };
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
@@ -14,6 +14,7 @@ use std::mem::swap;
 pub mod builtin_functions;
 pub mod ir;
 mod ir_debug;
+mod function_cmp;
 
 #[derive(PartialEq, Eq)]
 enum ValuePhysicality {
@@ -36,11 +37,6 @@ const fn operator_to_ir_operator(operator: ASTOperator) -> IROperator {
     }
 }
 
-// is func1 more specific than func2 - so every call that satisfies func1 also satisfies func2
-fn is_function_more_specific(func1: &ASTFunctionSignature, func2: &ASTFunctionSignature) -> bool {
-    todo!()
-}
-
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     let normalizer = Normalizer {
         ir: IR {
@@ -57,6 +53,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         type_resolver: TypeResolver::new(),
         variables_name_map: HashMap::new(),
         functions_name_map: HashMap::new(),
+        functions_specific_ordering: HashMap::new(),
         fields_name_map: HashMap::new(),
         curr_func_vars: Vec::new(),
         curr_func_ret_type: 0,
@@ -80,6 +77,9 @@ struct Normalizer {
     curr_var_label: IRVariableLabel,
     // key is (function name, number of arguments)
     functions_name_map: HashMap<(String, usize), Vec<(ASTFunctionSignature, ASTBlock)>>,
+    // lists all connections in the function ordering graph
+    // so if tuple (a, b) exists, it means function a is more specific than b
+    functions_specific_ordering: HashMap<(String, usize), Vec<(usize, usize)>>,
     curr_func_label: IRInstanceLabel,
     fields_name_map: HashMap<String, IRFieldLabel>,
     curr_field_label: IRFieldLabel,
@@ -146,6 +146,27 @@ impl Normalizer {
                 });
             }
         }
+
+        let keys = self.functions_name_map.keys().collect::<Vec<_>>().into_iter().map(|x| x.clone()).collect::<Vec<_>>();
+        for k in keys {
+            let n = self.functions_name_map[&k].len();
+            self.functions_specific_ordering.insert(k.clone(), Vec::new());
+            for i1 in 0..n {
+                for i2 in 0..n {
+                    if i1 == i2 {
+                        continue;
+                    }
+                    let sign1 = self.functions_name_map[&k][i1].0.clone();
+                    let sign2 = self.functions_name_map[&k][i2].0.clone();
+                    if self.check_is_function_more_specific(&sign1, &sign2) {
+                        println!("Found connection");
+                        self.functions_specific_ordering.get_mut(&k).unwrap().push((i1, i2));
+                    }
+                }
+            }
+        }
+
+
         if let Some(mut vec) = self.functions_name_map.get(&(transform_function_name("main".to_string()), 0)).cloned() {
             if vec.len() != 1 {
                 return Err(CompilerError {
