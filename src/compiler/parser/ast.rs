@@ -64,7 +64,7 @@ pub struct ASTBlock {
     pub children: Vec<ASTStatement>,
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ASTOperator {
     Plus,
     Mul,

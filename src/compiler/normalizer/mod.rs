@@ -1,14 +1,14 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
+    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
     IRTypeLabel, IRVariableLabel, IR,
 };
 use crate::compiler::parser::ast::{
-    ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTOperator, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
+    ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
 };
 use crate::compiler::type_resolver::TypeResolver;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::mem::swap;
 
 pub mod builtin_functions;
@@ -20,21 +20,6 @@ mod function_cmp;
 enum ValuePhysicality {
     Temporary,
     Physical,
-}
-
-const fn operator_to_ir_operator(operator: ASTOperator) -> IROperator {
-    match operator {
-        ASTOperator::Plus => IROperator::Plus,
-        ASTOperator::Minus => IROperator::Minus,
-        ASTOperator::Mul => IROperator::Mul,
-        ASTOperator::Div => IROperator::Div,
-        ASTOperator::Equals => IROperator::Equals,
-        ASTOperator::NotEquals => IROperator::NotEquals,
-        ASTOperator::Greater => IROperator::Greater,
-        ASTOperator::Lesser => IROperator::Lesser,
-        ASTOperator::GreaterEq => IROperator::GreaterEq,
-        ASTOperator::LesserEq => IROperator::LesserEq,
-    }
 }
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
@@ -151,6 +136,7 @@ impl Normalizer {
         for k in keys {
             let n = self.functions_name_map[&k].len();
             self.functions_specific_ordering.insert(k.clone(), Vec::new());
+            let mut conns = HashSet::new();
             for i1 in 0..n {
                 for i2 in 0..n {
                     if i1 == i2 {
@@ -159,8 +145,14 @@ impl Normalizer {
                     let sign1 = self.functions_name_map[&k][i1].0.clone();
                     let sign2 = self.functions_name_map[&k][i2].0.clone();
                     if self.check_is_function_more_specific(&sign1, &sign2) {
-                        println!("Found connection");
                         self.functions_specific_ordering.get_mut(&k).unwrap().push((i1, i2));
+                        conns.insert((i1, i2));
+                        if conns.contains(&(i2, i1)) {
+                            return Err(CompilerError {
+                                message: format!("Found two equivalent signatures for function {}", k.0),
+                                position: Some(self.functions_name_map[&k][i1].0.pos.clone()),
+                            });
+                        }
                     }
                 }
             }
@@ -270,16 +262,17 @@ impl Normalizer {
         template_arguments: &[IRTypeLabel],
         pos: FilePosition,
     ) -> CompilerResult<(ASTFunctionSignature, ASTBlock)> {
-        let Some(candidates) = self.functions_name_map.get(&(function_name.to_string(), function_arguments.len())).cloned() else {
+        let Some(candidates) = self.functions_name_map.get(&(function_name.to_string(), function_arguments.len())) else {
             return Err(CompilerError {
                 message: format!("Function {} does not exist.", &function_name[1..]),
                 position: Some(pos),
             });
         };
+        let candidates = candidates.iter().map(|(sign, block)| sign.clone()).collect::<Vec<_>>();
 
-        let mut matching = Vec::new();
+        let mut matching = HashSet::new();
 
-        for (sign, block) in candidates {
+        for (i, sign) in candidates.into_iter().enumerate() {
             if template_arguments.len() > sign.template.len() {
                 continue;
             }
@@ -310,9 +303,19 @@ impl Normalizer {
             self.template_types = old_template_types;
 
             if ok {
-                matching.push((sign, block));
+                matching.insert(i);
             }
         }
+
+        // eliminate more general functions
+        let mut to_remove = HashSet::new();
+        for (u, v) in &self.functions_specific_ordering[&(function_name.to_string(), function_arguments.len())] {
+            if matching.contains(u) {
+                to_remove.insert(*v);
+            }
+        }
+
+        matching.retain(|x| !to_remove.contains(x));
 
         if matching.is_empty() {
             return Err(CompilerError {
@@ -328,7 +331,11 @@ impl Normalizer {
             });
         }
 
-        Ok(matching.pop().unwrap())
+        let mut idx = 0;
+        for i in matching {
+            idx = i;
+        }
+        Ok(self.functions_name_map[&(function_name.to_string(), function_arguments.len())][idx].clone())
     }
 
     fn normalize_expression(&mut self, expression: ASTExpression) -> CompilerResult<(IRExpression, IRTypeLabel, ValuePhysicality)> {
@@ -521,7 +528,6 @@ impl Normalizer {
                 let (expression2, type2_label, _is_phys) = self.normalize_expression(*expression2)?;
                 self.relevant_types.push(type1_label);
                 self.relevant_types.push(type2_label);
-                let operator = operator_to_ir_operator(operator);
                 self.type_resolver.hint_operator(&self.ir, type1_label, type2_label, operator, type_label)?;
                 (
                     IRExpression::BinaryOperation {

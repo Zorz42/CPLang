@@ -1,6 +1,6 @@
+use crate::compiler::parser::ast::ASTOperator;
 use std::collections::HashMap;
 use std::fmt::Debug;
-
 // Function is a generic function. When you call it, it is reduced into
 // instance where all argument types are known
 
@@ -44,19 +44,7 @@ pub enum IRType {
     Struct(IRStructLabel, Vec<Self>),
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum IROperator {
-    Plus,
-    Minus,
-    Mul,
-    Div,
-    Equals,
-    NotEquals,
-    Greater,
-    GreaterEq,
-    Lesser,
-    LesserEq,
-}
+pub type IROperator = ASTOperator;
 
 #[derive(Debug)]
 pub enum IRConstant {

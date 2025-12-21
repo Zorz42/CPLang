@@ -1,4 +1,4 @@
-//ERR 10 10 10 18
+//ERR 5 0 5 6
 
 func x: i32
     ret x + 10
