@@ -132,7 +132,7 @@ impl Normalizer {
             }
         }
 
-        let keys = self.functions_name_map.keys().collect::<Vec<_>>().into_iter().map(|x| x.clone()).collect::<Vec<_>>();
+        let keys = self.functions_name_map.keys().collect::<Vec<_>>().into_iter().cloned().collect::<Vec<_>>();
         for k in keys {
             let n = self.functions_name_map[&k].len();
             self.functions_specific_ordering.insert(k.clone(), Vec::new());
@@ -150,7 +150,7 @@ impl Normalizer {
                         if conns.contains(&(i2, i1)) {
                             return Err(CompilerError {
                                 message: format!("Found two equivalent signatures for function {}", k.0),
-                                position: Some(self.functions_name_map[&k][i1].0.pos.clone()),
+                                position: Some(self.functions_name_map[&k][i1].0.pos),
                             });
                         }
                     }
@@ -268,7 +268,7 @@ impl Normalizer {
                 position: Some(pos),
             });
         };
-        let candidates = candidates.iter().map(|(sign, block)| sign.clone()).collect::<Vec<_>>();
+        let candidates = candidates.iter().map(|(sign, _block)| sign.clone()).collect::<Vec<_>>();
 
         let mut matching = HashSet::new();
 

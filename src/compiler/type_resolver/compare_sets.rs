@@ -5,8 +5,8 @@ use std::collections::HashMap;
 use std::ops::Add;
 
 fn compactify<T: Add<Output=T> + Default>(
-    set1: &Vec<IRTypeLabel>,
-    set2: &Vec<IRTypeLabel>,
+    set1: &[IRTypeLabel],
+    set2: &[IRTypeLabel],
     dsu: &mut Dsu<T>,
 ) -> Option<(Vec<usize>, Vec<usize>)> {
     let mut mp1 = HashMap::new();
@@ -112,10 +112,8 @@ impl TypeResolver {
                 return false;
             }
 
-            if let Some(struct1) = struct1 && let Some(struct2) = struct2 {
-                if !self.compare_sets(struct1.1, struct2.1) {
-                    return false;
-                }
+            if let Some(struct1) = struct1 && let Some(struct2) = struct2 && !self.compare_sets(struct1.1, struct2.1) {
+                return false;
             }
         }
 
