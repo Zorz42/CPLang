@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, AddAssign};
 
 // this struct stores file position so the error can be displayed
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,6 +30,12 @@ impl Add for FilePosition {
             first_pos: <(usize, usize)>::min(self.first_pos, rhs.first_pos),
             last_pos: <(usize, usize)>::max(self.last_pos, rhs.last_pos),
         }
+    }
+}
+
+impl AddAssign for FilePosition {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
     }
 }
 

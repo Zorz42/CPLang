@@ -1,0 +1,44 @@
+//OUT=17 36
+
+struct Vec[T]
+    size
+    vec: &T
+
+    fn index i
+        ret &_builtin_index(self.vec i)
+
+new_vec size
+    ret Vec size size vec _builtin_alloc(size)
+
+new_vec
+    ret new_vec(0)
+
+struct Box[T]
+    x: T
+
+sum vec: Vec
+    i = 0
+    res = 0
+    while i < vec.size
+        res += |vec.index(i)
+        i++
+    ret res
+
+sum vec: Vec[Box]
+    i = 0
+    res = 0
+    while i < vec.size
+        res += vec.index(i).x
+        i++
+    ret res
+
+main
+    v1 = new_vec(3)
+    |v1.index(0) = 10
+    |v1.index(1) = 5
+    |v1.index(2) = 2
+    v2 = new_vec(3)
+    |v2.index(0) = Box x 10
+    |v2.index(1) = Box x 12
+    |v2.index(2) = Box x 14
+    out "{sum(v1)} {sum(v2)}"

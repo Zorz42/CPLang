@@ -79,7 +79,8 @@ pub fn parse_struct_instantiation(
     mut pos: FilePosition,
     identifier: String,
 ) -> CompilerResult<ASTExpression> {
-    let template_arguments = parse_template_instantiation(block)?;
+    let (template_arguments, template_pos) = parse_template_instantiation(block)?;
+    pos += template_pos;
 
     let mut fields = HashMap::new();
     let mut fields_left = struct_declaration.fields.len();

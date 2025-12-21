@@ -20,7 +20,10 @@ pub fn parse_type(block: &mut TokenBlock) -> CompilerResult<ASTType> {
         (Token::Bool, pos) => Ok(ASTType::Primitive(ASTPrimitiveType::Bool, pos)),
         (Token::String, pos) => Ok(ASTType::Primitive(ASTPrimitiveType::String, pos)),
         (Token::Void, pos) => Ok(ASTType::Primitive(ASTPrimitiveType::Void, pos)),
-        (Token::Identifier(name), pos) => Ok(ASTType::Identifier(name, pos, parse_template_instantiation(block)?)),
+        (Token::Identifier(name), pos) => {
+            let (template_args, template_pos) = parse_template_instantiation(block)?;
+            Ok(ASTType::Identifier(name, pos + template_pos, template_args))
+        }
         (_, pos) => Err(CompilerError {
             message: ERR_MESSAGE.to_string(),
             position: Some(pos),

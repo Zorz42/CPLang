@@ -22,13 +22,15 @@ pub fn parse_declaration_template(block: &mut TokenBlock) -> CompilerResult<Vec<
     Ok(template)
 }
 
-pub fn parse_template_instantiation(block: &mut TokenBlock) -> CompilerResult<Vec<ASTType>> {
+pub fn parse_template_instantiation(block: &mut TokenBlock) -> CompilerResult<(Vec<ASTType>, FilePosition)> {
     let mut template = Vec::new();
+    let mut pos = FilePosition::unknown();
     if let Token::BracketBlock(_) = block.peek().0 {
-        let Token::BracketBlock(mut block) = block.get().0 else { unreachable!() };
+        let (Token::BracketBlock(mut block), block_pos) = block.get() else { unreachable!() };
+        pos = block_pos;
         while block.has_tokens() {
             template.push(parse_type(&mut block)?);
         }
     }
-    Ok(template)
+    Ok((template, pos))
 }
