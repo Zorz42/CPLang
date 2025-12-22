@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel, IR};
+use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel};
 use crate::compiler::type_resolver::default_operator_map::setup_operator_map;
 use crate::compiler::type_resolver::dsu::Dsu;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -9,6 +9,7 @@ use std::ops::Add;
 pub mod default_operator_map;
 pub mod dsu;
 mod compare_sets;
+mod test;
 
 #[derive(Clone)]
 enum Conn {
@@ -101,10 +102,12 @@ pub struct TypeResolver {
     fixed_ref_component: usize,
     // already known types (up to reference) can be merged if they are the same
     type_map: HashMap<IRType, IRTypeLabel>,
+    // static data about struct fields
+    structs: Vec<Vec<IRFieldLabel>>,
 }
 
 impl TypeResolver {
-    pub fn new() -> Self {
+    pub fn new(structs: Vec<Vec<IRFieldLabel>>) -> Self {
         let mut res = Self {
             type_positions: Vec::new(),
             operator_map: setup_operator_map(),
@@ -115,11 +118,16 @@ impl TypeResolver {
             ref_dsu: Dsu::new(),
             fixed_ref_component: 0,
             type_map: HashMap::new(),
+            structs,
         };
         let fixed = res.new_type_label(FilePosition::unknown());
         res.fixed_ref_component = fixed;
         res.type_dsu.get(res.fixed_ref_component).typ = Some(IRType::Primitive(IRPrimitiveType::Void));
         res
+    }
+
+    pub fn get_structs(&self) -> Vec<Vec<IRFieldLabel>> {
+        self.structs.clone()
     }
 
     pub fn new_type_label(&mut self, pos: FilePosition) -> IRTypeLabel {
@@ -183,7 +191,7 @@ impl TypeResolver {
         self.merge_ref(self.fixed_ref_component, label, ref_val)
     }
 
-    fn run_queue(&mut self, ir: &IR) -> CompilerResult<()> {
+    fn run_queue(&mut self) -> CompilerResult<()> {
         while let Some(node) = self.queue.pop_front() {
             // loop for type deduction
             if let Some(node_type) = self.type_dsu.get(node).typ.clone() {
@@ -246,9 +254,9 @@ impl TypeResolver {
                                     });
                                 }
                             };
-                            let curr_struct = &ir.structs[struct_label];
+                            let curr_struct = &self.structs[struct_label];
                             let mut field_idx = 0;
-                            for (idx, curr_field) in curr_struct.fields.iter().enumerate() {
+                            for (idx, curr_field) in curr_struct.iter().enumerate() {
                                 if *curr_field == field {
                                     field_idx = idx;
                                 }
@@ -287,7 +295,7 @@ impl TypeResolver {
                 let mut fields = HashMap::new();
 
                 if let Some((structure, args)) = &struct_fields {
-                    for (arg, field_label) in args.iter().zip(ir.structs[*structure].fields.iter()) {
+                    for (arg, field_label) in args.iter().zip(&self.structs[*structure]) {
                         fields.insert(*field_label, *arg);
                     }
                 }
@@ -354,8 +362,9 @@ impl TypeResolver {
         swap(&mut ref_map, &mut self.type_dsu.get(label1).ref_map);
         for (key, label) in ref_map {
             if let Some(other_label) = self.type_dsu.get(label2).ref_map.get(&key).copied() {
-                self.dsu.merge(label, other_label);
-                self.queue.push_back(label);
+                if self.dsu.merge(label, other_label) {
+                    self.queue.push_back(label);
+                }
             } else {
                 self.type_dsu.get(label2).ref_map.insert(key, label);
             }
@@ -412,14 +421,18 @@ impl TypeResolver {
             self.dsu.get(node).ref_depth += modify_offset;
         }
 
-        self.ref_dsu.merge(label1, label2);
+        if self.ref_dsu.merge(label1, label2) {
+            self.queue.push_back(label1);
+            self.queue.push_back(label2);
+        }
 
         all_nodes = self.ref_dsu.get(label1).nodes.clone();
         for node in all_nodes {
             let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
             if let Some(label) = self.type_dsu.get(node).ref_map.get(&key) {
-                self.dsu.merge(*label, node);
-                self.queue.push_back(node);
+                if self.dsu.merge(*label, node) {
+                    self.queue.push_back(node);
+                }
             } else {
                 self.type_dsu.get(node).ref_map.insert(key, node);
             }
@@ -427,26 +440,26 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_is(&mut self, ir: &IR, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
+    pub fn hint_is(&mut self, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
         let ir_type = IRType::Primitive(typ);
         self.set_type(label, ir_type)?;
         self.set_ref(label, 0)?;
 
-        self.run_queue(ir)?;
+        self.run_queue()?;
         Ok(())
     }
 
-    pub fn hint_equal(&mut self, ir: &IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
+    pub fn hint_equal(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
         self.merge(label1, label2)?;
 
         self.queue.push_back(label2);
         self.queue.push_back(label1);
 
-        self.run_queue(ir)?;
+        self.run_queue()?;
         Ok(())
     }
 
-    pub fn hint_operator(&mut self, ir: &IR, label1: IRTypeLabel, label2: IRTypeLabel, operator: IROperator, res_label: IRTypeLabel) -> CompilerResult<()> {
+    pub fn hint_operator(&mut self, label1: IRTypeLabel, label2: IRTypeLabel, operator: IROperator, res_label: IRTypeLabel) -> CompilerResult<()> {
         self.dsu.get(label1).neighbours.push(Conn::Operator(res_label, operator, label2));
         self.dsu.get(label2).neighbours.push(Conn::Operator(res_label, operator, label1));
 
@@ -456,11 +469,11 @@ impl TypeResolver {
         self.queue.push_back(label1);
         self.queue.push_back(label2);
 
-        self.run_queue(ir)?;
+        self.run_queue()?;
         Ok(())
     }
 
-    pub fn hint_is_ref(&mut self, ir: &IR, phys_label: IRTypeLabel, ref_label: IRTypeLabel) -> CompilerResult<()> {
+    pub fn hint_is_ref(&mut self, phys_label: IRTypeLabel, ref_label: IRTypeLabel) -> CompilerResult<()> {
         self.merge_type(phys_label, ref_label)?;
 
         self.merge_ref(phys_label, ref_label, 1)?;
@@ -468,11 +481,11 @@ impl TypeResolver {
         self.queue.push_back(phys_label);
         self.queue.push_back(ref_label);
 
-        self.run_queue(ir)?;
+        self.run_queue()?;
         Ok(())
     }
 
-    pub fn hint_struct(&mut self, ir: &IR, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
+    pub fn hint_struct(&mut self, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
         for field_type in &fields {
             self.dsu.get(*field_type).neighbours.push(Conn::Struct(res_label, struct_label, fields.clone()));
             self.queue.push_back(*field_type);
@@ -481,24 +494,24 @@ impl TypeResolver {
         self.queue.push_back(res_label);
         self.set_ref(res_label, 0)?;
 
-        self.run_queue(ir)?;
+        self.run_queue()?;
         Ok(())
     }
 
-    pub fn hint_is_field(&mut self, ir: &IR, res_label: IRTypeLabel, struct_label: IRTypeLabel, field_label: IRFieldLabel) -> CompilerResult<()> {
+    pub fn hint_is_field(&mut self, res_label: IRTypeLabel, struct_label: IRTypeLabel, field_label: IRFieldLabel) -> CompilerResult<()> {
         self.dsu.get(struct_label).neighbours.push(Conn::IsField(res_label, field_label));
         self.queue.push_back(struct_label);
         self.queue.push_back(res_label);
         self.set_ref(struct_label, 0)?;
 
-        self.run_queue(ir)?;
+        self.run_queue()?;
         Ok(())
     }
 
-    pub fn hint_autoref(&mut self, ir: &IR, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
+    pub fn hint_autoref(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
         self.merge_type(label1, label2)?;
 
-        self.run_queue(ir)?;
+        self.run_queue()?;
         Ok(())
     }
 

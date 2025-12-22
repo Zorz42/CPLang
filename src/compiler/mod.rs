@@ -63,7 +63,10 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
     std::thread::Builder::new()
         .stack_size(STACK_SIZE)
-        .spawn(move || compile_internal(&input_file, &output_file))
+        .spawn(move || {
+            let res = compile_internal(&input_file, &output_file);
+            res
+        })
         .unwrap()
         .join()
         .unwrap()

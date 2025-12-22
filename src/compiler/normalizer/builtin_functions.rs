@@ -40,14 +40,14 @@ impl Normalizer {
                 }
 
                 // index should be an integer
-                self.type_resolver.hint_is(&self.ir, expr_types[0], IRPrimitiveType::I32)?;
+                self.type_resolver.hint_is(expr_types[0], IRPrimitiveType::I32)?;
 
                 let typ = self.type_resolver.new_type_label(FilePosition::unknown());
                 let ref_typ = self.type_resolver.new_type_label(FilePosition::unknown());
-                self.type_resolver.hint_is_ref(&self.ir, typ, ref_typ)?;
+                self.type_resolver.hint_is_ref(typ, ref_typ)?;
 
                 if let Some(template_typ) = template_types.first() {
-                    self.type_resolver.hint_equal(&self.ir, typ, *template_typ)?;
+                    self.type_resolver.hint_equal(typ, *template_typ)?;
                 }
                 self.relevant_types.push(typ);
 
@@ -80,8 +80,8 @@ impl Normalizer {
 
                 let arr_type = self.type_resolver.new_type_label(FilePosition::unknown());
 
-                self.type_resolver.hint_is(&self.ir, expr_types[1], IRPrimitiveType::I32)?;
-                self.type_resolver.hint_is_ref(&self.ir, arr_type, expr_types[0])?;
+                self.type_resolver.hint_is(expr_types[1], IRPrimitiveType::I32)?;
+                self.type_resolver.hint_is_ref(arr_type, expr_types[0])?;
 
                 Ok((
                     BuiltinFunctionCall::Index {

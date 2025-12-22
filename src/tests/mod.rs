@@ -2,7 +2,7 @@
 #[allow(clippy::module_inception)]
 mod tests {
     use crate::compiler::compile;
-    use crate::compiler::error::{FilePosition, display_error};
+    use crate::compiler::error::{display_error, FilePosition};
     use std::hash::Hasher;
     use std::thread::sleep;
     use std::time::Duration;

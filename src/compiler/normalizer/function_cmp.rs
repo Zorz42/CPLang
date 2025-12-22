@@ -28,7 +28,7 @@ impl Normalizer {
 
     // is func1 more specific than func2 - so every call that satisfies func1 also satisfies func2
     pub fn check_is_function_more_specific(&mut self, func1: &ASTFunctionSignature, func2: &ASTFunctionSignature) -> bool {
-        let mut old_resolver = TypeResolver::new();
+        let mut old_resolver = TypeResolver::new(self.type_resolver.get_structs());
         // this is ugly (might refactor later)
         swap(&mut old_resolver, &mut self.type_resolver);
 
@@ -37,7 +37,7 @@ impl Normalizer {
         let Ok(args3) = self.add_func_to_resolver(func2) else { return false };
 
         for (arg1, arg2) in args2.iter().zip(args3) {
-            if self.type_resolver.hint_equal(&self.ir, *arg1, arg2).is_err() {
+            if self.type_resolver.hint_equal(*arg1, arg2).is_err() {
                 return false;
             }
         }

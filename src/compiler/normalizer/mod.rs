@@ -35,7 +35,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
         curr_var_label: 0,
         curr_func_label: 0,
         curr_field_label: 0,
-        type_resolver: TypeResolver::new(),
+        type_resolver: TypeResolver::new(Vec::new()),
         variables_name_map: HashMap::new(),
         functions_name_map: HashMap::new(),
         functions_specific_ordering: HashMap::new(),
@@ -111,6 +111,7 @@ impl Normalizer {
         }
 
         // normalize all structs
+        let mut resolver_structs = Vec::new();
         for structure in ast.structs {
             let name = structure.name.clone();
             let (ir_struct, type_hints, template) = self.normalize_struct(structure);
@@ -118,8 +119,11 @@ impl Normalizer {
             self.structs_type_hints.push(type_hints);
             self.structs_templates.push(template);
             self.structs_name_map.insert(name, label);
+            resolver_structs.push(ir_struct.fields.clone());
             self.ir.structs.push(ir_struct);
         }
+
+        self.type_resolver = TypeResolver::new(resolver_structs);
 
         // check that there is one main function with zero arguments and find it
         let main_name = transform_function_name("main".to_string());
@@ -287,13 +291,13 @@ impl Normalizer {
             }
 
             for (typ, (arg_name, _pos)) in template_arguments.iter().zip(&sign.template) {
-                self.type_resolver.hint_equal(&self.ir, *typ, self.template_types[arg_name])?;
+                self.type_resolver.hint_equal(*typ, self.template_types[arg_name])?;
             }
 
             for ((_, hint, _), typ) in sign.args.iter().zip(function_arguments) {
                 let hint_typ = self.normalize_type(hint.clone())?;
 
-                if self.type_resolver.hint_equal(&self.ir, *typ, hint_typ).is_err() {
+                if self.type_resolver.hint_equal(*typ, hint_typ).is_err() {
                     ok = false;
                     break;
                 }
@@ -342,11 +346,11 @@ impl Normalizer {
         let pos = expression.pos;
         let type_label = self.type_resolver.new_type_label(pos);
         let type_hint = self.normalize_type(expression.type_hint)?;
-        self.type_resolver.hint_equal(&self.ir, type_label, type_hint)?;
+        self.type_resolver.hint_equal(type_label, type_hint)?;
 
         let (expr, is_phys) = match expression.kind {
             ASTExpressionKind::Integer(x) => {
-                self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::I32)?;
+                self.type_resolver.hint_is(type_label, IRPrimitiveType::I32)?;
                 (
                     IRExpression::Constant {
                         constant: IRConstant::Int(i64::from(x)),
@@ -356,7 +360,7 @@ impl Normalizer {
             }
 
             ASTExpressionKind::Float(x) => {
-                self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::F32)?;
+                self.type_resolver.hint_is(type_label, IRPrimitiveType::F32)?;
                 (
                     IRExpression::Constant {
                         constant: IRConstant::Float(f64::from(x)),
@@ -366,7 +370,7 @@ impl Normalizer {
             }
 
             ASTExpressionKind::String(x) => {
-                self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::String)?;
+                self.type_resolver.hint_is(type_label, IRPrimitiveType::String)?;
                 (
                     IRExpression::Constant {
                         constant: IRConstant::String(x),
@@ -376,7 +380,7 @@ impl Normalizer {
             }
 
             ASTExpressionKind::Boolean(x) => {
-                self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::Bool)?;
+                self.type_resolver.hint_is(type_label, IRPrimitiveType::Bool)?;
                 (IRExpression::Constant { constant: IRConstant::Bool(x) }, ValuePhysicality::Temporary)
             }
 
@@ -390,7 +394,7 @@ impl Normalizer {
                     });
                 };
                 let var_type_label = self.ir.variable_types[label];
-                self.type_resolver.hint_equal(&self.ir, type_label, var_type_label)?;
+                self.type_resolver.hint_equal(type_label, var_type_label)?;
                 (IRExpression::Variable { variable_label: label }, ValuePhysicality::Physical)
             }
 
@@ -404,7 +408,7 @@ impl Normalizer {
                     });
                 }
 
-                self.type_resolver.hint_is_ref(&self.ir, type_label2, type_label)?;
+                self.type_resolver.hint_is_ref(type_label2, type_label)?;
                 (
                     IRExpression::Reference {
                         expression: Box::new(expression),
@@ -415,7 +419,7 @@ impl Normalizer {
 
             ASTExpressionKind::Dereference(expression) => {
                 let (expression, type_label2, _is_phys) = self.normalize_expression(*expression)?;
-                self.type_resolver.hint_is_ref(&self.ir, type_label, type_label2)?;
+                self.type_resolver.hint_is_ref(type_label, type_label2)?;
                 (
                     IRExpression::Dereference {
                         expression: Box::new(expression),
@@ -443,7 +447,7 @@ impl Normalizer {
 
                 if Self::is_builtin_function(&call.name) {
                     let (call, physicality, return_type) = self.get_builtin_call(call.name, expr_types, function_arguments, template_types, pos)?;
-                    self.type_resolver.hint_equal(&self.ir, return_type, type_label)?;
+                    self.type_resolver.hint_equal(return_type, type_label)?;
                     (IRExpression::BuiltinFunctionCall(call), physicality)
                 } else {
                     let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos)?;
@@ -460,7 +464,7 @@ impl Normalizer {
 
                     let instance_label = self.normalize_function(sig, block, expr_types, template_types)?;
                     let ret_type = self.ir.instances[instance_label].ret_type;
-                    self.type_resolver.hint_equal(&self.ir, ret_type, type_label)?;
+                    self.type_resolver.hint_equal(ret_type, type_label)?;
 
                     (
                         IRExpression::InstanceCall {
@@ -485,7 +489,7 @@ impl Normalizer {
                 for (arg, field_type_label) in fields.into_iter().zip(field_type_labels.iter()) {
                     let (expr, typ, _is_phys) = self.normalize_expression(arg)?;
                     field_values.push(expr);
-                    self.type_resolver.hint_equal(&self.ir, typ, *field_type_label)?;
+                    self.type_resolver.hint_equal(typ, *field_type_label)?;
                     self.relevant_types.push(*field_type_label);
                 }
 
@@ -494,7 +498,7 @@ impl Normalizer {
                     fields_type_labels: field_type_labels.clone(),
                     field_values,
                 };
-                self.type_resolver.hint_struct(&self.ir, type_label, struct_label, field_type_labels)?;
+                self.type_resolver.hint_struct(type_label, struct_label, field_type_labels)?;
 
                 (struct_expr, ValuePhysicality::Temporary)
             }
@@ -507,7 +511,7 @@ impl Normalizer {
                         position: Some(pos),
                     });
                 };
-                self.type_resolver.hint_is_field(&self.ir, type_label, type_label2, field_label)?;
+                self.type_resolver.hint_is_field(type_label, type_label2, field_label)?;
                 (
                     IRExpression::FieldAccess {
                         expression: Box::new(expression),
@@ -528,7 +532,7 @@ impl Normalizer {
                 let (expression2, type2_label, _is_phys) = self.normalize_expression(*expression2)?;
                 self.relevant_types.push(type1_label);
                 self.relevant_types.push(type2_label);
-                self.type_resolver.hint_operator(&self.ir, type1_label, type2_label, operator, type_label)?;
+                self.type_resolver.hint_operator(type1_label, type2_label, operator, type_label)?;
                 (
                     IRExpression::BinaryOperation {
                         operator,
@@ -545,7 +549,7 @@ impl Normalizer {
                 let (expression, type_label1, _is_phys) = self.normalize_expression(*expression)?;
                 let autoref_label = self.type_resolver.new_autoref_label(type_label, type_label1);
 
-                self.type_resolver.hint_autoref(&self.ir, type_label, type_label1)?;
+                self.type_resolver.hint_autoref(type_label, type_label1)?;
                 (
                     IRExpression::AutoRef {
                         autoref_label,
@@ -577,7 +581,7 @@ impl Normalizer {
             ASTType::Any(_) => {}
             ASTType::Primitive(typ, _) => {
                 let typ = Self::primitive_type_to_ir_type(typ);
-                self.type_resolver.hint_is(&self.ir, type_label, typ)?;
+                self.type_resolver.hint_is(type_label, typ)?;
             }
             ASTType::Identifier(name, pos, template_args) => {
                 if let Some(label) = self.template_types.get(&name).copied() {
@@ -588,12 +592,12 @@ impl Normalizer {
                             position: Some(pos),
                         });
                     }
-                    self.type_resolver.hint_equal(&self.ir, label, type_label)?;
+                    self.type_resolver.hint_equal(label, type_label)?;
                 } else if let Some(struct_label) = self.structs_name_map.get(&name).copied() {
                     // identifier is a concrete struct
                     let args = self.gen_struct_field_types(struct_label, template_args)?;
 
-                    self.type_resolver.hint_struct(&self.ir, type_label, struct_label, args)?;
+                    self.type_resolver.hint_struct(type_label, struct_label, args)?;
                 } else {
                     return Err(CompilerError {
                         message: format!("Unknown type: {name}"),
@@ -603,7 +607,7 @@ impl Normalizer {
             }
             ASTType::Reference(typ, _) => {
                 let type_label2 = self.normalize_type(*typ)?;
-                self.type_resolver.hint_is_ref(&self.ir, type_label2, type_label)?;
+                self.type_resolver.hint_is_ref(type_label2, type_label)?;
             }
         }
         Ok(type_label)
@@ -629,7 +633,7 @@ impl Normalizer {
 
                     let (assign_to, type_label1, is_phys) = self.normalize_expression(assign_to)?;
                     let (value, type_label2, _is_phys) = self.normalize_expression(value)?;
-                    self.type_resolver.hint_equal(&self.ir, type_label1, type_label2)?;
+                    self.type_resolver.hint_equal(type_label1, type_label2)?;
 
                     if is_phys == ValuePhysicality::Temporary {
                         return Err(CompilerError {
@@ -664,17 +668,17 @@ impl Normalizer {
                     self.has_ret_statement = true;
                     let st = if let Some(expr) = return_value {
                         let (expr, type_label, _is_phys) = self.normalize_expression(expr)?;
-                        self.type_resolver.hint_equal(&self.ir, self.curr_func_ret_type, type_label)?;
+                        self.type_resolver.hint_equal(self.curr_func_ret_type, type_label)?;
                         IRStatement::Return { return_value: Some(expr) }
                     } else {
-                        self.type_resolver.hint_is(&self.ir, self.curr_func_ret_type, IRPrimitiveType::Void)?;
+                        self.type_resolver.hint_is(self.curr_func_ret_type, IRPrimitiveType::Void)?;
                         IRStatement::Return { return_value: None }
                     };
                     res.statements.push(st);
                 }
                 ASTStatement::If { condition, block, else_block } => {
                     let (condition, type_label, _is_phys) = self.normalize_expression(condition)?;
-                    self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::Bool)?;
+                    self.type_resolver.hint_is(type_label, IRPrimitiveType::Bool)?;
                     let block = self.normalize_block(block)?;
                     let else_block = if let Some(else_block) = else_block {
                         Some(self.normalize_block(else_block)?)
@@ -685,7 +689,7 @@ impl Normalizer {
                 }
                 ASTStatement::While { condition, block } => {
                     let (condition, type_label, _is_phys) = self.normalize_expression(condition)?;
-                    self.type_resolver.hint_is(&self.ir, type_label, IRPrimitiveType::Bool)?;
+                    self.type_resolver.hint_is(type_label, IRPrimitiveType::Bool)?;
                     let block = self.normalize_block(block)?;
                     res.statements.push(IRStatement::While { condition, block });
                 }
@@ -728,6 +732,10 @@ impl Normalizer {
     ) -> CompilerResult<IRInstanceLabel> {
         const RECURSION_LIMIT: i32 = 100;
         assert_eq!(arg_types.len(), sign.args.len());
+
+        //println!("Normalize {}", self.depth);
+        //println!("Size {}", self.type_resolver.new_type_label(FilePosition::unknown()));
+        //println!("Queue runs {}", self.type_resolver.get_queue_runs());
 
         // check if function has been already normalized
         // this not only improves performance and makes generated code smaller,
@@ -783,7 +791,7 @@ impl Normalizer {
             let label = self.new_var(&arg);
             arguments.push(label);
             self.ir.variable_types.push(arg_type);
-            self.type_resolver.hint_equal(&self.ir, hint_label, arg_type)?;
+            self.type_resolver.hint_equal(hint_label, arg_type)?;
         }
 
         self.ir.instances.push(IRInstance {
@@ -808,7 +816,7 @@ impl Normalizer {
         self.ir.instances[label].variables = self.curr_func_vars.clone();
 
         if !self.has_ret_statement {
-            self.type_resolver.hint_is(&self.ir, self.curr_func_ret_type, IRPrimitiveType::Void)?;
+            self.type_resolver.hint_is(self.curr_func_ret_type, IRPrimitiveType::Void)?;
         }
 
         if self.type_resolver.check_is_type_known(self.curr_func_ret_type) && !has_added_to_cache {
