@@ -542,4 +542,8 @@ impl TypeResolver {
     pub fn are_equal(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> bool {
         self.dsu.get_repr(label1) == self.dsu.get_repr(label2)
     }
+
+    pub fn check_is_type_known(&mut self, label: IRTypeLabel) -> bool {
+        self.type_dsu.get(label).typ.is_some() && self.ref_is_fixed(label)
+    }
 }

@@ -21,8 +21,8 @@ fn compactify<T: Add<Output=T> + Default>(
         if !mp1.contains_key(&i1) && !mp2.contains_key(&i2) {
             mp1.insert(i1, curr_comp);
             mp2.insert(i2, curr_comp);
-            comps1.push(curr_comp);
-            comps2.push(curr_comp);
+            comps1.push(i1);
+            comps2.push(i2);
             curr_comp += 1;
         } else {
             if !mp1.contains_key(&i1) || !mp2.contains_key(&i2) {

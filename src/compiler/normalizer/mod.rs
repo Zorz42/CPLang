@@ -149,7 +149,7 @@ impl Normalizer {
                         conns.insert((i1, i2));
                         if conns.contains(&(i2, i1)) {
                             return Err(CompilerError {
-                                message: format!("Found two equivalent signatures for function {}", k.0),
+                                message: format!("Found two equivalent signatures for function {}", &k.0[1..]),
                                 position: Some(self.functions_name_map[&k][i1].0.pos),
                             });
                         }
@@ -733,6 +733,7 @@ impl Normalizer {
         // this not only improves performance and makes generated code smaller,
         // it also enables recursion
         if let Some(label) = self.check_instance_cache(&sign.name, &arg_types) {
+            println!("Used cached function {}", sign.name);
             return Ok(label);
         }
 
@@ -752,7 +753,8 @@ impl Normalizer {
                 message: format!(
                     "This function is in the {RECURSION_LIMIT}-th recursive call \
             in the normalization phase. Make sure argument types are more \
-            explicit and the function does not generate infinitely many functions recursively."
+            explicit, the return type is known in advance and the function \
+            does not generate infinitely many functions recursively with different types."
                 ),
                 position: Some(sign.pos),
             });
@@ -796,13 +798,21 @@ impl Normalizer {
             self.instance_cache.insert(sign.name.clone(), Vec::new());
         }
 
-        self.instance_cache.get_mut(&sign.name).unwrap().push((arg_types, label));
+        let mut has_added_to_cache = false;
+        if self.type_resolver.check_is_type_known(self.curr_func_ret_type) {
+            has_added_to_cache = true;
+            self.instance_cache.get_mut(&sign.name).unwrap().push((arg_types.clone(), label));
+        }
 
         self.ir.instances[label].block = self.normalize_block(block)?;
         self.ir.instances[label].variables = self.curr_func_vars.clone();
 
         if !self.has_ret_statement {
             self.type_resolver.hint_is(&self.ir, self.curr_func_ret_type, IRPrimitiveType::Void)?;
+        }
+
+        if self.type_resolver.check_is_type_known(self.curr_func_ret_type) && !has_added_to_cache {
+            self.instance_cache.get_mut(&sign.name).unwrap().push((arg_types, label));
         }
 
         self.curr_func_vars = prev_func_vars;
