@@ -1,4 +1,3 @@
-use crate::compiler::parser::ast::ASTOperator;
 use std::collections::HashMap;
 use std::fmt::Debug;
 // Function is a generic function. When you call it, it is reduced into
@@ -55,8 +54,6 @@ pub enum IRType {
     Struct(IRStructLabel, Vec<Self>),
 }
 
-pub type IROperator = ASTOperator;
-
 #[derive(Debug)]
 pub enum IRConstant {
     String(String),
@@ -68,13 +65,6 @@ pub enum IRConstant {
 #[rustfmt::skip]
 #[derive(Debug)]
 pub enum IRExpression {
-    BinaryOperation {
-        operator: IROperator,
-        expression1: Box<Self>,
-        type1_label: IRTypeLabel,
-        expression2: Box<Self>,
-        type2_label: IRTypeLabel,
-    },
     Constant {
         constant: IRConstant,
     },

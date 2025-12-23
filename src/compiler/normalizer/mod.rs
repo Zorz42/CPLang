@@ -179,7 +179,7 @@ impl Normalizer {
         instances.sort_by_key(|(_x, y)| *y);
         instances.reverse();
 
-        let mut instances = instances.into_iter().map(|(i, x)| i).collect::<Vec<_>>();
+        let mut instances = instances.into_iter().map(|(i, _x)| i).collect::<Vec<_>>();
 
         swap(&mut self.ir.instances, &mut instances);
 

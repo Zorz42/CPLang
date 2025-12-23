@@ -1,11 +1,8 @@
-use crate::compiler::generator::default_operators::init_default_operators;
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
+    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
     IRType, IRTypeLabel, IRVariableLabel, IR,
 };
 use std::collections::HashMap;
-
-mod default_operators;
 
 /*
 Generator converts IR into raw C code. Could be easily replaced with any other language.
@@ -15,7 +12,6 @@ Generator converts IR into raw C code. Could be easily replaced with any other l
 struct GeneratorContext {
     types: HashMap<IRTypeLabel, IRType>,
     var_types: Vec<IRTypeLabel>,
-    operators: HashMap<(IRType, IROperator, IRType), Box<dyn Fn(String, String) -> String>>,
     structs: Vec<IRStruct>,
     c_structs: HashMap<(IRStructLabel, Vec<IRType>), usize>,
     curr_struct_label: usize,
@@ -30,7 +26,6 @@ pub fn generate_code(ir: IR) -> String {
     let mut ctx = GeneratorContext {
         types: ir.types,
         var_types: ir.variable_types,
-        operators: init_default_operators(),
         structs: ir.structs,
         c_structs: HashMap::new(),
         curr_struct_label: 0,
@@ -169,19 +164,6 @@ fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> St
 
 fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> String {
     match expression {
-        IRExpression::BinaryOperation {
-            operator,
-            expression1,
-            type1_label,
-            expression2,
-            type2_label,
-        } => {
-            let code1 = gen_expression(ctx, *expression1);
-            let code2 = gen_expression(ctx, *expression2);
-            let typ1 = ctx.types[&type1_label].clone();
-            let typ2 = ctx.types[&type2_label].clone();
-            format!("({})", ctx.operators[&(typ1, operator, typ2)](code1, code2))
-        }
         IRExpression::Constant { constant } => match constant {
             IRConstant::String(x) => {
                 let mut escaped = String::new();
