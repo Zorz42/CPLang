@@ -1,5 +1,5 @@
 use crate::compiler::error::FilePosition;
-use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTExpressionKind, ASTOperator, ASTStatement, ASTType, Ast};
+use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStatement, ASTType, Ast};
 // Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
 pub fn lower_ast(mut ast: Ast) -> Ast {
@@ -38,17 +38,17 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
 }
 
 pub fn transform_function_name(name: String) -> String {
-    format!("f{name}")
+    format!("{name}")
 }
 
 pub fn transform_method_name(name: String) -> String {
-    format!("m{name}")
+    format!("Method:{name}")
 }
 
 /* transform a += b into
 {
     tmp = &a
-    :tmp = :tmp + a
+    :tmp = :tmp + b
 }
  */
 fn gen_op_block(pos: FilePosition, operator: ASTOperator, assign_to: ASTExpression, value: ASTExpression) -> ASTStatement {
@@ -140,12 +140,26 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
         } => {
             *expression1 = lower_expression(*expression1);
             *expression2 = lower_expression(*expression2);
+
+            let name = "operator".to_string() + match operator {
+                ASTOperator::Plus => "+",
+                ASTOperator::Mul => "*",
+                ASTOperator::Div => "/",
+                ASTOperator::Equals => "==",
+                ASTOperator::NotEquals => "!=",
+                ASTOperator::Greater => ">",
+                ASTOperator::Lesser => "<",
+                ASTOperator::GreaterEq => ">=",
+                ASTOperator::LesserEq => "<=",
+                ASTOperator::Minus => "-",
+            };
+
             ASTExpression::no_hint(
-                ASTExpressionKind::BinaryOperation {
-                    expression1,
-                    operator,
-                    expression2,
-                },
+                ASTExpressionKind::FunctionCall(ASTFunctionCall {
+                    name,
+                    arguments: vec![*expression1, *expression2],
+                    template_arguments: Vec::new(),
+                }),
                 pos,
             )
         }

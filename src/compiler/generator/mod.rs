@@ -123,7 +123,8 @@ fn gen_variable_label(func: IRVariableLabel) -> String {
 fn type_to_printf_format(typ: &IRType) -> &'static str {
     match typ {
         IRType::Primitive(typ) => match typ {
-            IRPrimitiveType::I32 | IRPrimitiveType::I64 => "ld",
+            IRPrimitiveType::I32 => "d",
+            IRPrimitiveType::I64 => "ld",
             IRPrimitiveType::F32 => "f",
             IRPrimitiveType::F64 => "lf",
             IRPrimitiveType::Bool => "d",
@@ -141,11 +142,28 @@ fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> St
             let typ = ctx.types[&typ].clone();
             format!("malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
         }
-        BuiltinFunctionCall::Index { arr, idx } => {
-            format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx))
-        }
-        BuiltinFunctionCall::Add { .. } => todo!(),
-        BuiltinFunctionCall::Mul { .. } => todo!(),
+        BuiltinFunctionCall::Index { arr, idx } =>
+            format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
+        BuiltinFunctionCall::Add { arg1, arg2 } =>
+            format!("({} + {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Sub { arg1, arg2 } =>
+            format!("({} - {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Mul { arg1, arg2 } =>
+            format!("({} * {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Div { arg1, arg2 } =>
+            format!("({} / {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Eq { arg1, arg2 } =>
+            format!("({} == {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::NotEq { arg1, arg2 } =>
+            format!("({} != {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Lesser { arg1, arg2 } =>
+            format!("({} < {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::LesserEq { arg1, arg2 } =>
+            format!("({} <= {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Greater { arg1, arg2 } =>
+            format!("({} > {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::GreaterEq { arg1, arg2 } =>
+            format!("({} >= {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
     }
 }
 

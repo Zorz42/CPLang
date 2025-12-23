@@ -131,7 +131,7 @@ impl TypeResolver {
         res
     }
 
-    fn get_ir_type(&mut self, label: IRTypeLabel) -> Option<IRType> {
+    pub fn fetch_final_ir_type(&mut self, label: IRTypeLabel) -> Option<IRType> {
         let mut typ = self.type_dsu.get(label).typ.clone()?;
         let dep = self.dsu.get(label).ref_depth;
         if dep < 0 || !self.ref_is_fixed(label) {
@@ -202,7 +202,7 @@ impl TypeResolver {
                             // only deduce type when all arguments are known
                             let mut ir_args = Vec::new();
                             for arg in args {
-                                if let Some(typ) = self.get_ir_type(arg) {
+                                if let Some(typ) = self.fetch_final_ir_type(arg) {
                                     ir_args.push(typ);
                                 } else {
                                     continue 'neighbour_loop;
@@ -486,22 +486,12 @@ impl TypeResolver {
         }
 
         for type_label in needed_types {
-            let Some(typ) = self.get_ir_type(type_label) else {
+            let Some(typ) = self.fetch_final_ir_type(type_label) else {
                 return Err(CompilerError {
                     message: "Could not deduce this expression's type".to_string(),
                     position: Some(self.type_positions[type_label]),
                 });
             };
-
-            let ref_depth = self.dsu.get(type_label).ref_depth;
-
-            if ref_depth < 0 {
-                let pos = self.type_positions[type_label];
-                return Err(CompilerError {
-                    message: "This has type of a dereferenced non-reference".to_string(),
-                    position: Some(pos),
-                });
-            }
 
             types.insert(type_label, typ);
         }

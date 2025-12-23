@@ -38,6 +38,8 @@ struct Normalizer {
     // so if tuple (a, b) exists, it means function a is more specific than b
     functions_specific_ordering: HashMap<(String, usize), Vec<(usize, usize)>>,
     curr_func_label: IRInstanceLabel,
+    curr_func_order: usize,
+    func_order_map: HashMap<IRInstanceLabel, usize>,
     fields_name_map: HashMap<String, IRFieldLabel>,
     curr_field_label: IRFieldLabel,
     curr_func_vars: Vec<IRVariableLabel>,
@@ -125,7 +127,7 @@ impl Normalizer {
                         conns.insert((i1, i2));
                         if conns.contains(&(i2, i1)) {
                             return Err(CompilerError {
-                                message: format!("Found two equivalent signatures for function {}", &k.0[1..]),
+                                message: format!("Found two equivalent signatures for function {}", k.0),
                                 position: Some(self.functions_name_map[&k][i1].0.pos),
                             });
                         }
@@ -168,9 +170,18 @@ impl Normalizer {
             });
         }
 
-        // so that functions are in right order, since labels are generated in increasing order
-        // if func0 is used inside func1 it should appear above func1 in generated c code
-        self.ir.instances.reverse();
+        // sort instances by order (so that c code has valid function order)
+        let mut instances = Vec::new();
+        swap(&mut self.ir.instances, &mut instances);
+
+        let mut instances = instances.into_iter().enumerate().map(|(i, x)| (x, self.func_order_map[&i])).collect::<Vec<_>>();
+
+        instances.sort_by_key(|(_x, y)| *y);
+        instances.reverse();
+
+        let mut instances = instances.into_iter().map(|(i, x)| i).collect::<Vec<_>>();
+
+        swap(&mut self.ir.instances, &mut instances);
 
         Ok(self.ir)
     }
@@ -240,7 +251,7 @@ impl Normalizer {
     ) -> CompilerResult<(ASTFunctionSignature, ASTBlock)> {
         let Some(candidates) = self.functions_name_map.get(&(function_name.to_string(), function_arguments.len())) else {
             return Err(CompilerError {
-                message: format!("Function {} does not exist.", &function_name[1..]),
+                message: format!("Function {} does not exist.", function_name),
                 position: Some(pos),
             });
         };
@@ -688,11 +699,14 @@ impl Normalizer {
         //println!("Size {}", self.type_resolver.new_type_label(FilePosition::unknown()));
         //println!("Queue runs {}", self.type_resolver.get_queue_runs());
 
+        let curr_func_ord = self.curr_func_order;
+        self.curr_func_order += 1;
+
         // check if function has been already normalized
         // this not only improves performance and makes generated code smaller,
         // it also enables recursion
         if let Some(label) = self.check_instance_cache(&sign.name, &arg_types) {
-            println!("Used cached function {}", sign.name);
+            self.func_order_map.insert(label, curr_func_ord);
             return Ok(label);
         }
 
@@ -726,6 +740,7 @@ impl Normalizer {
         self.has_ret_statement = false;
         let label = self.curr_func_label;
         self.curr_func_label += 1;
+        self.func_order_map.insert(label, curr_func_ord);
 
         for (idx, (template_arg, pos)) in sign.template.into_iter().enumerate() {
             let typ = if let Some(template_arg) = template_types.get(idx) {

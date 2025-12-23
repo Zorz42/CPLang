@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::builtin_functions::is_builtin;
+use crate::compiler::normalizer::builtin_functions::is_builtin_identifier;
 use crate::compiler::parser::ast::{ASTFunctionCall, ASTFunctionSignature, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::template::parse_declaration_template;
@@ -21,15 +21,34 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
             res_signature.name = name;
             res_signature.pos = res_signature.pos + pos;
         }
-        (_, pos) => {
+        (Token::Operator, pos) => {
+            let (op, op_pos) = block.get();
+            res_signature.name = "operator".to_string() + match op {
+                Token::Plus => "+",
+                Token::Minus => "-",
+                Token::Star => "*",
+                Token::Slash => "/",
+                Token::Equals => "==",
+                Token::NotEquals => "!=",
+                Token::LessThan => "<",
+                Token::LessThanOrEqual => "<=",
+                Token::GreaterThan => ">",
+                Token::GreaterThanOrEqual => ">=",
+                _ => return Err(CompilerError {
+                    message: "Unexpected token".to_string(),
+                    position: Some(op_pos),
+                }),
+            };
+            res_signature.pos = pos + op_pos;
+        }
+        (_, pos) =>
             return Err(CompilerError {
                 message: "Unexpected token".to_string(),
                 position: Some(pos),
-            });
-        }
+            }),
     }
 
-    if is_builtin(&res_signature.name) {
+    if is_builtin_identifier(&res_signature.name) {
         return Err(CompilerError {
             message: "You cannot declare a builtin function".to_string(),
             position: Some(res_signature.pos),

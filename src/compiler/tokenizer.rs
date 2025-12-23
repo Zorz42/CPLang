@@ -33,6 +33,7 @@ pub enum Token {
     Void,
     String,
     Bool,
+    Operator,
 
     // symbols
     Plus,
@@ -75,6 +76,7 @@ fn str_to_keyword(s: &str) -> Option<Token> {
         "void" => Some(Token::Void),
         "string" => Some(Token::String),
         "bool" => Some(Token::Bool),
+        "operator" => Some(Token::Operator),
         _ => None,
     }
 }
