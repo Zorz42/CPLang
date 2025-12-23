@@ -55,6 +55,7 @@ mod tests {
             if let Err(e) = res {
                 if let Some(pos) = e.position {
                     let correct_pos = FilePosition {
+                        file_ident: 0,
                         first_pos: (line_start as usize, column_start as usize),
                         last_pos: (line_end as usize, column_end as usize),
                     };

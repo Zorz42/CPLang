@@ -1,8 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
-use crate::compiler::preprocessor::{Fragment, PosChar, parse_blocks};
-use crate::compiler::tokenizer::{Constant, Token, TokenBlock, tokenize_fragments};
+use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
+use crate::compiler::tokenizer::{tokenize_fragments, Constant, Token, TokenBlock};
 
 fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>, pos: FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
@@ -20,6 +20,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
                     string.push(Fragment::Char(PosChar::new(
                         c,
                         FilePosition {
+                            file_ident: format_pos.file_ident,
                             first_pos: (format_pos.first_pos.0, format_pos.first_pos.1 + i + 1),
                             last_pos: (format_pos.first_pos.0, format_pos.first_pos.1 + i + 2),
                         },
@@ -30,6 +31,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
                 let expression = parse_expression(structs, &mut token_block)?;
 
                 let end_pos = FilePosition {
+                    file_ident: pos.file_ident,
                     first_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 2),
                     last_pos: (pos.first_pos.0, pos.first_pos.1 + idx + 2),
                 };
@@ -60,6 +62,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
     }
     if in_format {
         let end_pos = FilePosition {
+            file_ident: pos.file_ident,
             first_pos: (pos.first_pos.0, pos.first_pos.1 + string_len + 1),
             last_pos: (pos.first_pos.0, pos.first_pos.1 + string_len + 1),
         };

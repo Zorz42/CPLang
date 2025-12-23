@@ -68,8 +68,8 @@ impl FragmentBlock {
     }
 }
 
-pub fn preprocess(input: &str) -> CompilerResult<FragmentBlock> {
-    let pos_chars = add_file_positions(input);
+pub fn preprocess(input: &str, file_ident: usize) -> CompilerResult<FragmentBlock> {
+    let pos_chars = add_file_positions(input, file_ident);
     let fragments = parse_strings_and_comments(&pos_chars)?;
     let fragment_block = parse_blocks(&fragments, &mut 0)?;
     let fragment_block = parse_indentation(&fragment_block)?;
@@ -77,14 +77,15 @@ pub fn preprocess(input: &str) -> CompilerResult<FragmentBlock> {
     Ok(fragment_block)
 }
 
-fn add_file_positions(test: &str) -> Vec<PosChar> {
+fn add_file_positions(file_contents: &str, file_ident: usize) -> Vec<PosChar> {
     let mut res = Vec::new();
     let mut line = 0;
     let mut column = 0;
-    for c in test.chars() {
+    for c in file_contents.chars() {
         res.push(PosChar::new(
             c,
             FilePosition {
+                file_ident,
                 first_pos: (line, column),
                 last_pos: (line, column + 1),
             },

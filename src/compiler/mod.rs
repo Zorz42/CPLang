@@ -39,15 +39,25 @@ less different types of nodes and explicit types and indexes instead of string/n
 6. Code generation: IR is converted to C code.
  */
 
+pub const INPUT_NAMES: [&str; 2] = [
+    "",
+    "src/core/operators.cpl",
+];
+
+pub fn gain_input_sources(input_content: String) -> [String; 2] {
+    [
+        input_content,
+        include_str!("../core/operators.cpl").to_string(),
+    ]
+}
+
 fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
-    let input_sources = [
-        include_str!("../core/operators.cpl"),
-        &std::fs::read_to_string(input_file).unwrap(),
-    ];
+    let input_content = std::fs::read_to_string(input_file).unwrap();
+    let input_sources = gain_input_sources(input_content);
 
     let mut fragment_blocks = Vec::new();
-    for input in input_sources {
-        fragment_blocks.push(preprocess(&input)?)
+    for (file_ident, input) in input_sources.into_iter().enumerate() {
+        fragment_blocks.push(preprocess(&input, file_ident)?)
     }
 
     let mut program_block = Vec::new();

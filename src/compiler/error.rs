@@ -1,8 +1,10 @@
+use crate::compiler::{gain_input_sources, INPUT_NAMES};
 use std::ops::{Add, AddAssign};
 
 // this struct stores file position so the error can be displayed
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FilePosition {
+    pub file_ident: usize,
     pub first_pos: (usize, usize),
     pub last_pos: (usize, usize),
 }
@@ -10,6 +12,7 @@ pub struct FilePosition {
 impl FilePosition {
     pub const fn unknown() -> Self {
         Self {
+            file_ident: 0,
             first_pos: (usize::MAX, usize::MAX),
             last_pos: (usize::MAX, usize::MAX),
         }
@@ -26,7 +29,9 @@ impl Add for FilePosition {
         if rhs == Self::unknown() {
             return self;
         }
+        assert_eq!(self.file_ident, rhs.file_ident);
         Self {
+            file_ident: self.file_ident,
             first_pos: <(usize, usize)>::min(self.first_pos, rhs.first_pos),
             last_pos: <(usize, usize)>::max(self.last_pos, rhs.last_pos),
         }
@@ -65,7 +70,14 @@ pub fn display_error(error: &CompilerError, input: &str) {
             unreachable!();
         }
 
-        let lines: Vec<&str> = input.lines().collect();
+        let file_name = INPUT_NAMES[position.file_ident];
+        if !file_name.is_empty() {
+            println!("  --> {file_name}:{}:{}", position.first_pos.0, position.first_pos.1 + 1);
+        }
+        println!();
+
+        let source = &gain_input_sources(input.to_string())[position.file_ident];
+        let lines: Vec<&str> = source.lines().collect();
 
         let padded_line_start = line_start.saturating_sub(2);
         let padded_line_end = (line_end + 2).min(lines.len() - 1);
@@ -75,7 +87,7 @@ pub fn display_error(error: &CompilerError, input: &str) {
         for line in padded_line_start..=padded_line_end {
             // first, print line number and leave space after that for longer line numbers
             let spacing = " ".repeat((padded_line_end + 1).to_string().len() - (line + 1).to_string().len());
-            print!("{GREY_TEXT}{}{spacing}| {RESET}", line + 1);
+            print!("  {GREY_TEXT}{}{spacing} | {RESET}", line + 1);
 
             for (idx, ch) in lines[line].chars().enumerate() {
                 if position.first_pos <= (line, idx) && (line, idx) < position.last_pos {

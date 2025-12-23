@@ -27,6 +27,10 @@ pub enum BuiltinFunctionCall {
     Index { arr: Box<IRExpression>, idx: Box<IRExpression> },
     Add { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     Mul { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
+    Lesser { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
+    Greater { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
+    LesserEq { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
+    GreaterEq { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
 }
 
 #[derive(Clone, Eq, Hash, PartialEq)]
