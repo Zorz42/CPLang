@@ -200,7 +200,7 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
         if curr_token.is_empty() {
             *token_pos = pos;
         } else {
-            *token_pos = *token_pos + pos;
+            *token_pos += pos;
         }
         curr_token.push(c);
     };

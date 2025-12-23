@@ -102,8 +102,10 @@ pub struct TypeResolver {
 
 impl TypeResolver {
     pub fn new(structs: Vec<Vec<IRFieldLabel>>) -> Self {
-        let mut res = Self::default();
-        res.structs = structs;
+        let mut res = Self {
+            structs,
+            ..Default::default()
+        };
         let fixed = res.new_type_label(FilePosition::unknown());
         res.fixed_ref_component = fixed;
         res.type_dsu.get(res.fixed_ref_component).typ = Some(IRType::Primitive(IRPrimitiveType::Void));

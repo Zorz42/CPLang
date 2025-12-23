@@ -62,7 +62,7 @@ impl FragmentBlock {
         let mut position = FilePosition::unknown();
         for fragment in &fragments {
             let fragment_pos = fragment.get_position();
-            position = position + fragment_pos;
+            position += fragment_pos;
         }
         Self { fragments, position }
     }
@@ -286,7 +286,7 @@ pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<Fr
 
                 let mut fragment_block = parse_blocks(input, idx)?;
 
-                fragment_block.position = fragment_block.position + opening_pos;
+                fragment_block.position += opening_pos;
 
                 // expect closing char
                 if *idx >= input.len() {
@@ -297,7 +297,7 @@ pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<Fr
                 }
                 match &input[*idx] {
                     Fragment::Char(PosChar { c, pos: closing_pos }) if *c == closing_char => {
-                        fragment_block.position = fragment_block.position + *closing_pos;
+                        fragment_block.position += *closing_pos;
                         *idx += 1; // consume closing char
                         let fragment = match opening_char {
                             '(' => Fragment::ParenthesisBlock(fragment_block),

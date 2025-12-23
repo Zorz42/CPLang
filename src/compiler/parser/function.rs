@@ -19,7 +19,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
     match block.get() {
         (Token::Identifier(name), pos) => {
             res_signature.name = name;
-            res_signature.pos = res_signature.pos + pos;
+            res_signature.pos += pos;
         }
         (Token::Operator, pos) => {
             let (op, op_pos) = block.get();
@@ -65,7 +65,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
                 break;
             }
             (Token::Identifier(arg), pos) => {
-                res_signature.pos = res_signature.pos + pos;
+                res_signature.pos += pos;
                 (arg, pos)
             }
             (_, pos) => {
@@ -77,7 +77,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
         };
 
         let type_hint = parse_type_hint(block)?;
-        res_signature.pos = res_signature.pos + type_hint.get_pos();
+        res_signature.pos += type_hint.get_pos();
 
         res_signature.args.push((arg, type_hint, arg_pos));
     }

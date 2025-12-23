@@ -37,8 +37,8 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
     ast
 }
 
-pub fn transform_function_name(name: String) -> String {
-    format!("{name}")
+pub const fn transform_function_name(name: String) -> String {
+    name
 }
 
 pub fn transform_method_name(name: String) -> String {

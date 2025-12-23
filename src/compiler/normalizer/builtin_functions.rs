@@ -147,11 +147,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),
@@ -184,11 +180,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),
@@ -221,11 +213,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),
@@ -258,11 +246,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),
@@ -295,11 +279,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),
@@ -335,11 +315,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),
@@ -375,11 +351,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),
@@ -415,11 +387,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),
@@ -455,11 +423,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),
@@ -495,11 +459,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32) |
-                    IRType::Primitive(IRPrimitiveType::I64) |
-                    IRType::Primitive(IRPrimitiveType::F32) |
-                    IRType::Primitive(IRPrimitiveType::F64)
-                    => {} // ok
+                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
                     _ => return Err(CompilerError {
                         message: format!("Builtin operator does not support {typ:?}"),
                         position: Some(call_pos),

@@ -118,11 +118,10 @@ fn gen_variable_label(func: IRVariableLabel) -> String {
 fn type_to_printf_format(typ: &IRType) -> &'static str {
     match typ {
         IRType::Primitive(typ) => match typ {
-            IRPrimitiveType::I32 => "d",
+            IRPrimitiveType::I32 | IRPrimitiveType::Bool => "d",
             IRPrimitiveType::I64 => "ld",
             IRPrimitiveType::F32 => "f",
             IRPrimitiveType::F64 => "lf",
-            IRPrimitiveType::Bool => "d",
             IRPrimitiveType::String => "s",
             IRPrimitiveType::Void => unreachable!(),
         },

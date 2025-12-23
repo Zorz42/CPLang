@@ -116,7 +116,7 @@ pub fn parse_struct_instantiation(
         }
 
         fields.insert(field_name, expr);
-        pos = pos + expr_pos;
+        pos += expr_pos;
         fields_left -= 1;
     }
 

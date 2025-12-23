@@ -57,7 +57,7 @@ fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
     let mut fragment_blocks = Vec::new();
     for (file_ident, input) in input_sources.into_iter().enumerate() {
-        fragment_blocks.push(preprocess(&input, file_ident)?)
+        fragment_blocks.push(preprocess(&input, file_ident)?);
     }
 
     let mut program_block = Vec::new();
@@ -86,8 +86,7 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     std::thread::Builder::new()
         .stack_size(STACK_SIZE)
         .spawn(move || {
-            let res = compile_internal(&input_file, &output_file);
-            res
+            compile_internal(&input_file, &output_file)
         })
         .unwrap()
         .join()

@@ -251,7 +251,7 @@ impl Normalizer {
     ) -> CompilerResult<(ASTFunctionSignature, ASTBlock)> {
         let Some(candidates) = self.functions_name_map.get(&(function_name.to_string(), function_arguments.len())) else {
             return Err(CompilerError {
-                message: format!("Function {} does not exist.", function_name),
+                message: format!("Function {function_name} does not exist."),
                 position: Some(pos),
             });
         };
