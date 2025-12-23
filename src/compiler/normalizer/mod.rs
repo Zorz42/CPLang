@@ -494,28 +494,7 @@ impl Normalizer {
             }
 
             ASTExpressionKind::MethodCall { .. } => unreachable!("ASTExpression::MethodCall should be eliminated by lowerer"),
-
-            ASTExpressionKind::BinaryOperation {
-                expression1,
-                operator,
-                expression2,
-            } => {
-                let (expression1, type1_label, _is_phys) = self.normalize_expression(*expression1)?;
-                let (expression2, type2_label, _is_phys) = self.normalize_expression(*expression2)?;
-                self.relevant_types.push(type1_label);
-                self.relevant_types.push(type2_label);
-                self.type_resolver.hint_operator(type1_label, type2_label, operator, type_label)?;
-                (
-                    IRExpression::BinaryOperation {
-                        operator,
-                        expression1: Box::new(expression1),
-                        expression2: Box::new(expression2),
-                        type1_label,
-                        type2_label,
-                    },
-                    ValuePhysicality::Temporary,
-                )
-            }
+            ASTExpressionKind::BinaryOperation { .. } => unreachable!("ASTExpression::BinaryOperation should be eliminated by lowerer"),
 
             ASTExpressionKind::AutoRef(expression) => {
                 let (expression, type_label1, _is_phys) = self.normalize_expression(*expression)?;

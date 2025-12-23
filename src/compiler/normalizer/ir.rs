@@ -25,6 +25,8 @@ pub struct IR {
 pub enum BuiltinFunctionCall {
     Alloc { typ: IRTypeLabel, num: Box<IRExpression> },
     Index { arr: Box<IRExpression>, idx: Box<IRExpression> },
+    Add { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
+    Mul { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
 }
 
 #[derive(Clone, Eq, Hash, PartialEq)]

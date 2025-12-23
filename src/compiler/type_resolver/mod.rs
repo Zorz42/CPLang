@@ -1,21 +1,16 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IROperator, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel};
-use crate::compiler::type_resolver::default_operator_map::setup_operator_map;
+use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel};
 use crate::compiler::type_resolver::dsu::Dsu;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem::swap;
 use std::ops::Add;
 
-pub mod default_operator_map;
 pub mod dsu;
 mod compare_sets;
 mod test;
 
 #[derive(Clone)]
 enum Conn {
-    // node + arg1 = arg3 (+ is arg2)
-    Operator(IRTypeLabel, IROperator, IRTypeLabel),
-
     // arg1 = arg2 { arg3[0], ..., arg3[n] }
     Struct(IRTypeLabel, IRStructLabel, Vec<IRTypeLabel>),
 
@@ -89,7 +84,6 @@ impl Add for RefNode {
 #[derive(Clone, Default)]
 pub struct TypeResolver {
     type_positions: Vec<FilePosition>,
-    operator_map: HashMap<(IRType, IROperator, IRType), IRType>,
     queue: VecDeque<IRTypeLabel>,
     auto_ref_pairs: Vec<(IRTypeLabel, IRTypeLabel)>,
     // two labels are in the same component if they have exactly the same type
@@ -109,7 +103,6 @@ pub struct TypeResolver {
 impl TypeResolver {
     pub fn new(structs: Vec<Vec<IRFieldLabel>>) -> Self {
         let mut res = Self::default();
-        res.operator_map = setup_operator_map();
         res.structs = structs;
         let fixed = res.new_type_label(FilePosition::unknown());
         res.fixed_ref_component = fixed;
@@ -188,19 +181,6 @@ impl TypeResolver {
             if let Some(node_type) = self.type_dsu.get(node).typ.clone() {
                 'neighbour_loop: for ne in self.dsu.get(node).neighbours.clone() {
                     match ne {
-                        Conn::Operator(ne, op, typ2) => {
-                            if let Some(node_type2) = self.type_dsu.get(typ2).typ.clone() {
-                                let Some(ir_type) = self.operator_map.get(&(node_type.clone(), op, node_type2.clone())).cloned() else {
-                                    return Err(CompilerError {
-                                        message: format!("Operator {op:?} is not defined for {node_type2:?} and {node_type:?}"),
-                                        position: Some(self.type_positions[ne]),
-                                    });
-                                };
-                                let (ir_type, ref_depth) = deref_type(ir_type);
-                                self.set_type(ne, ir_type)?;
-                                self.set_ref(ne, ref_depth)?;
-                            }
-                        }
                         Conn::Struct(typ, structure, args) => {
                             if typ == node {
                                 let IRType::Struct(_, args2) = node_type.clone() else {
@@ -445,20 +425,6 @@ impl TypeResolver {
 
         self.queue.push_back(label2);
         self.queue.push_back(label1);
-
-        self.run_queue()?;
-        Ok(())
-    }
-
-    pub fn hint_operator(&mut self, label1: IRTypeLabel, label2: IRTypeLabel, operator: IROperator, res_label: IRTypeLabel) -> CompilerResult<()> {
-        self.dsu.get(label1).neighbours.push(Conn::Operator(res_label, operator, label2));
-        self.dsu.get(label2).neighbours.push(Conn::Operator(res_label, operator, label1));
-
-        self.set_ref(label1, 0)?;
-        self.set_ref(label2, 0)?;
-
-        self.queue.push_back(label1);
-        self.queue.push_back(label2);
 
         self.run_queue()?;
         Ok(())

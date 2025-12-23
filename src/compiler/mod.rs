@@ -18,7 +18,7 @@ use crate::compiler::lowerer::lower_ast;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
-use crate::compiler::tokenizer::tokenize_fragments;
+use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
 
 pub mod error;
 mod generator;
@@ -40,11 +40,23 @@ less different types of nodes and explicit types and indexes instead of string/n
  */
 
 fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
-    let input = std::fs::read_to_string(input_file).unwrap();
+    let input_sources = [
+        include_str!("../core/operators.cpl"),
+        &std::fs::read_to_string(input_file).unwrap(),
+    ];
 
-    let fragment_block = preprocess(&input)?;
-    let program_block = tokenize_fragments(&fragment_block.fragments)?;
-    let ast = parse_tokens(program_block)?;
+    let mut fragment_blocks = Vec::new();
+    for input in input_sources {
+        fragment_blocks.push(preprocess(&input)?)
+    }
+
+    let mut program_block = Vec::new();
+    for block in fragment_blocks {
+        let block = tokenize_fragments(&block.fragments)?;
+        program_block.append(&mut block.into_iter());
+    }
+
+    let ast = parse_tokens(TokenBlock::new(program_block))?;
     let ast = lower_ast(ast);
     let ir = normalize_ast(ast)?;
     let code = generate_code(ir);

@@ -1,0 +1,76 @@
+operator+ a: i32 b: i32
+    ret __builtin_add(a b)
+
+operator+ a: i64 b: i64
+    ret __builtin_add(a b)
+
+operator+ a: f32 b: f32
+    ret __builtin_add(a b)
+
+operator+ a: f64 b: f64
+    ret __builtin_add(a b)
+
+
+operator* a: i32 b: i32
+    ret __builtin_mul(a b)
+
+operator* a: i64 b: i64
+    ret __builtin_mul(a b)
+
+operator* a: f32 b: f32
+    ret __builtin_mul(a b)
+
+operator* a: f64 b: f64
+    ret __builtin_mul(a b)
+
+
+operator< a: i32 b: i32
+    ret __builtin_lesser(a b)
+
+operator< a: i64 b: i64
+    ret __builtin_lesser(a b)
+
+operator< a: f32 b: f32
+    ret __builtin_lesser(a b)
+
+operator< a: f64 b: f64
+    ret __builtin_lesser(a b)
+
+
+operator> a: i32 b: i32
+    ret __builtin_greater(a b)
+
+operator> a: i64 b: i64
+    ret __builtin_greater(a b)
+
+operator> a: f32 b: f32
+    ret __builtin_greater(a b)
+
+operator> a: f64 b: f64
+    ret __builtin_greater(a b)
+
+
+operator<= a: i32 b: i32
+    ret __builtin_lessereq(a b)
+
+operator<= a: i64 b: i64
+    ret __builtin_lessereq(a b)
+
+operator<= a: f32 b: f32
+    ret __builtin_lessereq(a b)
+
+operator<= a: f64 b: f64
+    ret __builtin_lessereq(a b)
+
+
+operator>= a: i32 b: i32
+    ret __builtin_greatereq(a b)
+
+operator>= a: i64 b: i64
+    ret __builtin_greatereq(a b)
+
+operator>= a: f32 b: f32
+    ret __builtin_greatereq(a b)
+
+operator>= a: f64 b: f64
+    ret __builtin_greatereq(a b)

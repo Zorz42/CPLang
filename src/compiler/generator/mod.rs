@@ -1,7 +1,7 @@
 use crate::compiler::generator::default_operators::init_default_operators;
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct,
-    IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
+    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IROperator, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
+    IRType, IRTypeLabel, IRVariableLabel, IR,
 };
 use std::collections::HashMap;
 
@@ -62,7 +62,7 @@ fn gen_primitive_type(typ: IRPrimitiveType) -> String {
         IRPrimitiveType::String => "char*",
         IRPrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -144,6 +144,8 @@ fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> St
         BuiltinFunctionCall::Index { arr, idx } => {
             format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx))
         }
+        BuiltinFunctionCall::Add { .. } => todo!(),
+        BuiltinFunctionCall::Mul { .. } => todo!(),
     }
 }
 

@@ -60,6 +60,7 @@ impl Normalizer {
                     ref_typ,
                 ))
             }
+
             label if label == index_label => {
                 if function_arguments.len() != 2 {
                     return Err(CompilerError {
