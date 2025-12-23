@@ -86,7 +86,7 @@ impl Add for RefNode {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct TypeResolver {
     type_positions: Vec<FilePosition>,
     operator_map: HashMap<(IRType, IROperator, IRType), IRType>,
@@ -108,18 +108,9 @@ pub struct TypeResolver {
 
 impl TypeResolver {
     pub fn new(structs: Vec<Vec<IRFieldLabel>>) -> Self {
-        let mut res = Self {
-            type_positions: Vec::new(),
-            operator_map: setup_operator_map(),
-            queue: VecDeque::new(),
-            auto_ref_pairs: Vec::new(),
-            dsu: Dsu::new(),
-            type_dsu: Dsu::new(),
-            ref_dsu: Dsu::new(),
-            fixed_ref_component: 0,
-            type_map: HashMap::new(),
-            structs,
-        };
+        let mut res = Self::default();
+        res.operator_map = setup_operator_map();
+        res.structs = structs;
         let fixed = res.new_type_label(FilePosition::unknown());
         res.fixed_ref_component = fixed;
         res.type_dsu.get(res.fixed_ref_component).typ = Some(IRType::Primitive(IRPrimitiveType::Void));

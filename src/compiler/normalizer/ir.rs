@@ -11,6 +11,7 @@ pub type IRStructLabel = usize;
 pub type IRFieldLabel = usize;
 pub type IRAutoRefLabel = usize;
 
+#[derive(Default)]
 pub struct IR {
     pub structs: Vec<IRStruct>,
     pub instances: Vec<IRInstance>,

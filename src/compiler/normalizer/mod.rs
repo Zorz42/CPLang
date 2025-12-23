@@ -23,38 +23,10 @@ enum ValuePhysicality {
 }
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
-    let normalizer = Normalizer {
-        ir: IR {
-            structs: Vec::new(),
-            instances: Vec::new(),
-            types: HashMap::new(),
-            variable_types: Vec::new(),
-            main_function: 0,
-            autorefs: Vec::new(),
-        },
-        curr_var_label: 0,
-        curr_func_label: 0,
-        curr_field_label: 0,
-        type_resolver: TypeResolver::new(Vec::new()),
-        variables_name_map: HashMap::new(),
-        functions_name_map: HashMap::new(),
-        functions_specific_ordering: HashMap::new(),
-        fields_name_map: HashMap::new(),
-        curr_func_vars: Vec::new(),
-        curr_func_ret_type: 0,
-        has_ret_statement: false,
-        depth: 0,
-        structs_name_map: HashMap::new(),
-        instance_cache: HashMap::new(),
-        structs_type_hints: Vec::new(),
-        structs_templates: Vec::new(),
-        template_types: HashMap::new(),
-        relevant_types: Vec::new(),
-    };
-
-    normalizer.normalize_ast(ast)
+    Normalizer::default().normalize_ast(ast)
 }
 
+#[derive(Default)]
 struct Normalizer {
     ir: IR,
     type_resolver: TypeResolver,
