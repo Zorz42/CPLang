@@ -1,0 +1,8 @@
+//OUT=10
+
+operator+ a: string b: string
+    ret 10
+
+main
+    a = "a" + "b"
+    out "{a}"
