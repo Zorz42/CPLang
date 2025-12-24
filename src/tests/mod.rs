@@ -60,7 +60,7 @@ mod tests {
                         last_pos: (line_end as usize, column_end as usize),
                     };
                     if pos != correct_pos {
-                        display_error(&e, &binding);
+                        display_error(&e, test_file, &binding);
                         assert_eq!(pos, correct_pos);
                     }
                 } else if line_start != -1 {
@@ -75,7 +75,7 @@ mod tests {
             expected_output.push('\n');
 
             if let Err(e) = compile(test_file, &c_file) {
-                display_error(&e, &binding);
+                display_error(&e, test_file, &binding);
                 panic!("compilation error")
             }
             let exec_file = compile_gcc(&c_file);

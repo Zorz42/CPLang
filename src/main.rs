@@ -9,6 +9,6 @@ fn main() {
     let output_file = "main.c";
     let res = compile(input_file, output_file);
     if let Err(err) = res {
-        display_error(&err, &std::fs::read_to_string(input_file).unwrap());
+        display_error(&err, input_file, &std::fs::read_to_string(input_file).unwrap());
     }
 }

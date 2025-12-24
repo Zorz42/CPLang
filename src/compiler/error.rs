@@ -59,7 +59,7 @@ const RESET: &str = "\x1b[0m";
 const RED_TEXT: &str = "\x1b[31m";
 const BOLD_TEXT: &str = "\x1b[1m";
 
-pub fn display_error(error: &CompilerError, input: &str) {
+pub fn display_error(error: &CompilerError, input_path: &str, input: &str) {
     println!("{BOLD_TEXT}{RED_TEXT}Error: {}{RESET}", error.message);
 
     if let Some(position) = &error.position {
@@ -70,10 +70,11 @@ pub fn display_error(error: &CompilerError, input: &str) {
             unreachable!();
         }
 
-        let file_name = INPUT_NAMES[position.file_ident];
-        if !file_name.is_empty() {
-            println!("  --> {file_name}:{}:{}", position.first_pos.0, position.first_pos.1 + 1);
+        let mut file_name = INPUT_NAMES[position.file_ident];
+        if file_name.is_empty() {
+            file_name = input_path;
         }
+        println!("  --> {file_name}:{}:{}", position.first_pos.0, position.first_pos.1 + 1);
         println!();
 
         let source = &gain_input_sources(input.to_string())[position.file_ident];

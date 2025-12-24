@@ -37,7 +37,7 @@ struct Normalizer {
     // lists all connections in the function ordering graph
     // so if tuple (a, b) exists, it means function a is more specific than b
     functions_specific_ordering: HashMap<(String, usize), Vec<(usize, usize)>>,
-    curr_func_label: IRInstanceLabel,
+    curr_instance_label: IRInstanceLabel,
     curr_func_order: usize,
     func_order_map: HashMap<IRInstanceLabel, usize>,
     fields_name_map: HashMap<String, IRFieldLabel>,
@@ -49,7 +49,15 @@ struct Normalizer {
     structs_name_map: HashMap<String, IRStructLabel>,
     structs_type_hints: Vec<Vec<ASTType>>,
     structs_templates: Vec<Vec<(String, FilePosition)>>,
-    instance_cache: HashMap<String, Vec<(Vec<IRTypeLabel>, IRInstanceLabel)>>,
+    // caches instances to avoid duplicating functions
+    instance_cache: HashMap<String, Vec<(Vec<IRTypeLabel>, Vec<IRTypeLabel>, IRInstanceLabel)>>,
+    // if two instances have same arguments types but different return values
+    // (for example some function returns vector, but its inner type depends on further use,
+    // then there can be many different instances of the same function with same argument types)
+    // then instance is only cached if its return type can be determined solely on argument and template types
+    // vector holds (function_name, return_type, argument_types, template_types, instance_label)
+    instance_cache_queue: Vec<(String, IRTypeLabel, Vec<IRTypeLabel>, Vec<IRTypeLabel>, IRInstanceLabel)>,
+    active_instances: HashSet<IRTypeLabel>,
     template_types: HashMap<String, IRTypeLabel>,
     relevant_types: Vec<IRTypeLabel>,
 }
@@ -663,15 +671,45 @@ impl Normalizer {
         Ok(res)
     }
 
-    fn check_instance_cache(&mut self, function_name: &String, arg_types: &Vec<IRTypeLabel>) -> Option<IRInstanceLabel> {
+    fn flush_instance_cache(&mut self) {
+        let mut instance_cache_queue = Vec::new();
+        swap(&mut instance_cache_queue, &mut self.instance_cache_queue);
+
+        for (function_name, ret_type, arg_types, template_types, instance_label) in instance_cache_queue {
+            if !self.active_instances.contains(&ret_type) {
+                continue;
+            }
+
+            if self.type_resolver.check_is_type_known(ret_type) {
+                if !self.instance_cache.contains_key(&function_name) {
+                    self.instance_cache.insert(function_name.clone(), Vec::new());
+                }
+
+                self.instance_cache.get_mut(&function_name).unwrap().push((arg_types, template_types, instance_label));
+            } else {
+                self.instance_cache_queue.push((function_name, ret_type, arg_types, template_types, instance_label));
+            }
+        }
+    }
+
+    fn check_instance_cache(&mut self, function_name: &String, arg_types: &Vec<IRTypeLabel>, template_types: &Vec<IRTypeLabel>) -> Option<IRInstanceLabel> {
+        self.flush_instance_cache();
+
         let cache = self.instance_cache.get(function_name)?;
-        for (types, label) in cache {
-            if types.len() != arg_types.len() {
+        for (cache_arg_types, cache_template_types, label) in cache {
+            if cache_arg_types.len() != arg_types.len() || cache_template_types.len() != template_types.len() {
                 continue;
             }
 
             let mut ok = true;
-            for (t1, t2) in types.iter().zip(arg_types) {
+            for (t1, t2) in cache_arg_types.iter().zip(arg_types) {
+                if !self.type_resolver.are_equal(*t1, *t2) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            for (t1, t2) in cache_template_types.iter().zip(template_types) {
                 if !self.type_resolver.are_equal(*t1, *t2) {
                     ok = false;
                     break;
@@ -690,7 +728,7 @@ impl Normalizer {
         sign: ASTFunctionSignature,
         block: ASTBlock,
         arg_types: Vec<IRTypeLabel>,
-        template_types: Vec<IRTypeLabel>,
+        mut template_types: Vec<IRTypeLabel>,
     ) -> CompilerResult<IRInstanceLabel> {
         const RECURSION_LIMIT: i32 = 100;
         assert_eq!(arg_types.len(), sign.args.len());
@@ -702,10 +740,14 @@ impl Normalizer {
         let curr_func_ord = self.curr_func_order;
         self.curr_func_order += 1;
 
+        while template_types.len() < sign.template.len() {
+            template_types.push(self.type_resolver.new_type_label(FilePosition::unknown()));
+        }
+
         // check if function has been already normalized
         // this not only improves performance and makes generated code smaller,
         // it also enables recursion
-        if let Some(label) = self.check_instance_cache(&sign.name, &arg_types) {
+        if let Some(label) = self.check_instance_cache(&sign.name, &arg_types, &template_types) {
             self.func_order_map.insert(label, curr_func_ord);
             return Ok(label);
         }
@@ -738,17 +780,16 @@ impl Normalizer {
         self.curr_func_ret_type = self.type_resolver.new_type_label(sign.pos);
         self.relevant_types.push(self.curr_func_ret_type);
         self.has_ret_statement = false;
-        let label = self.curr_func_label;
-        self.curr_func_label += 1;
-        self.func_order_map.insert(label, curr_func_ord);
+        let instance_label = self.curr_instance_label as IRInstanceLabel;
+        self.curr_instance_label += 1;
+        self.func_order_map.insert(instance_label, curr_func_ord);
 
-        for (idx, (template_arg, pos)) in sign.template.into_iter().enumerate() {
-            let typ = if let Some(template_arg) = template_types.get(idx) {
-                *template_arg
-            } else {
-                self.type_resolver.new_type_label(pos)
-            };
-            self.template_types.insert(template_arg, typ);
+        self.active_instances.insert(instance_label);
+
+        self.instance_cache_queue.push((sign.name.clone(), self.curr_func_ret_type, arg_types.clone(), template_types.clone(), instance_label));
+
+        for (idx, (template_arg, _pos)) in sign.template.into_iter().enumerate() {
+            self.template_types.insert(template_arg, template_types[idx]);
         }
 
         let mut arguments = Vec::new();
@@ -765,29 +806,19 @@ impl Normalizer {
             variables: Vec::new(),
             ret_type: self.curr_func_ret_type,
             block: IRBlock { statements: Vec::new() },
-            label,
+            label: instance_label,
         });
 
-        if !self.instance_cache.contains_key(&sign.name) {
-            self.instance_cache.insert(sign.name.clone(), Vec::new());
-        }
-
-        let mut has_added_to_cache = false;
-        if self.type_resolver.check_is_type_known(self.curr_func_ret_type) {
-            has_added_to_cache = true;
-            self.instance_cache.get_mut(&sign.name).unwrap().push((arg_types.clone(), label));
-        }
-
-        self.ir.instances[label].block = self.normalize_block(block)?;
-        self.ir.instances[label].variables = self.curr_func_vars.clone();
+        self.ir.instances[instance_label].block = self.normalize_block(block)?;
+        self.ir.instances[instance_label].variables = self.curr_func_vars.clone();
 
         if !self.has_ret_statement {
             self.type_resolver.hint_is(self.curr_func_ret_type, IRPrimitiveType::Void)?;
         }
 
-        if self.type_resolver.check_is_type_known(self.curr_func_ret_type) && !has_added_to_cache {
-            self.instance_cache.get_mut(&sign.name).unwrap().push((arg_types, label));
-        }
+        self.flush_instance_cache();
+
+        self.active_instances.remove(&instance_label);
 
         self.curr_func_vars = prev_func_vars;
         self.curr_func_ret_type = prev_func_ret_type;
@@ -796,6 +827,6 @@ impl Normalizer {
         swap(&mut old_variables_name_map, &mut self.variables_name_map);
         self.depth -= 1;
 
-        Ok(label)
+        Ok(instance_label)
     }
 }
