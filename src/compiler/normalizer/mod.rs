@@ -27,6 +27,7 @@ pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
 }
 
 #[derive(Default)]
+#[allow(clippy::type_complexity)]
 struct Normalizer {
     ir: IR,
     type_resolver: TypeResolver,
