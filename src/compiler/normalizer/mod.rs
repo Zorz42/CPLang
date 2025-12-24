@@ -38,8 +38,6 @@ struct Normalizer {
     // so if tuple (a, b) exists, it means function a is more specific than b
     functions_specific_ordering: HashMap<(String, usize), Vec<(usize, usize)>>,
     curr_instance_label: IRInstanceLabel,
-    curr_func_order: usize,
-    func_order_map: HashMap<IRInstanceLabel, usize>,
     fields_name_map: HashMap<String, IRFieldLabel>,
     curr_field_label: IRFieldLabel,
     curr_func_vars: Vec<IRVariableLabel>,
@@ -177,19 +175,6 @@ impl Normalizer {
                 position: None,
             });
         }
-
-        // sort instances by order (so that c code has valid function order)
-        let mut instances = Vec::new();
-        swap(&mut self.ir.instances, &mut instances);
-
-        let mut instances = instances.into_iter().enumerate().map(|(i, x)| (x, self.func_order_map[&i])).collect::<Vec<_>>();
-
-        instances.sort_by_key(|(_x, y)| *y);
-        instances.reverse();
-
-        let mut instances = instances.into_iter().map(|(i, _x)| i).collect::<Vec<_>>();
-
-        swap(&mut self.ir.instances, &mut instances);
 
         Ok(self.ir)
     }
@@ -676,7 +661,7 @@ impl Normalizer {
         swap(&mut instance_cache_queue, &mut self.instance_cache_queue);
 
         for (function_name, ret_type, arg_types, template_types, instance_label) in instance_cache_queue {
-            if !self.active_instances.contains(&ret_type) {
+            if !self.active_instances.contains(&instance_label) {
                 continue;
             }
 
@@ -737,9 +722,6 @@ impl Normalizer {
         //println!("Size {}", self.type_resolver.new_type_label(FilePosition::unknown()));
         //println!("Queue runs {}", self.type_resolver.get_queue_runs());
 
-        let curr_func_ord = self.curr_func_order;
-        self.curr_func_order += 1;
-
         while template_types.len() < sign.template.len() {
             template_types.push(self.type_resolver.new_type_label(FilePosition::unknown()));
         }
@@ -748,7 +730,6 @@ impl Normalizer {
         // this not only improves performance and makes generated code smaller,
         // it also enables recursion
         if let Some(label) = self.check_instance_cache(&sign.name, &arg_types, &template_types) {
-            self.func_order_map.insert(label, curr_func_ord);
             return Ok(label);
         }
 
@@ -782,7 +763,6 @@ impl Normalizer {
         self.has_ret_statement = false;
         let instance_label = self.curr_instance_label as IRInstanceLabel;
         self.curr_instance_label += 1;
-        self.func_order_map.insert(instance_label, curr_func_ord);
 
         self.active_instances.insert(instance_label);
 

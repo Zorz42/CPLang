@@ -20,7 +20,6 @@ struct GeneratorContext {
 }
 
 pub fn generate_code(ir: IR) -> String {
-    let mut code = String::new();
     let imports = "#include<stdio.h>\n#include<stdlib.h>\n\n".to_owned();
 
     let mut ctx = GeneratorContext {
@@ -33,8 +32,15 @@ pub fn generate_code(ir: IR) -> String {
         autorefs: ir.autorefs,
     };
 
+    let mut function_signatures = String::new();
+    for func in &ir.instances {
+        function_signatures += &gen_function_signature(&mut ctx, func);
+        function_signatures += ";\n";
+    }
+
+    let mut functions = String::new();
     for func in ir.instances {
-        code += &gen_function(&mut ctx, func);
+        functions += &gen_function(&mut ctx, func);
     }
 
     let main_code = "
@@ -45,7 +51,7 @@ int main(){
     ";
     let main_code = main_code.replace("$main$", &gen_function_label(ir.main_function));
 
-    format!("{}\n{}\n{}\n{}", imports, ctx.struct_declarations, code, main_code)
+    format!("{}\n{}\n{}\n{}\n{}", imports, ctx.struct_declarations, function_signatures, functions, main_code)
 }
 
 fn gen_primitive_type(typ: IRPrimitiveType) -> String {
@@ -289,21 +295,25 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
     code
 }
 
-fn gen_function(ctx: &mut GeneratorContext, func: IRInstance) -> String {
+fn gen_function_signature(ctx: &mut GeneratorContext, func: &IRInstance) -> String {
     let mut args = String::new();
-    for arg in func.arguments {
-        let typ = ctx.types[&ctx.var_types[arg]].clone();
-        args += &format!("{} {},", gen_type(ctx, typ), gen_variable_label(arg));
+    for arg in &func.arguments {
+        let typ = ctx.types[&ctx.var_types[*arg]].clone();
+        args += &format!("{} {},", gen_type(ctx, typ), gen_variable_label(*arg));
     }
     // pop the last "," if it exists
     args.pop();
 
-    let mut code = format!(
+    format!(
         "{} {}({})",
         gen_type(ctx, ctx.types[&func.ret_type].clone()),
         gen_function_label(func.label),
         args
-    );
+    )
+}
+
+fn gen_function(ctx: &mut GeneratorContext, func: IRInstance) -> String {
+    let mut code = gen_function_signature(ctx, &func);
 
     let mut vars_code = String::new();
     for var in func.variables {
