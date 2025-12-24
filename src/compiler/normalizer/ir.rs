@@ -36,7 +36,7 @@ pub enum BuiltinFunctionCall {
     GreaterEq { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
 }
 
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq, Debug)]
 pub enum IRPrimitiveType {
     I32,
     I64,

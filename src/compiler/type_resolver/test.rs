@@ -159,4 +159,33 @@ mod test_type_resolver {
         resolver.hint_is(typ6, IRPrimitiveType::Void).unwrap();
         assert!(!resolver.are_equal(typ1, typ4));
     }
+
+    #[test]
+    fn test_hint_field() {
+        let mut resolver = TypeResolver::new(vec![vec![0]]);
+        let typ1 = resolver.new_type_label(FilePosition::unknown());
+        let typ2 = resolver.new_type_label(FilePosition::unknown());
+        let typ3 = resolver.new_type_label(FilePosition::unknown());
+        resolver.hint_struct(typ1, 0, vec![typ2]).unwrap();
+        resolver.hint_is_field(typ3, typ1, 0).unwrap();
+        resolver.hint_is(typ3, IRPrimitiveType::Bool).unwrap();
+        assert_eq!(resolver.fetch_final_ir_type(typ1), Some(IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::Bool)])));
+    }
+
+    #[test]
+    fn test_hint_field_reffed() {
+        let mut resolver = TypeResolver::new(vec![vec![0]]);
+        let typ1 = resolver.new_type_label(FilePosition::unknown());
+        let typ2 = resolver.new_type_label(FilePosition::unknown());
+        let typ3 = resolver.new_type_label(FilePosition::unknown());
+        let typ4 = resolver.new_type_label(FilePosition::unknown());
+        resolver.hint_struct(typ4, 0, vec![typ1]).unwrap();
+        resolver.hint_is_field(typ3, typ4, 0).unwrap();
+        assert!(resolver.are_equal(typ1, typ3));
+        resolver.hint_is_ref(typ2, typ3).unwrap();
+        resolver.hint_is(typ2, IRPrimitiveType::String).unwrap();
+        assert_eq!(resolver.fetch_final_ir_type(typ4), Some(IRType::Struct(0, vec![
+            IRType::Reference(Box::new(IRType::Primitive(IRPrimitiveType::String)))
+        ])));
+    }
 }

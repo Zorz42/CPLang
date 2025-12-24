@@ -51,6 +51,7 @@ pub struct TypeNode {
     // (representative, ref_depth) -> node
     // if two nodes have the same representative and ref_depth (within type component),
     // they are the same exact type and should be merged
+    // representative is from ref_dsu
     ref_map: HashMap<(IRTypeLabel, i32), IRTypeLabel>,
 }
 
@@ -167,7 +168,9 @@ impl TypeResolver {
             } else {
                 self.type_map.insert(typ.clone(), label);
                 self.type_dsu.get(label).typ = Some(typ);
-                self.queue.push_back(label);
+                for label in self.type_dsu.get(label).ref_map.values() {
+                    self.queue.push_back(*label);
+                }
             }
         }
         Ok(())
@@ -328,8 +331,19 @@ impl TypeResolver {
             });
         }
 
-        self.type_dsu.get(label1).typ = typ1;
-        self.type_dsu.get(label2).typ = typ2;
+        if self.type_dsu.get(label1).typ != typ1 {
+            self.type_dsu.get(label1).typ = typ1;
+            // go through all different types in that component
+            for label in self.type_dsu.get(label1).ref_map.values() {
+                self.queue.push_back(*label);
+            }
+        }
+        if self.type_dsu.get(label2).typ != typ2 {
+            self.type_dsu.get(label2).typ = typ2;
+            for label in self.type_dsu.get(label2).ref_map.values() {
+                self.queue.push_back(*label);
+            }
+        }
 
         let mut ref_map = HashMap::new();
         swap(&mut ref_map, &mut self.type_dsu.get(label1).ref_map);
@@ -343,10 +357,7 @@ impl TypeResolver {
             }
         }
 
-        if self.type_dsu.merge(label1, label2) {
-            self.queue.push_back(label1);
-            self.queue.push_back(label2);
-        }
+        self.type_dsu.merge(label1, label2);
 
         Ok(())
     }
@@ -399,6 +410,7 @@ impl TypeResolver {
             self.queue.push_back(label2);
         }
 
+        // update ref_dsu's ref_maps
         all_nodes = self.ref_dsu.get(label1).nodes.clone();
         for node in all_nodes {
             let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
@@ -414,11 +426,11 @@ impl TypeResolver {
     }
 
     pub fn hint_is(&mut self, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
-        let ir_type = IRType::Primitive(typ);
-        self.set_type(label, ir_type)?;
+        self.set_type(label, IRType::Primitive(typ))?;
         self.set_ref(label, 0)?;
 
         self.run_queue()?;
+
         Ok(())
     }
 
