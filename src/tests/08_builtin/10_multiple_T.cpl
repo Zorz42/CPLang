@@ -1,0 +1,21 @@
+//OUT=ok
+
+struct Vec[T]
+    size: i32
+    vec: &T
+
+    fn index i: i32
+        ret &_builtin_index(self.vec i)
+
+new_vec[T] size
+    ret Vec[T] size size vec _builtin_alloc(size)
+
+func[T]
+    v = new_vec[T](10)
+    v2 = new_vec[T](10)
+    |v.index(0) = 10
+
+main
+    func()
+    out "ok"
+

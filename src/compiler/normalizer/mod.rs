@@ -207,8 +207,8 @@ impl Normalizer {
         }
 
         let mut field_types = Vec::new();
-        let mut old_template_types = HashMap::new();
-        swap(&mut old_template_types, &mut self.template_types);
+        let mut prev_template_types = HashMap::new();
+        swap(&mut prev_template_types, &mut self.template_types);
         let struct_template_names = self.structs_templates[struct_label].clone();
         let struct_fields = self.structs_type_hints[struct_label].clone();
 
@@ -232,7 +232,7 @@ impl Normalizer {
             field_types.push(self.normalize_type(field)?);
         }
 
-        swap(&mut old_template_types, &mut self.template_types);
+        swap(&mut prev_template_types, &mut self.template_types);
         Ok(field_types)
     }
 
@@ -258,9 +258,9 @@ impl Normalizer {
                 continue;
             }
 
-            let old_resolver = self.type_resolver.clone();
-            let old_template_types = self.template_types.clone();
-            self.template_types.clear();
+            let prev_resolver = self.type_resolver.clone();
+            let mut prev_template_types = Default::default();
+            swap(&mut self.template_types, &mut prev_template_types);
             let mut ok = true;
 
             for (template_arg, pos) in sign.template.clone() {
@@ -280,8 +280,8 @@ impl Normalizer {
                 }
             }
 
-            self.type_resolver = old_resolver;
-            self.template_types = old_template_types;
+            self.type_resolver = prev_resolver;
+            swap(&mut self.template_types, &mut prev_template_types);
 
             if ok {
                 matching.insert(i);
@@ -739,11 +739,18 @@ impl Normalizer {
         }
 
         // backup and override values that are needed by instance normalizing
-        let prev_func_vars = self.curr_func_vars.clone();
-        let prev_func_ret_type = self.curr_func_ret_type;
-        let prev_has_ret_statement = self.has_ret_statement;
-        let mut old_variables_name_map = HashMap::new();
-        swap(&mut old_variables_name_map, &mut self.variables_name_map);
+        let mut prev_func_vars = Default::default();
+        let mut prev_func_ret_type = self.type_resolver.new_type_label(sign.pos);
+        let mut prev_has_ret_statement = false;
+        let mut prev_variables_name_map = HashMap::new();
+        let mut prev_template_types = Default::default();
+
+        swap(&mut prev_func_vars, &mut self.curr_func_vars);
+        swap(&mut prev_func_ret_type, &mut self.curr_func_ret_type);
+        swap(&mut prev_has_ret_statement, &mut self.has_ret_statement);
+        swap(&mut prev_variables_name_map, &mut self.variables_name_map);
+        swap(&mut prev_template_types, &mut self.template_types);
+
 
         if self.depth == RECURSION_LIMIT {
             return Err(CompilerError {
@@ -758,10 +765,7 @@ impl Normalizer {
         }
 
         self.depth += 1;
-        self.curr_func_vars = Vec::new();
-        self.curr_func_ret_type = self.type_resolver.new_type_label(sign.pos);
         self.relevant_types.push(self.curr_func_ret_type);
-        self.has_ret_statement = false;
         let instance_label = self.curr_instance_label as IRInstanceLabel;
         self.curr_instance_label += 1;
 
@@ -801,11 +805,11 @@ impl Normalizer {
 
         self.active_instances.remove(&instance_label);
 
-        self.curr_func_vars = prev_func_vars;
-        self.curr_func_ret_type = prev_func_ret_type;
-        self.has_ret_statement = prev_has_ret_statement;
-        self.template_types.clear();
-        swap(&mut old_variables_name_map, &mut self.variables_name_map);
+        swap(&mut prev_func_vars, &mut self.curr_func_vars);
+        swap(&mut prev_func_ret_type, &mut self.curr_func_ret_type);
+        swap(&mut prev_has_ret_statement, &mut self.has_ret_statement);
+        swap(&mut prev_variables_name_map, &mut self.variables_name_map);
+        swap(&mut prev_template_types, &mut self.template_types);
         self.depth -= 1;
 
         Ok(instance_label)
