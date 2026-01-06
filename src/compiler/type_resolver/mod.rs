@@ -181,22 +181,30 @@ impl TypeResolver {
                 position: Some(self.type_positions[label]),
             });
         }
-        if self.type_dsu.get(label).typ.is_none() {
-            if let Some(label2) = self.type_map.get(&typ) {
-                self.merge_type(label, *label2)?;
-            } else {
-                self.type_map.insert(typ.clone(), label);
-                self.type_dsu.get(label).typ = Some(typ);
-                let labels = self.type_dsu.get(label).ref_map.values().map(|x| *x).collect::<Vec<_>>();
-                for label in labels {
-                    self.add_to_queue(label);
-                }
-            }
-
-            for (parent_type, _field_label) in self.dsu.get(label).parent_structs.clone() {
-                self.add_to_queue(parent_type);
+        if self.type_dsu.get(label).typ.is_some() {
+            return Ok(());
+        }
+        if let Some(label2) = self.type_map.get(&typ) {
+            self.merge_type(label, *label2)?;
+        } else {
+            self.type_map.insert(typ.clone(), label);
+            self.type_dsu.get(label).typ = Some(typ);
+            let labels = self.type_dsu.get(label).ref_map.values().map(|x| *x).collect::<Vec<_>>();
+            for label in labels {
+                self.add_to_queue(label);
             }
         }
+
+        let mut to_queue = Vec::new();
+        for (_, label2) in &self.type_dsu.get(label).ref_map {
+            for (parent_type, _field_label) in &self.dsu.get(*label2).parent_structs {
+                to_queue.push(*parent_type);
+            }
+        }
+        for i in to_queue {
+            self.add_to_queue(i);
+        }
+
         Ok(())
     }
 
