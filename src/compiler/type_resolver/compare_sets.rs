@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{IRStructLabel, IRTypeLabel};
 use crate::compiler::type_resolver::dsu::Dsu;
-use crate::compiler::type_resolver::{Conn, TypeResolver};
+use crate::compiler::type_resolver::TypeResolver;
 use std::collections::HashMap;
 use std::ops::Add;
 
@@ -37,24 +37,21 @@ fn compactify<T: Add<Output=T> + Default>(
 }
 
 impl TypeResolver {
-    fn get_type_struct(&mut self, typ: IRTypeLabel) -> (Option<(IRStructLabel, Vec<IRTypeLabel>)>, bool) {
-        let mut struct1 = None;
+    fn get_type_struct(&mut self, typ: IRTypeLabel) -> Option<(IRStructLabel, Vec<IRTypeLabel>)> {
+        if let Some(struct_label) = self.dsu.get(typ).known_struct {
+            let fields = self.structs_ord[struct_label].clone();
 
-        for conn in self.dsu.get(typ).neighbours.clone() {
-            let Conn::Struct(type_label, struct_label, field_labels) = conn else { unreachable!() };
-            if !self.are_equal(type_label, typ) {
-                continue;
+            let mut field_types = Vec::new();
+
+            for field in fields {
+                let typ = self.dsu.get(typ).child_fields[&field];
+                field_types.push(typ);
             }
-            let field_labels = field_labels.into_iter().map(|x| self.dsu.get_repr(x)).collect::<Vec<IRTypeLabel>>();
-            if let Some(struct1) = &struct1 {
-                if struct1 != &(struct_label, field_labels) {
-                    return (None, false);
-                }
-            } else {
-                struct1 = Some((struct_label, field_labels));
-            }
+
+            Some((struct_label, field_types))
+        } else {
+            None
         }
-        (struct1, true)
     }
 
     // lets define P(s) as the set of all theoretically possible arrays of types for some array of type labels s
@@ -99,14 +96,8 @@ impl TypeResolver {
                 return false;
             }
 
-            let (struct1, res) = self.get_type_struct(comps1[i]);
-            if !res {
-                return false;
-            }
-            let (struct2, res) = self.get_type_struct(comps2[i]);
-            if !res {
-                return false;
-            }
+            let struct1 = self.get_type_struct(comps1[i]);
+            let struct2 = self.get_type_struct(comps2[i]);
 
             if struct1.is_some() != struct2.is_some() {
                 return false;

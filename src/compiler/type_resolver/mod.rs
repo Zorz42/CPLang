@@ -9,37 +9,32 @@ pub mod dsu;
 mod compare_sets;
 mod test;
 
-#[derive(Clone)]
-enum Conn {
-    // arg1 = arg2 { arg3[0], ..., arg3[n] }
-    Struct(IRTypeLabel, IRStructLabel, Vec<IRTypeLabel>),
-
-    // arg1 = node.arg2
-    IsField(IRTypeLabel, IRFieldLabel),
-}
-
-fn deref_type(mut ir_type: IRType) -> (IRType, i32) {
-    let mut ref_depth = 0;
-
-    while let IRType::Reference(inner) = ir_type {
-        ir_type = *inner;
-        ref_depth += 1;
-    }
-
-    (ir_type, ref_depth)
-}
-
 #[derive(Default, Clone)]
 pub struct Node {
-    neighbours: Vec<Conn>,
+    parent_structs: Vec<(IRTypeLabel, IRFieldLabel)>,
+    child_fields: HashMap<IRFieldLabel, IRTypeLabel>,
     ref_depth: i32,
+    known_struct: Option<IRStructLabel>,
+    in_queue: bool,
+    // a vector of types it is equal to (gets merged in queue phase)
+    // it is delayed to avoid recursion
+    to_merge: Vec<IRTypeLabel>,
 }
 
 impl Add for Node {
     type Output = Self;
 
     fn add(mut self, mut rhs: Self) -> Self::Output {
-        self.neighbours.append(&mut rhs.neighbours);
+        assert_eq!(self.known_struct, rhs.known_struct);
+        if !rhs.child_fields.is_empty() {
+            swap(&mut self.child_fields, &mut rhs.child_fields);
+        }
+        assert!(rhs.child_fields.is_empty());
+        self.in_queue = self.in_queue || rhs.in_queue;
+        if self.parent_structs.len() < rhs.parent_structs.len() {
+            swap(&mut self.parent_structs, &mut rhs.parent_structs);
+        }
+        self.parent_structs.append(&mut rhs.parent_structs);
         self
     }
 }
@@ -77,6 +72,9 @@ impl Add for RefNode {
     type Output = Self;
 
     fn add(mut self, mut rhs: Self) -> Self::Output {
+        if self.nodes.len() < rhs.nodes.len() {
+            swap(&mut self.nodes, &mut rhs.nodes);
+        }
         self.nodes.append(&mut rhs.nodes);
         self
     }
@@ -98,13 +96,15 @@ pub struct TypeResolver {
     // already known types (up to reference) can be merged if they are the same
     type_map: HashMap<IRType, IRTypeLabel>,
     // static data about struct fields
-    structs: Vec<Vec<IRFieldLabel>>,
+    structs: Vec<HashSet<IRFieldLabel>>,
+    structs_ord: Vec<Vec<IRFieldLabel>>,
 }
 
 impl TypeResolver {
     pub fn new(structs: Vec<Vec<IRFieldLabel>>) -> Self {
         let mut res = Self {
-            structs,
+            structs_ord: structs.clone(),
+            structs: structs.into_iter().map(|x| HashSet::from_iter(x)).collect(),
             ..Default::default()
         };
         let fixed = res.new_type_label(FilePosition::unknown());
@@ -114,7 +114,18 @@ impl TypeResolver {
     }
 
     pub fn get_structs(&self) -> Vec<Vec<IRFieldLabel>> {
-        self.structs.clone()
+        self.structs_ord.clone()
+    }
+
+    fn get_num_known_fields(&mut self, type_label: IRTypeLabel) -> usize {
+        let mut num_known_fields = 0;
+        let values = self.dsu.get(type_label).child_fields.values().into_iter().cloned().collect::<Vec<_>>();
+        for field_type_label in values {
+            if self.check_is_type_known(field_type_label) {
+                num_known_fields += 1;
+            }
+        }
+        num_known_fields
     }
 
     pub fn new_type_label(&mut self, pos: FilePosition) -> IRTypeLabel {
@@ -126,6 +137,14 @@ impl TypeResolver {
         self.ref_dsu.get(res).nodes.push(res);
         self.type_positions.push(pos);
         res
+    }
+
+    fn add_to_queue(&mut self, label: IRTypeLabel) {
+        if self.dsu.get(label).in_queue {
+            return;
+        }
+        self.dsu.get(label).in_queue = true;
+        self.queue.push_back(label);
     }
 
     pub fn new_autoref_label(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> IRAutoRefLabel {
@@ -168,9 +187,14 @@ impl TypeResolver {
             } else {
                 self.type_map.insert(typ.clone(), label);
                 self.type_dsu.get(label).typ = Some(typ);
-                for label in self.type_dsu.get(label).ref_map.values() {
-                    self.queue.push_back(*label);
+                let labels = self.type_dsu.get(label).ref_map.values().map(|x| *x).collect::<Vec<_>>();
+                for label in labels {
+                    self.add_to_queue(label);
                 }
+            }
+
+            for (parent_type, _field_label) in self.dsu.get(label).parent_structs.clone() {
+                self.add_to_queue(parent_type);
             }
         }
         Ok(())
@@ -182,126 +206,41 @@ impl TypeResolver {
 
     fn run_queue(&mut self) -> CompilerResult<()> {
         while let Some(node) = self.queue.pop_front() {
-            // loop for type deduction
-            if let Some(node_type) = self.type_dsu.get(node).typ.clone() {
-                'neighbour_loop: for ne in self.dsu.get(node).neighbours.clone() {
-                    match ne {
-                        Conn::Struct(typ, structure, args) => {
-                            if typ == node {
-                                let IRType::Struct(_, args2) = node_type.clone() else {
-                                    return Err(CompilerError {
-                                        message: format!("This cannot be a struct and {node_type:?} at the same time."),
-                                        position: Some(self.type_positions[node]),
-                                    });
-                                };
+            self.dsu.get(node).in_queue = false;
 
-                                for (typ_label, typ) in args.into_iter().zip(args2) {
-                                    let (typ, ref_depth) = deref_type(typ);
-                                    self.set_type(typ_label, typ)?;
-                                    self.set_ref(typ_label, ref_depth)?;
-                                }
+            // when a node is updated it does the following:
+            // - it merges with all neighbouring nodes (it is delayed until this stage)
+            // - in case it is a struct type: it checks if all its child fields are known, then the type is automatically known
 
-                                continue 'neighbour_loop;
-                            }
+            let mut to_merge = Vec::new();
+            swap(&mut to_merge, &mut self.dsu.get(node).to_merge);
+            for node2 in to_merge {
+                if self.dsu.get_repr(node) == self.dsu.get_repr(node2) {
+                    continue;
+                }
 
-                            // only deduce type when all arguments are known
-                            let mut ir_args = Vec::new();
-                            for arg in args {
-                                if let Some(typ) = self.fetch_final_ir_type(arg) {
-                                    ir_args.push(typ);
-                                } else {
-                                    continue 'neighbour_loop;
-                                }
-                            }
-
-                            let ir_type = IRType::Struct(structure, ir_args);
-                            self.set_type(typ, ir_type)?;
-                        }
-                        Conn::IsField(typ, field) => {
-                            let (struct_label, struct_args) = match &self.type_dsu.get(node).typ {
-                                Some(IRType::Struct(label, args)) => (*label, args),
-                                _ => {
-                                    return Err(CompilerError {
-                                        message: format!(
-                                            "Cannot access field since this is not a struct but has type {:?}",
-                                            self.type_dsu.get(node).typ.as_ref().unwrap()
-                                        ),
-                                        position: Some(self.type_positions[node]),
-                                    });
-                                }
-                            };
-                            let curr_struct = &self.structs[struct_label];
-                            let mut field_idx = 0;
-                            for (idx, curr_field) in curr_struct.iter().enumerate() {
-                                if *curr_field == field {
-                                    field_idx = idx;
-                                }
-                            }
-
-                            let ir_type = struct_args[field_idx].clone();
-                            let (ir_type, ref_depth) = deref_type(ir_type);
-
-                            self.set_type(typ, ir_type)?;
-                            self.set_ref(typ, ref_depth)?;
-                        }
+                for (field_label, field_type) in self.dsu.get(node2).child_fields.clone() {
+                    if let Some(field_type2) = self.dsu.get(node).child_fields.get(&field_label).cloned() {
+                        self.merge(field_type, field_type2)?;
+                    } else {
+                        self.dsu.get(node).child_fields.insert(field_label, field_type);
                     }
                 }
+                self.dsu.get(node2).child_fields.clear();
+
+                self.dsu.merge(node, node2);
             }
+            let num_known_fields = self.get_num_known_fields(node);
 
-            if self.type_dsu.get(node).typ.is_none() {
-                // if the type is struct, save its fields (if they exist).
-                let mut struct_fields: Option<(IRStructLabel, Vec<IRTypeLabel>)> = None;
 
-                for ne in self.dsu.get(node).neighbours.clone() {
-                    if let Conn::Struct(typ, structure, args) = ne
-                        && self.are_equal(typ, node)
-                    {
-                        if let Some((curr_structure, curr_args)) = &struct_fields {
-                            assert_eq!(*curr_structure, structure);
-
-                            for (arg1, arg2) in args.iter().zip(curr_args.clone()) {
-                                self.merge(*arg1, arg2)?;
-                            }
-                        } else {
-                            struct_fields = Some((structure, args.clone()));
-                        }
-                    }
+            if let Some(struct_label) = self.dsu.get(node).known_struct &&
+                num_known_fields == self.structs_ord[struct_label].len() {
+                let mut struct_fields = Vec::new();
+                for field_label in self.structs_ord[struct_label].clone() {
+                    let type_label = self.dsu.get(node).child_fields[&field_label].clone();
+                    struct_fields.push(self.fetch_final_ir_type(type_label).unwrap());
                 }
-
-                let mut fields = HashMap::new();
-
-                if let Some((structure, args)) = &struct_fields {
-                    for (arg, field_label) in args.iter().zip(&self.structs[*structure]) {
-                        fields.insert(*field_label, *arg);
-                    }
-                }
-
-                for ne in self.dsu.get(node).neighbours.clone() {
-                    if let Conn::IsField(typ, field) = ne {
-                        if let Some(typ2) = fields.get(&field) {
-                            self.merge(typ, *typ2)?;
-                        } else {
-                            fields.insert(field, typ);
-                        }
-                    }
-                }
-
-                // check if all field types are now known
-                if let Some((structure, args)) = struct_fields {
-                    let mut arg_types = Vec::new();
-
-                    for arg in &args {
-                        if let Some(typ) = &self.type_dsu.get(*arg).typ {
-                            arg_types.push(typ.clone());
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if arg_types.len() == args.len() {
-                        self.type_dsu.get(node).typ = Some(IRType::Struct(structure, arg_types));
-                    }
-                }
+                self.set_type(node, IRType::Struct(struct_label, struct_fields))?;
             }
         }
 
@@ -334,14 +273,16 @@ impl TypeResolver {
         if self.type_dsu.get(label1).typ != typ1 {
             self.type_dsu.get(label1).typ = typ1;
             // go through all different types in that component
-            for label in self.type_dsu.get(label1).ref_map.values() {
-                self.queue.push_back(*label);
+            let labels = self.type_dsu.get(label1).ref_map.values().map(|x| *x).collect::<Vec<_>>();
+            for label in labels {
+                self.add_to_queue(label);
             }
         }
         if self.type_dsu.get(label2).typ != typ2 {
             self.type_dsu.get(label2).typ = typ2;
-            for label in self.type_dsu.get(label2).ref_map.values() {
-                self.queue.push_back(*label);
+            let labels = self.type_dsu.get(label2).ref_map.values().map(|x| *x).collect::<Vec<_>>();
+            for label in labels {
+                self.add_to_queue(label);
             }
         }
 
@@ -349,8 +290,9 @@ impl TypeResolver {
         swap(&mut ref_map, &mut self.type_dsu.get(label1).ref_map);
         for (key, label) in ref_map {
             if let Some(other_label) = self.type_dsu.get(label2).ref_map.get(&key).copied() {
-                if self.dsu.merge(label, other_label) {
-                    self.queue.push_back(label);
+                if self.dsu.get_repr(label) != self.dsu.get_repr(other_label) {
+                    self.add_to_queue(label);
+                    self.dsu.get(label).to_merge.push(other_label);
                 }
             } else {
                 self.type_dsu.get(label2).ref_map.insert(key, label);
@@ -362,7 +304,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    // label2 has offset more references than label1
+    // label2 has exactly offset more references than label1
     fn merge_ref(&mut self, label1: IRTypeLabel, label2: IRTypeLabel, offset: i32) -> CompilerResult<()> {
         if self.ref_dsu.get_repr(label1) == self.ref_dsu.get_repr(label2) {
             // already merged, just check if there is no contradiction
@@ -406,17 +348,18 @@ impl TypeResolver {
         }
 
         if self.ref_dsu.merge(label1, label2) {
-            self.queue.push_back(label1);
-            self.queue.push_back(label2);
+            self.add_to_queue(label1);
+            self.add_to_queue(label2);
         }
 
         // update ref_dsu's ref_maps
         all_nodes = self.ref_dsu.get(label1).nodes.clone();
         for node in all_nodes {
             let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
-            if let Some(label) = self.type_dsu.get(node).ref_map.get(&key) {
-                if self.dsu.merge(*label, node) {
-                    self.queue.push_back(node);
+            if let Some(label) = self.type_dsu.get(node).ref_map.get(&key).cloned() {
+                if self.dsu.get_repr(label) != self.dsu.get_repr(node) {
+                    self.add_to_queue(label);
+                    self.dsu.get(label).to_merge.push(node);
                 }
             } else {
                 self.type_dsu.get(node).ref_map.insert(key, node);
@@ -437,32 +380,52 @@ impl TypeResolver {
     pub fn hint_equal(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
         self.merge(label1, label2)?;
 
-        self.queue.push_back(label2);
-        self.queue.push_back(label1);
-
         self.run_queue()?;
         Ok(())
     }
 
     pub fn hint_is_ref(&mut self, phys_label: IRTypeLabel, ref_label: IRTypeLabel) -> CompilerResult<()> {
         self.merge_type(phys_label, ref_label)?;
-
         self.merge_ref(phys_label, ref_label, 1)?;
-
-        self.queue.push_back(phys_label);
-        self.queue.push_back(ref_label);
 
         self.run_queue()?;
         Ok(())
     }
 
-    pub fn hint_struct(&mut self, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
-        for field_type in &fields {
-            self.dsu.get(*field_type).neighbours.push(Conn::Struct(res_label, struct_label, fields.clone()));
-            self.queue.push_back(*field_type);
+    fn set_field(&mut self, field_type_label: IRTypeLabel, field_label: IRFieldLabel, struct_type_label: IRTypeLabel) -> CompilerResult<()> {
+        if let Some(field_label) = self.dsu.get(struct_type_label).child_fields.get(&field_label).cloned() {
+            self.merge(field_label, field_type_label)?;
+        } else {
+            self.dsu.get(struct_type_label).child_fields.insert(field_label, field_type_label);
         }
-        self.dsu.get(res_label).neighbours.push(Conn::Struct(res_label, struct_label, fields));
-        self.queue.push_back(res_label);
+
+        self.dsu.get(field_type_label).parent_structs.push((struct_type_label, field_label));
+        self.add_to_queue(struct_type_label);
+
+        Ok(())
+    }
+
+    pub fn hint_struct(&mut self, res_label: IRTypeLabel, struct_label: IRStructLabel, fields: Vec<IRTypeLabel>) -> CompilerResult<()> {
+        assert_eq!(fields.len(), self.structs[struct_label].len());
+
+        if let Some(curr_struct_label) = self.dsu.get(res_label).known_struct {
+            if curr_struct_label != struct_label {
+                return Err(CompilerError {
+                    message: "This type cannot be two different struct types at the same time.".to_string(),
+                    position: Some(self.type_positions[res_label]),
+                });
+            }
+        } else {
+            self.dsu.get(res_label).known_struct = Some(struct_label);
+        }
+
+        for (field_label, field_type) in self.structs_ord[struct_label].clone().into_iter().zip(fields) {
+            assert!(self.structs[struct_label].contains(&field_label));
+
+            self.set_field(field_type, field_label, res_label)?;
+        }
+
+
         self.set_ref(res_label, 0)?;
 
         self.run_queue()?;
@@ -470,10 +433,7 @@ impl TypeResolver {
     }
 
     pub fn hint_is_field(&mut self, res_label: IRTypeLabel, struct_label: IRTypeLabel, field_label: IRFieldLabel) -> CompilerResult<()> {
-        self.dsu.get(struct_label).neighbours.push(Conn::IsField(res_label, field_label));
-        self.queue.push_back(struct_label);
-        self.queue.push_back(res_label);
-        self.set_ref(struct_label, 0)?;
+        self.set_field(res_label, field_label, struct_label)?;
 
         self.run_queue()?;
         Ok(())
