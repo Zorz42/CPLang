@@ -38,13 +38,13 @@ fn compactify<T: Add<Output=T> + Default>(
 
 impl TypeResolver {
     fn get_type_struct(&mut self, typ: IRTypeLabel) -> Option<(IRStructLabel, Vec<IRTypeLabel>)> {
-        if let Some(struct_label) = self.dsu.get(typ).known_struct {
+        if let Some(struct_label) = self.type_dsu.get(typ).known_struct {
             let fields = self.structs_ord[struct_label].clone();
 
             let mut field_types = Vec::new();
 
             for field in fields {
-                let typ = self.dsu.get(typ).child_fields[&field];
+                let typ = self.type_dsu.get(typ).child_fields[&field];
                 field_types.push(typ);
             }
 

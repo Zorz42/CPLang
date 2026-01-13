@@ -216,4 +216,19 @@ mod test_type_resolver {
         resolver.hint_is_field(typ4, typ3, 0).unwrap();
         assert_eq!(resolver.fetch_final_ir_type(typ4), Some(IRType::Primitive(IRPrimitiveType::Bool)));
     }
+
+    #[test]
+    fn test_complicated() {
+        let mut resolver = TypeResolver::new(vec![vec![0]]);
+        let typ1 = resolver.new_type_label(FilePosition::unknown());
+        let typ2 = resolver.new_type_label(FilePosition::unknown());
+        let typ3 = resolver.new_type_label(FilePosition::unknown());
+        let typ4 = resolver.new_type_label(FilePosition::unknown());
+        let typ5 = resolver.new_type_label(FilePosition::unknown());
+        resolver.hint_is(typ1, IRPrimitiveType::String).unwrap();
+        resolver.hint_struct(typ3, 0, vec![typ1]).unwrap();
+        resolver.hint_autoref(typ5, typ3).unwrap();
+        resolver.hint_struct(typ4, 0, vec![typ2]).unwrap();
+        resolver.hint_is_ref(typ4, typ5).unwrap();
+    }
 }

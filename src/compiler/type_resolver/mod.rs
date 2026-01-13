@@ -12,24 +12,14 @@ mod test;
 #[derive(Default, Clone)]
 pub struct Node {
     parent_structs: Vec<(IRTypeLabel, IRFieldLabel)>,
-    child_fields: HashMap<IRFieldLabel, IRTypeLabel>,
     ref_depth: i32,
-    known_struct: Option<IRStructLabel>,
     in_queue: bool,
-    // a vector of types it is equal to (gets merged in queue phase)
-    // it is delayed to avoid recursion
-    to_merge: Vec<IRTypeLabel>,
 }
 
 impl Add for Node {
     type Output = Self;
 
     fn add(mut self, mut rhs: Self) -> Self::Output {
-        assert_eq!(self.known_struct, rhs.known_struct);
-        if !rhs.child_fields.is_empty() {
-            swap(&mut self.child_fields, &mut rhs.child_fields);
-        }
-        assert!(rhs.child_fields.is_empty());
         self.in_queue = self.in_queue || rhs.in_queue;
         if self.parent_structs.len() < rhs.parent_structs.len() {
             swap(&mut self.parent_structs, &mut rhs.parent_structs);
@@ -42,18 +32,28 @@ impl Add for Node {
 #[derive(Default, Clone)]
 pub struct TypeNode {
     typ: Option<IRType>,
+    child_fields: HashMap<IRFieldLabel, IRTypeLabel>,
+    known_struct: Option<IRStructLabel>,
     // stores all reference values of nodes
     // (representative, ref_depth) -> node
     // if two nodes have the same representative and ref_depth (within type component),
     // they are the same exact type and should be merged
     // representative is from ref_dsu
     ref_map: HashMap<(IRTypeLabel, i32), IRTypeLabel>,
+    // a vector of types it is equal to (gets merged in queue phase)
+    // it is delayed to avoid recursion
+    to_merge: Vec<IRTypeLabel>,
 }
 
 impl Add for TypeNode {
     type Output = Self;
 
     fn add(mut self, mut rhs: Self) -> Self::Output {
+        assert_eq!(self.known_struct, rhs.known_struct);
+        if !rhs.child_fields.is_empty() {
+            swap(&mut self.child_fields, &mut rhs.child_fields);
+        }
+        assert!(rhs.child_fields.is_empty());
         assert_eq!(self.typ, rhs.typ);
         if !rhs.ref_map.is_empty() {
             swap(&mut rhs.ref_map, &mut self.ref_map);
@@ -119,7 +119,7 @@ impl TypeResolver {
 
     fn get_num_known_fields(&mut self, type_label: IRTypeLabel) -> usize {
         let mut num_known_fields = 0;
-        let values = self.dsu.get(type_label).child_fields.values().into_iter().cloned().collect::<Vec<_>>();
+        let values = self.type_dsu.get(type_label).child_fields.values().into_iter().cloned().collect::<Vec<_>>();
         for field_type_label in values {
             if self.check_is_type_known(field_type_label) {
                 num_known_fields += 1;
@@ -185,7 +185,7 @@ impl TypeResolver {
             return Ok(());
         }
         if let Some(label2) = self.type_map.get(&typ) {
-            self.merge_type(label, *label2)?;
+            self.schedule_merge_type(label, *label2);
         } else {
             self.type_map.insert(typ.clone(), label);
             self.type_dsu.get(label).typ = Some(typ);
@@ -221,48 +221,23 @@ impl TypeResolver {
             // - in case it is a struct type: it checks if all its child fields are known, then the type is automatically known
 
             let mut to_merge = Vec::new();
-            swap(&mut to_merge, &mut self.dsu.get(node).to_merge);
+            swap(&mut to_merge, &mut self.type_dsu.get(node).to_merge);
             for node2 in to_merge {
-                if self.dsu.get_repr(node) == self.dsu.get_repr(node2) {
+                if self.type_dsu.get_repr(node) == self.type_dsu.get_repr(node2) {
                     continue;
                 }
 
-                for (field_label, field_type) in self.dsu.get(node2).child_fields.clone() {
-                    if let Some(field_type2) = self.dsu.get(node).child_fields.get(&field_label).cloned() {
-                        self.merge(field_type, field_type2)?;
-                    } else {
-                        self.dsu.get(node).child_fields.insert(field_label, field_type);
-                    }
-                }
-                self.dsu.get(node2).child_fields.clear();
-
-
-                // merge known_struct
-                if let Some(s1) = self.dsu.get(node).known_struct && let Some(s2) = self.dsu.get(node2).known_struct {
-                    if s1 != s2 {
-                        return Err(CompilerError {
-                            message: "This type cannot be two different struct types at the same time.".to_string(),
-                            position: Some(self.type_positions[node]),
-                        });
-                    }
-                }
-
-                if self.dsu.get(node).known_struct.is_none() {
-                    self.dsu.get(node).known_struct = self.dsu.get(node2).known_struct;
-                } else {
-                    self.dsu.get(node2).known_struct = self.dsu.get(node).known_struct;
-                }
-
-                self.dsu.merge(node, node2);
+                self.merge_type(node, node2)?;
             }
             let num_known_fields = self.get_num_known_fields(node);
 
 
-            if let Some(struct_label) = self.dsu.get(node).known_struct &&
-                num_known_fields == self.structs_ord[struct_label].len() {
+            if let Some(struct_label) = self.type_dsu.get(node).known_struct &&
+                num_known_fields == self.structs_ord[struct_label].len() &&
+                self.ref_is_fixed(node) && self.dsu.get(node).ref_depth == 0 {
                 let mut struct_fields = Vec::new();
                 for field_label in self.structs_ord[struct_label].clone() {
-                    let type_label = self.dsu.get(node).child_fields[&field_label].clone();
+                    let type_label = self.type_dsu.get(node).child_fields[&field_label].clone();
                     struct_fields.push(self.fetch_final_ir_type(type_label).unwrap());
                 }
                 self.set_type(node, IRType::Struct(struct_label, struct_fields))?;
@@ -273,10 +248,15 @@ impl TypeResolver {
     }
 
     fn merge(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
-        self.merge_type(label1, label2)?;
+        self.schedule_merge_type(label1, label2);
         self.merge_ref(label1, label2, 0)?;
 
         Ok(())
+    }
+
+    fn schedule_merge_type(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) {
+        self.type_dsu.get(label1).to_merge.push(label2);
+        self.add_to_queue(label1);
     }
 
     fn merge_type(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
@@ -311,13 +291,41 @@ impl TypeResolver {
             }
         }
 
+        // merge known_struct
+        if let Some(s1) = self.type_dsu.get(label1).known_struct &&
+            let Some(s2) = self.type_dsu.get(label2).known_struct {
+            if s1 != s2 {
+                return Err(CompilerError {
+                    message: "This type cannot be two different struct types at the same time.".to_string(),
+                    position: Some(self.type_positions[label1]),
+                });
+            }
+        }
+
+        if self.type_dsu.get(label1).known_struct.is_none() {
+            self.type_dsu.get(label1).known_struct = self.type_dsu.get(label2).known_struct;
+        } else {
+            self.type_dsu.get(label2).known_struct = self.type_dsu.get(label1).known_struct;
+        }
+
+        // merge child fields
+        for (field_label, field_type) in self.type_dsu.get(label2).child_fields.clone() {
+            if let Some(field_type2) = self.type_dsu.get(label1).child_fields.get(&field_label).cloned() {
+                self.merge(field_type, field_type2)?;
+            } else {
+                self.type_dsu.get(label1).child_fields.insert(field_label, field_type);
+            }
+        }
+
+        self.type_dsu.get(label2).child_fields.clear();
+
         let mut ref_map = HashMap::new();
         swap(&mut ref_map, &mut self.type_dsu.get(label1).ref_map);
         for (key, label) in ref_map {
             if let Some(other_label) = self.type_dsu.get(label2).ref_map.get(&key).copied() {
                 if self.dsu.get_repr(label) != self.dsu.get_repr(other_label) {
                     self.add_to_queue(label);
-                    self.dsu.get(label).to_merge.push(other_label);
+                    self.dsu.merge(label, other_label);
                 }
             } else {
                 self.type_dsu.get(label2).ref_map.insert(key, label);
@@ -384,7 +392,7 @@ impl TypeResolver {
             if let Some(label) = self.type_dsu.get(node).ref_map.get(&key).cloned() {
                 if self.dsu.get_repr(label) != self.dsu.get_repr(node) {
                     self.add_to_queue(label);
-                    self.dsu.get(label).to_merge.push(node);
+                    self.dsu.merge(label, node);
                 }
             } else {
                 self.type_dsu.get(node).ref_map.insert(key, node);
@@ -394,7 +402,8 @@ impl TypeResolver {
     }
 
     pub fn hint_is(&mut self, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
-        //println!("hint_is({label}, {typ:?})");
+        #[cfg(test)]
+        println!("hint_is({label}, {typ:?})");
 
         self.set_type(label, IRType::Primitive(typ))?;
         self.set_ref(label, 0)?;
@@ -405,7 +414,8 @@ impl TypeResolver {
     }
 
     pub fn hint_equal(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
-        //println!("hint_equal({label1}, {label2})");
+        #[cfg(test)]
+        println!("hint_equal({label1}, {label2})");
         self.merge(label1, label2)?;
 
         self.run_queue()?;
@@ -413,8 +423,9 @@ impl TypeResolver {
     }
 
     pub fn hint_is_ref(&mut self, phys_label: IRTypeLabel, ref_label: IRTypeLabel) -> CompilerResult<()> {
-        //println!("hint_is_ref({phys_label}, {ref_label})");
-        self.merge_type(phys_label, ref_label)?;
+        #[cfg(test)]
+        println!("hint_is_ref({phys_label}, {ref_label})");
+        self.schedule_merge_type(phys_label, ref_label);
         self.merge_ref(phys_label, ref_label, 1)?;
 
         self.run_queue()?;
@@ -422,11 +433,12 @@ impl TypeResolver {
     }
 
     fn set_field(&mut self, field_type_label: IRTypeLabel, field_label: IRFieldLabel, struct_type_label: IRTypeLabel) -> CompilerResult<()> {
+        #[cfg(test)]
         println!("set field field_type={field_type_label} field_label={field_label} struct_type={struct_type_label}");
-        if let Some(field_label) = self.dsu.get(struct_type_label).child_fields.get(&field_label).cloned() {
+        if let Some(field_label) = self.type_dsu.get(struct_type_label).child_fields.get(&field_label).cloned() {
             self.merge(field_label, field_type_label)?;
         } else {
-            self.dsu.get(struct_type_label).child_fields.insert(field_label, field_type_label);
+            self.type_dsu.get(struct_type_label).child_fields.insert(field_label, field_type_label);
         }
 
         self.dsu.get(field_type_label).parent_structs.push((struct_type_label, field_label));
@@ -436,10 +448,11 @@ impl TypeResolver {
     }
 
     pub fn hint_struct(&mut self, struct_type_label: IRTypeLabel, struct_label: IRStructLabel, field_type_labels: Vec<IRTypeLabel>) -> CompilerResult<()> {
-        //println!("hint_struct({struct_type_label}, {struct_label}, {field_type_labels:?})");
+        #[cfg(test)]
+        println!("hint_struct({struct_type_label}, {struct_label}, {field_type_labels:?})");
         assert_eq!(field_type_labels.len(), self.structs[struct_label].len());
 
-        if let Some(curr_struct_label) = self.dsu.get(struct_type_label).known_struct {
+        if let Some(curr_struct_label) = self.type_dsu.get(struct_type_label).known_struct {
             if curr_struct_label != struct_label {
                 return Err(CompilerError {
                     message: "This type cannot be two different struct types at the same time.".to_string(),
@@ -447,7 +460,7 @@ impl TypeResolver {
                 });
             }
         } else {
-            self.dsu.get(struct_type_label).known_struct = Some(struct_label);
+            self.type_dsu.get(struct_type_label).known_struct = Some(struct_label);
         }
 
         for (field_label, field_type) in self.structs_ord[struct_label].clone().into_iter().zip(field_type_labels) {
@@ -464,7 +477,8 @@ impl TypeResolver {
     }
 
     pub fn hint_is_field(&mut self, field_type_label: IRTypeLabel, struct_type_label: IRTypeLabel, field_label: IRFieldLabel) -> CompilerResult<()> {
-        //println!("hint_is_field({field_type_label}, {struct_type_label}, {field_label})");
+        #[cfg(test)]
+        println!("hint_is_field({field_type_label}, {struct_type_label}, {field_label})");
         self.set_field(field_type_label, field_label, struct_type_label)?;
 
         self.run_queue()?;
@@ -472,8 +486,9 @@ impl TypeResolver {
     }
 
     pub fn hint_autoref(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
-        //println!("hint_autoref({label1}, {label2})");
-        self.merge_type(label1, label2)?;
+        #[cfg(test)]
+        println!("hint_autoref({label1}, {label2})");
+        self.schedule_merge_type(label1, label2);
 
         self.run_queue()?;
         Ok(())
