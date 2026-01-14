@@ -170,6 +170,19 @@ impl TypeResolver {
         self.ref_dsu.get_repr(self.fixed_ref_component) == self.ref_dsu.get_repr(label)
     }
 
+    // push to queue every struct type that depends on label's type (in type_dsu)
+    fn push_type_parents(&mut self, label: IRTypeLabel) {
+        let mut to_queue = Vec::new();
+        for (_, label2) in &self.type_dsu.get(label).ref_map {
+            for (parent_type, _field_label) in &self.dsu.get(*label2).parent_structs {
+                to_queue.push(*parent_type);
+            }
+        }
+        for i in to_queue {
+            self.add_to_queue(i);
+        }
+    }
+
     fn set_type(&mut self, label: IRTypeLabel, typ: IRType) -> CompilerResult<()> {
         if self.type_dsu.get(label).typ.is_some() && self.type_dsu.get(label).typ.as_ref() != Some(&typ) {
             return Err(CompilerError {
@@ -195,15 +208,7 @@ impl TypeResolver {
             }
         }
 
-        let mut to_queue = Vec::new();
-        for (_, label2) in &self.type_dsu.get(label).ref_map {
-            for (parent_type, _field_label) in &self.dsu.get(*label2).parent_structs {
-                to_queue.push(*parent_type);
-            }
-        }
-        for i in to_queue {
-            self.add_to_queue(i);
-        }
+        self.push_type_parents(label);
 
         Ok(())
     }
@@ -316,9 +321,9 @@ impl TypeResolver {
                 self.type_dsu.get(label1).child_fields.insert(field_label, field_type);
             }
         }
-
         self.type_dsu.get(label2).child_fields.clear();
 
+        // merge same refs
         let mut ref_map = HashMap::new();
         swap(&mut ref_map, &mut self.type_dsu.get(label1).ref_map);
         for (key, label) in ref_map {
@@ -332,7 +337,11 @@ impl TypeResolver {
             }
         }
 
+        // push refs into queue
+
         self.type_dsu.merge(label1, label2);
+
+        self.push_type_parents(label1);
 
         Ok(())
     }
