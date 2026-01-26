@@ -12,3 +12,5 @@ opt-level = "z"
 panic = "abort"
 strip = "symbols"
 
+[features]
+trace = []

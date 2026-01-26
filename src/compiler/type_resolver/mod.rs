@@ -411,7 +411,7 @@ impl TypeResolver {
     }
 
     pub fn hint_is(&mut self, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
-        #[cfg(test)]
+        #[cfg(feature = "trace")]
         println!("hint_is({label}, {typ:?})");
 
         self.set_type(label, IRType::Primitive(typ))?;
@@ -423,7 +423,7 @@ impl TypeResolver {
     }
 
     pub fn hint_equal(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
-        #[cfg(test)]
+        #[cfg(feature = "trace")]
         println!("hint_equal({label1}, {label2})");
         self.merge(label1, label2)?;
 
@@ -432,7 +432,7 @@ impl TypeResolver {
     }
 
     pub fn hint_is_ref(&mut self, phys_label: IRTypeLabel, ref_label: IRTypeLabel) -> CompilerResult<()> {
-        #[cfg(test)]
+        #[cfg(feature = "trace")]
         println!("hint_is_ref({phys_label}, {ref_label})");
         self.schedule_merge_type(phys_label, ref_label);
         self.merge_ref(phys_label, ref_label, 1)?;
@@ -442,7 +442,7 @@ impl TypeResolver {
     }
 
     fn set_field(&mut self, field_type_label: IRTypeLabel, field_label: IRFieldLabel, struct_type_label: IRTypeLabel) -> CompilerResult<()> {
-        #[cfg(test)]
+        #[cfg(feature = "trace")]
         println!("set field field_type={field_type_label} field_label={field_label} struct_type={struct_type_label}");
         if let Some(field_label) = self.type_dsu.get(struct_type_label).child_fields.get(&field_label).cloned() {
             self.merge(field_label, field_type_label)?;
@@ -457,7 +457,7 @@ impl TypeResolver {
     }
 
     pub fn hint_struct(&mut self, struct_type_label: IRTypeLabel, struct_label: IRStructLabel, field_type_labels: Vec<IRTypeLabel>) -> CompilerResult<()> {
-        #[cfg(test)]
+        #[cfg(feature = "trace")]
         println!("hint_struct({struct_type_label}, {struct_label}, {field_type_labels:?})");
         assert_eq!(field_type_labels.len(), self.structs[struct_label].len());
 
@@ -486,7 +486,7 @@ impl TypeResolver {
     }
 
     pub fn hint_is_field(&mut self, field_type_label: IRTypeLabel, struct_type_label: IRTypeLabel, field_label: IRFieldLabel) -> CompilerResult<()> {
-        #[cfg(test)]
+        #[cfg(feature = "trace")]
         println!("hint_is_field({field_type_label}, {struct_type_label}, {field_label})");
         self.set_field(field_type_label, field_label, struct_type_label)?;
 
@@ -495,7 +495,7 @@ impl TypeResolver {
     }
 
     pub fn hint_autoref(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
-        #[cfg(test)]
+        #[cfg(feature = "trace")]
         println!("hint_autoref({label1}, {label2})");
         self.schedule_merge_type(label1, label2);
 
