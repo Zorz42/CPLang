@@ -104,7 +104,7 @@ impl TypeResolver {
     pub fn new(structs: Vec<Vec<IRFieldLabel>>) -> Self {
         let mut res = Self {
             structs_ord: structs.clone(),
-            structs: structs.into_iter().map(|x| HashSet::from_iter(x)).collect(),
+            structs: structs.into_iter().map(HashSet::from_iter).collect(),
             ..Default::default()
         };
         let fixed = res.new_type_label(FilePosition::unknown());
@@ -119,7 +119,7 @@ impl TypeResolver {
 
     fn get_num_known_fields(&mut self, type_label: IRTypeLabel) -> usize {
         let mut num_known_fields = 0;
-        let values = self.type_dsu.get(type_label).child_fields.values().into_iter().cloned().collect::<Vec<_>>();
+        let values = self.type_dsu.get(type_label).child_fields.values().copied().collect::<Vec<_>>();
         for field_type_label in values {
             if self.check_is_type_known(field_type_label) {
                 num_known_fields += 1;
@@ -173,7 +173,7 @@ impl TypeResolver {
     // push to queue every struct type that depends on label's type (in type_dsu)
     fn push_type_parents(&mut self, label: IRTypeLabel) {
         let mut to_queue = Vec::new();
-        for (_, label2) in &self.type_dsu.get(label).ref_map {
+        for label2 in self.type_dsu.get(label).ref_map.values() {
             for (parent_type, _field_label) in &self.dsu.get(*label2).parent_structs {
                 to_queue.push(*parent_type);
             }
@@ -202,7 +202,7 @@ impl TypeResolver {
         } else {
             self.type_map.insert(typ.clone(), label);
             self.type_dsu.get(label).typ = Some(typ);
-            let labels = self.type_dsu.get(label).ref_map.values().map(|x| *x).collect::<Vec<_>>();
+            let labels = self.type_dsu.get(label).ref_map.values().copied().collect::<Vec<_>>();
             for label in labels {
                 self.add_to_queue(label);
             }
@@ -242,7 +242,7 @@ impl TypeResolver {
                 self.ref_is_fixed(node) && self.dsu.get(node).ref_depth == 0 {
                 let mut struct_fields = Vec::new();
                 for field_label in self.structs_ord[struct_label].clone() {
-                    let type_label = self.type_dsu.get(node).child_fields[&field_label].clone();
+                    let type_label = self.type_dsu.get(node).child_fields[&field_label];
                     struct_fields.push(self.fetch_final_ir_type(type_label).unwrap());
                 }
                 self.set_type(node, IRType::Struct(struct_label, struct_fields))?;
@@ -283,14 +283,14 @@ impl TypeResolver {
         if self.type_dsu.get(label1).typ != typ1 {
             self.type_dsu.get(label1).typ = typ1;
             // go through all different types in that component
-            let labels = self.type_dsu.get(label1).ref_map.values().map(|x| *x).collect::<Vec<_>>();
+            let labels = self.type_dsu.get(label1).ref_map.values().copied().collect::<Vec<_>>();
             for label in labels {
                 self.add_to_queue(label);
             }
         }
         if self.type_dsu.get(label2).typ != typ2 {
             self.type_dsu.get(label2).typ = typ2;
-            let labels = self.type_dsu.get(label2).ref_map.values().map(|x| *x).collect::<Vec<_>>();
+            let labels = self.type_dsu.get(label2).ref_map.values().copied().collect::<Vec<_>>();
             for label in labels {
                 self.add_to_queue(label);
             }
@@ -298,13 +298,11 @@ impl TypeResolver {
 
         // merge known_struct
         if let Some(s1) = self.type_dsu.get(label1).known_struct &&
-            let Some(s2) = self.type_dsu.get(label2).known_struct {
-            if s1 != s2 {
-                return Err(CompilerError {
-                    message: "This type cannot be two different struct types at the same time.".to_string(),
-                    position: Some(self.type_positions[label1]),
-                });
-            }
+            let Some(s2) = self.type_dsu.get(label2).known_struct && s1 != s2 {
+            return Err(CompilerError {
+                message: "This type cannot be two different struct types at the same time.".to_string(),
+                position: Some(self.type_positions[label1]),
+            });
         }
 
         if self.type_dsu.get(label1).known_struct.is_none() {
@@ -315,7 +313,7 @@ impl TypeResolver {
 
         // merge child fields
         for (field_label, field_type) in self.type_dsu.get(label2).child_fields.clone() {
-            if let Some(field_type2) = self.type_dsu.get(label1).child_fields.get(&field_label).cloned() {
+            if let Some(field_type2) = self.type_dsu.get(label1).child_fields.get(&field_label).copied() {
                 self.merge(field_type, field_type2)?;
             } else {
                 self.type_dsu.get(label1).child_fields.insert(field_label, field_type);
@@ -412,7 +410,7 @@ impl TypeResolver {
         all_nodes = self.ref_dsu.get(label1).nodes.clone();
         for node in all_nodes {
             let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
-            if let Some(label) = self.type_dsu.get(node).ref_map.get(&key).cloned() {
+            if let Some(label) = self.type_dsu.get(node).ref_map.get(&key).copied() {
                 if self.dsu.get_repr(label) != self.dsu.get_repr(node) {
                     self.add_to_queue(label);
                     self.dsu.merge(label, node);
@@ -458,7 +456,7 @@ impl TypeResolver {
     fn set_field(&mut self, field_type_label: IRTypeLabel, field_label: IRFieldLabel, struct_type_label: IRTypeLabel) -> CompilerResult<()> {
         #[cfg(feature = "trace")]
         println!("set field field_type={field_type_label} field_label={field_label} struct_type={struct_type_label}");
-        if let Some(field_label) = self.type_dsu.get(struct_type_label).child_fields.get(&field_label).cloned() {
+        if let Some(field_label) = self.type_dsu.get(struct_type_label).child_fields.get(&field_label).copied() {
             self.merge(field_label, field_type_label)?;
         } else {
             self.type_dsu.get(struct_type_label).child_fields.insert(field_label, field_type_label);

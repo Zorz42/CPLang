@@ -266,7 +266,7 @@ impl Normalizer {
             }
 
             let prev_resolver = self.type_resolver.clone();
-            let mut prev_template_types = Default::default();
+            let mut prev_template_types = HashMap::default();
             swap(&mut self.template_types, &mut prev_template_types);
             let mut ok = true;
 
@@ -750,11 +750,11 @@ impl Normalizer {
         }
 
         // backup and override values that are needed by instance normalizing
-        let mut prev_func_vars = Default::default();
+        let mut prev_func_vars = Vec::default();
         let mut prev_func_ret_type = self.type_resolver.new_type_label(sign.pos);
         let mut prev_has_ret_statement = false;
         let mut prev_variables_name_map = HashMap::new();
-        let mut prev_template_types = Default::default();
+        let mut prev_template_types = HashMap::default();
 
         swap(&mut prev_func_vars, &mut self.curr_func_vars);
         swap(&mut prev_func_ret_type, &mut self.curr_func_ret_type);
