@@ -28,6 +28,11 @@ impl Normalizer {
 
     // is func1 more specific than func2 - so every call that satisfies func1 also satisfies func2
     pub fn check_is_function_more_specific(&mut self, func1: &ASTFunctionSignature, func2: &ASTFunctionSignature) -> bool {
+        #[cfg(feature = "trace")] {
+            println!("===============");
+            println!("Comparing {func1:?} {func2:?}");
+        }
+
         let mut old_resolver = TypeResolver::new(self.type_resolver.get_structs());
         // this is ugly (might refactor later)
         swap(&mut old_resolver, &mut self.type_resolver);
@@ -38,12 +43,19 @@ impl Normalizer {
 
         for (arg1, arg2) in args2.iter().zip(args3) {
             if self.type_resolver.hint_equal(*arg1, arg2).is_err() {
+                #[cfg(feature = "trace")]
+                println!("===============");
+
                 return false;
             }
         }
 
         let res = self.type_resolver.compare_sets(args1, args2);
         swap(&mut old_resolver, &mut self.type_resolver);
+        #[cfg(feature = "trace")] {
+            println!("Verdict: {res}");
+            println!("===============");
+        }
         res
     }
 }

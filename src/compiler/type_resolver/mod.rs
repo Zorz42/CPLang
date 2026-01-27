@@ -341,6 +341,20 @@ impl TypeResolver {
 
         self.type_dsu.merge(label1, label2);
 
+        if let Some(typ) = &self.type_dsu.get(label1).typ {
+            let known_struct = match typ {
+                IRType::Struct(label, _) => Some(*label),
+                _ => None,
+            };
+
+            if self.type_dsu.get(label1).known_struct != known_struct {
+                return Err(CompilerError {
+                    message: "This type cannot be two different struct types at the same time.".to_string(),
+                    position: Some(self.type_positions[label1]),
+                });
+            }
+        }
+
         self.push_type_parents(label1);
 
         Ok(())

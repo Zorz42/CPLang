@@ -254,7 +254,14 @@ impl Normalizer {
         let mut matching = HashSet::new();
 
         for (i, sign) in candidates.into_iter().enumerate() {
+            #[cfg(feature = "trace")] {
+                println!("===============");
+                println!("Trying to match {function_arguments:?} {sign:?}");
+            }
+
             if template_arguments.len() > sign.template.len() {
+                #[cfg(feature = "trace")]
+                println!("===============");
                 continue;
             }
 
@@ -283,6 +290,10 @@ impl Normalizer {
             self.type_resolver = prev_resolver;
             swap(&mut self.template_types, &mut prev_template_types);
 
+            #[cfg(feature = "trace")] {
+                println!("Mathing: {ok}");
+                println!("===============");
+            }
             if ok {
                 matching.insert(i);
             }
