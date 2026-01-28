@@ -3,6 +3,6 @@
 struct TestStruct
     x
 
-main
+fn main
     a = TestStruct invalid_field "compile"
     out "ok"

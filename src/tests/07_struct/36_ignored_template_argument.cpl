@@ -4,7 +4,7 @@ struct Box[T]
     fn get
         0
 
-main
+fn main
     vec = Box
     vec.get()
     out "ok"

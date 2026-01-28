@@ -1,0 +1,5 @@
+//OUT=ok
+
+fn main
+    // TODO: tuple tests
+    out "ok"

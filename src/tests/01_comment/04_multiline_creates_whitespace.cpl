@@ -1,7 +1,7 @@
 //OUT=it works! 50
 
-func/*a*/x/*bbb*/y
+fn func/*a*/x/*bbb*/y
     ret x + y
 
-main
+fn main
     out/*b*/"it works! {func(20 30)}"

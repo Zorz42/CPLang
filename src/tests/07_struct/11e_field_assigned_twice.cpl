@@ -3,6 +3,6 @@
 struct TestStruct
     x y
 
-main
+fn main
     a = TestStruct x "compile" x "compile"
     out "ok"

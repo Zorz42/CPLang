@@ -1,5 +1,5 @@
 //OUT=5
 
-main
+fn main
     out "{10/2}"
 

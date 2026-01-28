@@ -8,6 +8,6 @@ struct S2
     fn get
         ret "method2"
 
-main
+fn main
     a = S2
     out "{a.get()}"

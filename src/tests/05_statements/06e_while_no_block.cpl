@@ -1,6 +1,6 @@
 //ERR 8 4 8 7
 
-main
+fn main
     a = 0
     b = 1
     cnt = 0

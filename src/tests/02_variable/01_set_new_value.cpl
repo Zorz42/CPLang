@@ -1,6 +1,6 @@
 //OUT=hello 12
 
-main
+fn main
     a = 10
     a = 12
     out "hello {a}"

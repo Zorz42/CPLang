@@ -3,12 +3,12 @@
 struct Box[T]
     x: T
 
-fun vec: Box
+fn fun vec: Box
     out "ok"
 
-fun vec: Box[Box]
+fn fun vec: Box[Box]
     out "err"
 
-main
+fn main
     v = Box x 10
     fun(v)

@@ -1,11 +1,11 @@
 //OUT=compile
 
-func
+fn func
     if 10 == 10
         ret
 
     ret
 
-main
+fn main
     func()
     out "compile"

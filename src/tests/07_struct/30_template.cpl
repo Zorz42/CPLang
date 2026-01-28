@@ -5,6 +5,6 @@ struct Obj[T]
     y: T
     z: string
 
-main
+fn main
     a = Obj x 10 y 20 z "ok"
     out "{a.z}"

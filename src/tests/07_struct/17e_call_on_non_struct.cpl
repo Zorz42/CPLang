@@ -1,5 +1,5 @@
 //ERR 4 6 4 14
 
-main
+fn main
     a = 10
     a.method()

@@ -6,5 +6,5 @@ struct TestStruct
     fn set_x
         x = "compile"
 
-main
+fn main
     out "compile"

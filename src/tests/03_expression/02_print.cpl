@@ -1,6 +1,6 @@
 //OUT=230
 
-main
+fn main
     a = 10
     b = 20
     out "{a+b*11}"

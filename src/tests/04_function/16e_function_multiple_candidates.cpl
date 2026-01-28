@@ -1,11 +1,11 @@
 //ERR 10 10 10 21
 
-func x: i32 y
+fn func x: i32 y
     ret x + 10
 
-func x y: i32
+fn func x y: i32
     ret x
 
-main
+fn main
     s = func("OK" 10)
     out "{func(12 10)} {s}"

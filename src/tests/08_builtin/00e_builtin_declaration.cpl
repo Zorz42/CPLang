@@ -3,5 +3,5 @@
 _builtin_error x
     ret x
 
-main
+fn main
     out "ok"

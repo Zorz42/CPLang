@@ -1,11 +1,11 @@
 //OUT=Hello, 10
 
-id x
+fn id x
     ret x
 
-print_with_hello x
+fn print_with_hello x
     out "Hello, {id(x)}"
 
-main
+fn main
     val = id("test")
     print_with_hello(10)

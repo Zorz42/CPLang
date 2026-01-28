@@ -2,7 +2,7 @@
 
 // Comments can be anywhere
 
-main
+fn main
     // in functions
 
     out "it works!" // or after statements

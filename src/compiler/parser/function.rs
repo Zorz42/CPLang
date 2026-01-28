@@ -6,7 +6,13 @@ use crate::compiler::parser::template::parse_declaration_template;
 use crate::compiler::parser::typed::{parse_type, parse_type_hint};
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
-pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(ASTFunctionSignature, TokenBlock)> {
+pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<Option<(ASTFunctionSignature, TokenBlock)>> {
+    match block.peek() {
+        (Token::Fn, _) => { block.get(); }
+        (Token::Operator, _) => {}
+        _ => return Ok(None),
+    }
+
     let mut res_signature = ASTFunctionSignature {
         name: String::new(),
         args: Vec::new(),
@@ -82,7 +88,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<(AST
         res_signature.args.push((arg, type_hint, arg_pos));
     }
 
-    Ok((res_signature, res_block))
+    Ok(Some((res_signature, res_block)))
 }
 
 // this function is called when function name is already consumed

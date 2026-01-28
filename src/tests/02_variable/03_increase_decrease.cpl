@@ -1,6 +1,6 @@
 //OUT=12 8
 
-main
+fn main
     a = 10
     a += 2
     b = 10

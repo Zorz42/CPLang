@@ -3,7 +3,7 @@
 struct T
     x
 
-main
+fn main
     a = T x 10
     b = &a.x
     |b = 20

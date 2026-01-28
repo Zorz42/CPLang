@@ -1,5 +1,5 @@
 //ERR 3 4 3 7
 
-main
+fn main
     res: string = 10+20*10: i32
     out "{res}"

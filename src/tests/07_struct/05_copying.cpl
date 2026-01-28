@@ -3,10 +3,10 @@
 struct T
     x
 
-print x
+fn print x
     out "{x.x}"
 
-main
+fn main
     a = T x 20
     b = a
     print(b)

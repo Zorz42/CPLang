@@ -7,16 +7,16 @@ struct Vec[T]
     fn index i
         ret &_builtin_index(self.vec i)
 
-new_vec size
+fn new_vec size
     ret Vec size size vec _builtin_alloc(size)
 
-new_vec
+fn new_vec
     ret new_vec(0)
 
 struct Box[T]
     x: T
 
-sum vec: Vec
+fn sum vec: Vec
     i = 0
     res = 0
     while i < vec.size
@@ -24,7 +24,7 @@ sum vec: Vec
         i++
     ret res
 
-sum vec: Vec[Box]
+fn sum vec: Vec[Box]
     i = 0
     res = 0
     while i < vec.size
@@ -32,7 +32,7 @@ sum vec: Vec[Box]
         i++
     ret res
 
-main
+fn main
     v1 = new_vec(3)
     |v1.index(0) = 10
     |v1.index(1) = 5

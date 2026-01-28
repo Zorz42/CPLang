@@ -3,5 +3,5 @@
 struct TestStruct
     if
 
-main
+fn main
     out "compile"

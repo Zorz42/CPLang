@@ -1,5 +1,5 @@
 //ERR 4 14 4 15
 
-main
+fn main
     str = "a
     out "{str}"

@@ -3,6 +3,6 @@
 struct TestStruct
     x: string
 
-main
+fn main
     a = TestStruct x "compile"
     out "ok"

@@ -1,6 +1,6 @@
 //OUT=1 532 12
 
-main
+fn main
     a = _builtin_alloc(3)
     _builtin_index(a 0) = 1
     _builtin_index(a 1) = 532

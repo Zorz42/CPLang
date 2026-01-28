@@ -1,6 +1,6 @@
 //OUT=20 20
 
-main
+fn main
     a = 10
     ref_a = &a
     |ref_a = 20

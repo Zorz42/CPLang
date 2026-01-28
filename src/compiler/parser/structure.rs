@@ -44,20 +44,21 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
     let mut methods = Vec::new();
 
     while block.has_tokens() {
+        if let Some((signature, block)) = parse_function_declaration(&mut block)? {
+            let block = parse_block(&Vec::new(), block)?;
+            methods.push((signature, block));
+            continue;
+        }
+
         match block.get() {
             (Token::Identifier(name), _) => {
                 let type_hint = parse_type_hint(&mut block)?;
 
                 fields.push((name.clone(), type_hint));
             }
-            (Token::Fn, _) => {
-                let (signature, block) = parse_function_declaration(&mut block)?;
-                let block = parse_block(&Vec::new(), block)?;
-                methods.push((signature, block));
-            }
             (_, pos) => {
                 return Err(CompilerError {
-                    message: "Expected field name of fn keyword".to_owned(),
+                    message: "Expected field name or fn keyword".to_owned(),
                     position: Some(pos),
                 });
             }

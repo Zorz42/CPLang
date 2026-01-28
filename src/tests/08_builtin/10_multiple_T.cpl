@@ -7,15 +7,15 @@ struct Vec[T]
     fn index i: i32
         ret &_builtin_index(self.vec i)
 
-new_vec[T] size
+fn new_vec[T] size
     ret Vec[T] size size vec _builtin_alloc(size)
 
-func[T]
+fn func[T]
     v = new_vec[T](10)
     v2 = new_vec[T](10)
     |v.index(0) = 10
 
-main
+fn main
     func()
     out "ok"
 

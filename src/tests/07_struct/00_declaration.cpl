@@ -3,5 +3,5 @@
 struct TestStruct
     x
 
-main
+fn main
     out "compile"

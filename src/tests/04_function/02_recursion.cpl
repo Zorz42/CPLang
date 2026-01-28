@@ -1,10 +1,10 @@
 //OUT=6765
 
-fib n
+fn fib n
     if n <= 2
         ret 1
     else
         ret fib(n - 1) + fib(n - 2)
 
-main
+fn main
     out "{fib(20)}"

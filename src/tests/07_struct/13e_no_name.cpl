@@ -3,5 +3,5 @@
 struct
     x
 
-main
+fn main
     out "compile"

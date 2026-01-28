@@ -1,6 +1,6 @@
 //OUT=6765
 
-main
+fn main
     a = 0
     b = 1
     cnt = 0

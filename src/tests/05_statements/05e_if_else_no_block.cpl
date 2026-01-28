@@ -1,6 +1,6 @@
 //ERR 14 4 14 7
 
-main
+fn main
     a = 0
     if 10 == 10
         a = 20

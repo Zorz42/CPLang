@@ -1,4 +1,4 @@
 //OUT=Hello, World!
 
-main
+fn main
     out "Hello, World!"

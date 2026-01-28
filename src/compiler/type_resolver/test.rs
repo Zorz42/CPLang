@@ -244,7 +244,6 @@ mod test_type_resolver {
         resolver.hint_struct(typ1, 0, vec![typ2]).unwrap();
         resolver.hint_struct(typ4, 0, vec![typ5]).unwrap();
         resolver.hint_struct(typ3, 0, vec![typ4]).unwrap();
-        println!("Hint equal");
         assert!(resolver.hint_equal(typ1, typ3).is_err());
     }
 }

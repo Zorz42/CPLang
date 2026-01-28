@@ -1,5 +1,5 @@
 //ERR 3 4 3 13
 
-main
+fn main
     missing()
 

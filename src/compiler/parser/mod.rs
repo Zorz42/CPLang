@@ -1,4 +1,4 @@
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::parser::ast::Ast;
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::function::parse_function_declaration;
@@ -29,11 +29,15 @@ pub fn parse_tokens(mut program_block: TokenBlock) -> CompilerResult<Ast> {
         structs: Vec::new(),
     };
     while program_block.has_tokens() {
-        if let Some(struct_declaration) = parse_struct_declaration(&mut program_block)? {
+        if let Some(declaration) = parse_function_declaration(&mut program_block)? {
+            function_declarations.push(declaration);
+        } else if let Some(struct_declaration) = parse_struct_declaration(&mut program_block)? {
             res.structs.push(struct_declaration);
         } else {
-            let declaration = parse_function_declaration(&mut program_block)?;
-            function_declarations.push(declaration);
+            return Err(CompilerError {
+                message: "Unexpected token, expected one of: fn, struct".to_owned(),
+                position: Some(program_block.get().1),
+            })
         }
     }
     for (signature, function_block) in function_declarations {

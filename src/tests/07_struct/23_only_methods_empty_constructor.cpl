@@ -4,6 +4,6 @@ struct S
     fn dummy
         0
 
-main
+fn main
     a = S
     out "compile"

@@ -1,10 +1,10 @@
-//ERR 5 0 5 6
+//ERR 5 3 5 9
 
 struct Box
     x
 
-func x
+fn func x
     ret func(Box x x)
 
-main
+fn main
     func(0)

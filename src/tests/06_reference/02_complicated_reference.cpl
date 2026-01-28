@@ -1,9 +1,9 @@
 //OUT=20
 
-set20 x
+fn set20 x
     |x = 20
 
-main
+fn main
     a = 10
     set20(&(a))
     out "{a}"

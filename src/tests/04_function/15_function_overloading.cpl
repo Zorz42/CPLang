@@ -1,11 +1,11 @@
 //OUT=22 OK
 
-func x: i32
+fn func x: i32
     ret x + 10
 
-func x: string
+fn func x: string
     ret x
 
-main
+fn main
     s = func("OK")
     out "{func(12)} {s}"

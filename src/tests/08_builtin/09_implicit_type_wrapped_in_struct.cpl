@@ -3,7 +3,7 @@
 struct Vec
     vec
 
-main
+fn main
     v1 = Vec vec _builtin_alloc(1)
     _builtin_index(v1.vec 0) = 10
     v2 = Vec vec _builtin_alloc(1)

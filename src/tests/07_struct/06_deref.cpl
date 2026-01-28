@@ -6,7 +6,7 @@ struct T
 struct T2
     y
 
-main
+fn main
     a = T x 20
     b = T2 y &a
     c = &b

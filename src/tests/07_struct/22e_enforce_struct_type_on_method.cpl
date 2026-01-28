@@ -6,6 +6,6 @@ struct TestStruct
     fn get_x
         0
 
-main
+fn main
     a = 0
     out "{a.get_x()}"

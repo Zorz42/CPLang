@@ -6,7 +6,7 @@ struct Box[T]
     fn get
         0
 
-main
+fn main
     vec = Box x 10
     vec.get()
     out "ok"

@@ -6,6 +6,6 @@ struct A
 struct B
     a b c
 
-main
+fn main
     a = A x 10 y B a 10 b "cool" c "ok" z 30
     out "{a.y.c}"

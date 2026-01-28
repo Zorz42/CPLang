@@ -1,6 +1,6 @@
 //OUT=1 0
 
-main
+fn main
     a = 10 == 10
     b = 10 != 10
     out "{a} {b}"

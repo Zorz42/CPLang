@@ -1,4 +1,4 @@
-//ERR 2 5 2 8
+//ERR 2 8 2 11
 
-main arg
+fn main arg
     0

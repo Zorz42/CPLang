@@ -3,6 +3,6 @@
 struct TestStruct
     x: i32
 
-main
+fn main
     a = TestStruct x "compile"
     out "ok"

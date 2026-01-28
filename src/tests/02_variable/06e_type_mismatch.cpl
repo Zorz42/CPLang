@@ -1,6 +1,6 @@
 //ERR 4 4 4 5
 
-main
+fn main
     a = 10
     a = "a"
     out "hello {a}"

@@ -5,6 +5,6 @@ struct Obj[T]
     y: T
     z: string
 
-main
+fn main
     a = Obj[i32] x "not ok" y "not ok" z "ok"
     out "{a.z}"

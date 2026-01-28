@@ -1,5 +1,5 @@
 //ERR 3 8 3 9
 
-main
+fn main
     a = (10
     out "{a}"

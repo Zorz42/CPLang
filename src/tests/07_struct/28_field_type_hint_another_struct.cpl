@@ -6,6 +6,6 @@ struct Struct2
 struct TestStruct
     x: Struct2
 
-main
+fn main
     a = TestStruct x Struct2 x "compile"
     out "ok"

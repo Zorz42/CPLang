@@ -2,7 +2,7 @@
 
 // Comments can be anywhere
 
-main
+fn main
 
     /*
     comments can be multiline

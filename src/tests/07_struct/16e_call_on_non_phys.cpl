@@ -9,6 +9,6 @@ struct TestStruct
     fn get_x
         ret self.x
 
-main
+fn main
     a = (TestStruct x "no good").set_x()
     out "{a.get_x()}"

@@ -3,6 +3,6 @@
 operator+ a: string b: string
     ret 10
 
-main
+fn main
     a = "a" + "b"
     out "{a}"

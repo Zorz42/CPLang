@@ -1,4 +1,4 @@
 //OUT=1 0 1.500000
 
-main
+fn main
     out "{true} {false} {1.5}"

@@ -1,6 +1,6 @@
 //OUT=good
 
-main
+fn main
     a="Hello
 This is a string
    that is
