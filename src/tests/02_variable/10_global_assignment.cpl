@@ -1,0 +1,16 @@
+//OUT=10 20 15
+
+a = 10
+
+fn change_a x
+    a = x
+
+fn main
+    v1 = a
+    a = 20
+    v2 = a
+    change_a(15)
+    v3 = a
+
+    out "{v1} {v2} {v3}"
+

@@ -1,0 +1,10 @@
+//OUT=ok
+
+a = 10
+b: i32
+c
+d: i32 = 20
+
+fn main
+    out "ok"
+

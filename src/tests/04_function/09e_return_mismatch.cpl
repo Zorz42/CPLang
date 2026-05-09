@@ -1,8 +1,8 @@
-//ERR 2 0 2 4
+//ERR 2 3 2 7
 
-func
+fn func
     ret 10
     ret "abc"
 
-main
+fn main
     func()

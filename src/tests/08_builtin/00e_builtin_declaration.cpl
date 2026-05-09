@@ -1,6 +1,6 @@
-//ERR 2 0 2 14
+//ERR 2 3 2 17
 
-_builtin_error x
+fn _builtin_error x
     ret x
 
 fn main

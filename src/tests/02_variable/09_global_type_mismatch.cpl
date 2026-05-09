@@ -1,0 +1,7 @@
+//ERR -1 -1 -1 -1
+
+a: i32 = "bad"
+
+fn main
+    out "ok"
+

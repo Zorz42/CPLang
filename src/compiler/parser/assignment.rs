@@ -1,6 +1,7 @@
-use crate::compiler::error::CompilerResult;
-use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStatement, ASTStructDeclaration};
+use crate::compiler::error::{CompilerError, CompilerResult};
+use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::expression::parse_expression;
+use crate::compiler::parser::typed::parse_type_hint;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
 pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpression, block: &mut TokenBlock) -> CompilerResult<Option<ASTStatement>> {
@@ -46,4 +47,26 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
     };
 
     Ok(Some(res))
+}
+
+pub fn parse_global_variable_declaration(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<(String, ASTType, Option<ASTExpression>)> {
+    let ident = match block.get() {
+        (Token::Identifier(ident), _) => ident,
+        (_, pos) => return Err(CompilerError {
+            message: "Unexpected token, expected one of: fn, struct, identifier".to_owned(),
+            position: Some(pos),
+        }),
+    };
+
+    let hint = parse_type_hint(block)?;
+
+    let value = if let (Token::Assign, _) = block.peek() {
+        block.get();
+        let value = parse_expression(structs, block)?;
+        Some(value)
+    } else {
+        None
+    };
+
+    Ok((ident, hint, value))
 }

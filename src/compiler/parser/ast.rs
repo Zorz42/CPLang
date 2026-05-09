@@ -4,6 +4,8 @@ use crate::compiler::error::FilePosition;
 pub struct Ast {
     pub functions: Vec<(ASTFunctionSignature, ASTBlock)>,
     pub structs: Vec<ASTStructDeclaration>,
+    // variables are (name, type_hint, initial_value)
+    pub global_variables: Vec<(String, ASTType, Option<ASTExpression>)>,
 }
 
 #[derive(Debug, Clone)]
