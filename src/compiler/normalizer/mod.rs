@@ -188,7 +188,7 @@ impl Normalizer {
                         variable_label,
                     },
                     value,
-                })
+                });
             }
 
             swap(&mut self.ir.instances[self.ir.main_function].block.statements, &mut main_block);
