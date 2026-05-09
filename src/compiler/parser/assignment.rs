@@ -1,4 +1,4 @@
-use crate::compiler::error::{CompilerError, CompilerResult};
+use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::typed::parse_type_hint;
@@ -49,9 +49,9 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
     Ok(Some(res))
 }
 
-pub fn parse_global_variable_declaration(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<(String, ASTType, Option<ASTExpression>)> {
-    let ident = match block.get() {
-        (Token::Identifier(ident), _) => ident,
+pub fn parse_global_variable_declaration(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<(String, ASTType, Option<ASTExpression>, FilePosition)> {
+    let (ident, ident_pos) = match block.get() {
+        (Token::Identifier(ident), ident_pos) => (ident, ident_pos),
         (_, pos) => return Err(CompilerError {
             message: "Unexpected token, expected one of: fn, struct, identifier".to_owned(),
             position: Some(pos),
@@ -68,5 +68,5 @@ pub fn parse_global_variable_declaration(structs: &Vec<ASTStructDeclaration>, bl
         None
     };
 
-    Ok((ident, hint, value))
+    Ok((ident, hint, value, ident_pos))
 }

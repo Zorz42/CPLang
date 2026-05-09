@@ -16,6 +16,7 @@ pub struct IR {
     pub instances: Vec<IRInstance>,
     pub types: HashMap<IRTypeLabel, IRType>,
     pub variable_types: Vec<IRTypeLabel>,
+    pub global_variables: Vec<IRVariableLabel>,
     pub autorefs: Vec<i32>,
     pub main_function: IRInstanceLabel,
 }

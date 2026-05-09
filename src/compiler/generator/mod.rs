@@ -32,6 +32,13 @@ pub fn generate_code(ir: IR) -> String {
         autorefs: ir.autorefs,
     };
 
+    let mut global_variables = String::new();
+    for var_label in ir.global_variables {
+        let var_type = ctx.types[&ctx.var_types[var_label]].clone();
+        let var_type = gen_type(&mut ctx, var_type);
+        global_variables += &format!("{} {};\n", var_type, gen_variable_label(var_label));
+    }
+
     let mut function_signatures = String::new();
     for func in &ir.instances {
         function_signatures += &gen_function_signature(&mut ctx, func);
@@ -51,7 +58,7 @@ int main(){
     ";
     let main_code = main_code.replace("$main$", &gen_function_label(ir.main_function));
 
-    format!("{}\n{}\n{}\n{}\n{}", imports, ctx.struct_declarations, function_signatures, functions, main_code)
+    format!("{}\n{}\n{}\n{}\n{}\n{}", imports, global_variables, ctx.struct_declarations, function_signatures, functions, main_code)
 }
 
 fn gen_primitive_type(typ: IRPrimitiveType) -> String {

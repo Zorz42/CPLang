@@ -6,5 +6,6 @@ c
 d: i32 = 20
 
 fn main
+    c = 10
     out "ok"
 

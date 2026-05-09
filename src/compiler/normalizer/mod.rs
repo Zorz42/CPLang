@@ -32,6 +32,7 @@ struct Normalizer {
     ir: IR,
     type_resolver: TypeResolver,
     variables_name_map: HashMap<String, IRVariableLabel>,
+    global_variables_name_map: HashMap<String, IRVariableLabel>,
     curr_var_label: IRVariableLabel,
     // key is (function name, number of arguments)
     functions_name_map: HashMap<(String, usize), Vec<(ASTFunctionSignature, ASTBlock)>>,
@@ -117,6 +118,7 @@ impl Normalizer {
             }
         }
 
+        // compute function ordering based on how specific they are
         let keys = self.functions_name_map.keys().collect::<Vec<_>>().into_iter().cloned().collect::<Vec<_>>();
         for k in keys {
             let n = self.functions_name_map[&k].len();
@@ -143,6 +145,25 @@ impl Normalizer {
             }
         }
 
+        // add all global variables
+        let mut global_assignments = Vec::new();
+        for (variable_name, type_hint, initial_value, ident_pos) in ast.global_variables {
+            let var_label = self.new_var(&variable_name);
+            self.ir.global_variables.push(var_label);
+            let type_label = self.type_resolver.new_type_label(ident_pos);
+            self.relevant_types.push(type_label);
+            self.ir.variable_types.push(type_label);
+            let type_hint_label = self.normalize_type(type_hint)?;
+            self.type_resolver.hint_equal(type_label, type_hint_label)?;
+            if let Some(initial_value) = initial_value {
+                let (initial_value, value_type_label, _) = self.normalize_expression(initial_value)?;
+                self.type_resolver.hint_equal(type_label, value_type_label)?;
+                global_assignments.push((var_label, initial_value));
+            }
+        }
+
+        // variables_name_map got populated instead of global one
+        swap(&mut self.variables_name_map, &mut self.global_variables_name_map);
 
         if let Some(mut vec) = self.functions_name_map.get(&(transform_function_name("main".to_string()), 0)).cloned() {
             if vec.len() != 1 {
@@ -157,6 +178,21 @@ impl Normalizer {
             // normalize the main function (which recursively normalizes every instance that is used within
             // this is where vast majority of the work happens
             self.ir.main_function = self.normalize_function(sig, block, Vec::new(), Vec::new())?;
+
+            // insert initial global assignments at the start of main function
+            let mut main_block = Vec::new();
+
+            for (variable_label, value) in global_assignments {
+                main_block.push(IRStatement::Assignment {
+                    assign_to: IRExpression::Variable {
+                        variable_label,
+                    },
+                    value,
+                })
+            }
+
+            swap(&mut self.ir.instances[self.ir.main_function].block.statements, &mut main_block);
+            self.ir.instances[self.ir.main_function].block.statements.append(&mut main_block);
         } else {
             return Err(CompilerError {
                 message: "No main function found".to_string(),
@@ -753,7 +789,7 @@ impl Normalizer {
         let mut prev_func_vars = Vec::default();
         let mut prev_func_ret_type = self.type_resolver.new_type_label(sign.pos);
         let mut prev_has_ret_statement = false;
-        let mut prev_variables_name_map = HashMap::new();
+        let mut prev_variables_name_map = self.global_variables_name_map.clone();
         let mut prev_template_types = HashMap::default();
 
         swap(&mut prev_func_vars, &mut self.curr_func_vars);
