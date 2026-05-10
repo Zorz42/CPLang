@@ -86,11 +86,8 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
         | ASTExpressionKind::Float(_)
         | ASTExpressionKind::String(_)
         | ASTExpressionKind::Boolean(_)
-        | ASTExpressionKind::Variable(_) => ASTExpression {
-            kind: expression.kind,
-            pos,
-            type_hint: expression.type_hint,
-        },
+        | ASTExpressionKind::Variable(_) => expression,
+
         ASTExpressionKind::Reference(mut expression) => {
             *expression = lower_expression(*expression);
             ASTExpression::no_hint(ASTExpressionKind::Reference(expression), pos)
@@ -191,33 +188,27 @@ fn lower_statement(statement: ASTStatement) -> ASTStatement {
             value: ASTExpression::no_hint(ASTExpressionKind::Integer(1), pos),
             operator: ASTOperator::Minus,
         }),
-        ASTStatement::Block { mut block } => {
-            block.children = block.children.into_iter().map(lower_statement).collect();
-            ASTStatement::Block { block }
-        }
-        ASTStatement::If {
-            mut condition,
-            mut block,
-            mut else_block,
-        } => {
-            block = lower_block(block);
-            else_block = else_block.map(lower_block);
-            condition = lower_expression(condition);
-            ASTStatement::If { condition, block, else_block }
-        }
-        ASTStatement::While { mut block, mut condition } => {
-            block = lower_block(block);
-            condition = lower_expression(condition);
-            ASTStatement::While { block, condition }
-        }
-        ASTStatement::Return { mut return_value, pos } => {
-            return_value = return_value.map(lower_expression);
-            ASTStatement::Return { return_value, pos }
-        }
-        ASTStatement::Print { mut values } => {
-            values = values.into_iter().map(lower_expression).collect();
-            ASTStatement::Print { values }
-        }
+        ASTStatement::Block { block } => ASTStatement::Block {
+            block: ASTBlock {
+                children: block.children.into_iter().map(lower_statement).collect(),
+            }
+        },
+        ASTStatement::If { condition, block, else_block } => ASTStatement::If {
+            block: lower_block(block),
+            else_block: else_block.map(lower_block),
+            condition: lower_expression(condition),
+        },
+        ASTStatement::While { block, condition } => ASTStatement::While {
+            block: lower_block(block),
+            condition: lower_expression(condition),
+        },
+        ASTStatement::Return { return_value, pos } => ASTStatement::Return {
+            return_value: return_value.map(lower_expression),
+            pos,
+        },
+        ASTStatement::Print { values } => ASTStatement::Print {
+            values: values.into_iter().map(lower_expression).collect(),
+        },
         ASTStatement::Expression { expression } => ASTStatement::Expression {
             expression: lower_expression(expression),
         },
