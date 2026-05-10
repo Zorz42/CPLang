@@ -666,6 +666,8 @@ impl Normalizer {
 
                     res.statements.push(IRStatement::Assignment { assign_to, value });
                 }
+
+                ASTStatement::SemiBlock { .. } => unreachable!("ASTStatement::SemiBlock should be eliminated by lowerer"),
                 ASTStatement::AssignmentOperator { .. } => unreachable!("ASTStatement::AssignmentOperator should be eliminated by lowerer"),
                 ASTStatement::AssignmentIncrement { .. } => unreachable!("ASTStatement::AssignmentIncrement should be eliminated by lowerer"),
                 ASTStatement::AssignmentDecrement { .. } => unreachable!("ASTStatement::AssignmentDecrement should be eliminated by lowerer"),

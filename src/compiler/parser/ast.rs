@@ -1,4 +1,5 @@
 use crate::compiler::error::FilePosition;
+use std::fmt::{Debug, Formatter};
 
 #[derive(Debug)]
 pub struct Ast {
@@ -19,6 +20,10 @@ pub struct ASTFunctionCall {
 #[derive(Debug, Clone)]
 pub enum ASTStatement {
     Block {
+        block: ASTBlock,
+    },
+    // Same as block, except its scope leaks into the parent block
+    SemiBlock {
         block: ASTBlock,
     },
     Expression {
@@ -61,9 +66,21 @@ pub enum ASTStatement {
     },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ASTBlock {
     pub children: Vec<ASTStatement>,
+}
+
+impl Debug for ASTBlock {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[\n")?;
+        for child in &self.children {
+            child.fmt(f)?;
+            f.write_str("\n")?;
+        }
+        f.write_str("]\n")?;
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -131,7 +148,7 @@ pub enum ASTExpressionKind {
         expression2: Box<ASTExpression>,
     },
     // wrapper that automatically decides how many references/dereferences should the expression have
-    // using this is worse for type checker, since it has less information but better for the user, 
+    // using this is worse for type checker, since it has less information but better for the user,
     // since there is no need for manual referencing
     AutoRef(Box<ASTExpression>),
     // wrapper that determines type for expression

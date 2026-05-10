@@ -1,12 +1,19 @@
 use crate::compiler::{gain_input_sources, INPUT_NAMES};
+use std::fmt::{Debug, Formatter};
 use std::ops::{Add, AddAssign};
 
 // this struct stores file position so the error can be displayed
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct FilePosition {
     pub file_ident: usize,
     pub first_pos: (usize, usize),
     pub last_pos: (usize, usize),
+}
+
+impl Debug for FilePosition {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("()")
+    }
 }
 
 impl FilePosition {
