@@ -52,7 +52,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
         } else if pc.c == '{' {
             in_format = true;
             if !curr.is_empty() {
-                res.push(ASTExpression::no_hint(ASTExpressionKind::String(curr), FilePosition::unknown()));
+                res.push(ASTExpression::new(ASTExpressionKind::String(curr), FilePosition::unknown()));
             }
             curr = String::new();
             format_pos = pc.pos;
@@ -73,7 +73,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
     }
 
     if !curr.is_empty() {
-        res.push(ASTExpression::no_hint(ASTExpressionKind::String(curr), FilePosition::unknown()));
+        res.push(ASTExpression::new(ASTExpressionKind::String(curr), FilePosition::unknown()));
     }
     Ok(res)
 }

@@ -85,14 +85,12 @@ pub enum ASTOperator {
 pub struct ASTExpression {
     pub kind: ASTExpressionKind,
     pub pos: FilePosition,
-    pub type_hint: ASTType,
 }
 
 impl ASTExpression {
-    pub const fn no_hint(kind: ASTExpressionKind, pos: FilePosition) -> Self {
+    pub const fn new(kind: ASTExpressionKind, pos: FilePosition) -> Self {
         Self {
             kind,
-            type_hint: ASTType::Any(pos),
             pos,
         }
     }
@@ -121,6 +119,7 @@ pub enum ASTExpressionKind {
         expression: Box<ASTExpression>,
         field_index: usize,
     },
+    TupleInitialization(Vec<ASTExpression>),
     MethodCall {
         expression: Box<ASTExpression>,
         call: ASTFunctionCall,
@@ -131,7 +130,15 @@ pub enum ASTExpressionKind {
         operator: ASTOperator,
         expression2: Box<ASTExpression>,
     },
+    // wrapper that automatically decides how many references/dereferences should the expression have
+    // using this is worse for type checker, since it has less information but better for the user, 
+    // since there is no need for manual referencing
     AutoRef(Box<ASTExpression>),
+    // wrapper that determines type for expression
+    TypeHint {
+        expression: Box<ASTExpression>,
+        type_hint: ASTType,
+    },
 }
 
 #[derive(Debug, Clone)]

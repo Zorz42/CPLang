@@ -1,4 +1,4 @@
-//ERR 3 4 3 7
+//ERR 3 4 3 15
 
 fn main
     res: string = 10+20*10: i32

@@ -126,7 +126,7 @@ pub fn parse_struct_instantiation(
         fields_res.push(fields[field_name].clone());
     }
 
-    Ok(ASTExpression::no_hint(
+    Ok(ASTExpression::new(
         ASTExpressionKind::StructInitialization {
             name: identifier,
             fields: fields_res,

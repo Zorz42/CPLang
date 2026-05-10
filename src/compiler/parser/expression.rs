@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTOperator, ASTStructDeclaration};
+use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTOperator, ASTStructDeclaration, ASTType};
 use crate::compiler::parser::function::parse_function_call;
 use crate::compiler::parser::structure::parse_struct_instantiation;
 use crate::compiler::parser::typed::parse_type_hint;
@@ -9,34 +9,34 @@ use crate::compiler::tokenizer::{Token, TokenBlock};
 fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<ASTExpression> {
     // check for function call first
     if let Some((call, pos)) = parse_function_call(structs, block)? {
-        return Ok(ASTExpression::no_hint(ASTExpressionKind::FunctionCall(call), pos));
+        return Ok(ASTExpression::new(ASTExpressionKind::FunctionCall(call), pos));
     }
 
     let mut res = match block.get() {
-        (Token::ConstInteger(int), pos) => ASTExpression::no_hint(ASTExpressionKind::Integer(int), pos),
-        (Token::ConstFloat(float), pos) => ASTExpression::no_hint(ASTExpressionKind::Float(float), pos),
-        (Token::ConstString(string), pos) => ASTExpression::no_hint(ASTExpressionKind::String(string.iter().map(|x| x.c).collect()), pos),
-        (Token::ConstBoolean(boolean), pos) => ASTExpression::no_hint(ASTExpressionKind::Boolean(boolean), pos),
+        (Token::ConstInteger(int), pos) => ASTExpression::new(ASTExpressionKind::Integer(int), pos),
+        (Token::ConstFloat(float), pos) => ASTExpression::new(ASTExpressionKind::Float(float), pos),
+        (Token::ConstString(string), pos) => ASTExpression::new(ASTExpressionKind::String(string.iter().map(|x| x.c).collect()), pos),
+        (Token::ConstBoolean(boolean), pos) => ASTExpression::new(ASTExpressionKind::Boolean(boolean), pos),
 
         (Token::Identifier(identifier), pos) => {
             // we need to know if this is a struct instantiation or a variable
             if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
                 parse_struct_instantiation(structs, block, struct_declaration, pos, identifier)?
             } else {
-                ASTExpression::no_hint(ASTExpressionKind::Variable(identifier.clone()), pos)
+                ASTExpression::new(ASTExpressionKind::Variable(identifier.clone()), pos)
             }
         }
         (Token::Reference, _) => {
             let res = parse_value(structs, block)?;
             let pos = res.pos;
 
-            ASTExpression::no_hint(ASTExpressionKind::Reference(Box::new(res)), pos)
+            ASTExpression::new(ASTExpressionKind::Reference(Box::new(res)), pos)
         }
         (Token::Pipe, _) => {
             let res = parse_value(structs, block)?;
             let pos = res.pos;
 
-            ASTExpression::no_hint(ASTExpressionKind::Dereference(Box::new(res)), pos)
+            ASTExpression::new(ASTExpressionKind::Dereference(Box::new(res)), pos)
         }
         (Token::ParenthesisBlock(mut block), _) => parse_expression(structs, &mut block)?,
         (_, pos) => {
@@ -51,7 +51,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
         block.get();
 
         res = if let Some((call, pos)) = parse_function_call(structs, block)? {
-            ASTExpression::no_hint(
+            ASTExpression::new(
                 ASTExpressionKind::MethodCall {
                     expression: Box::new(res),
                     call,
@@ -60,14 +60,14 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
             )
         } else {
             match block.get() {
-                (Token::Identifier(identifier), pos) => ASTExpression::no_hint(
+                (Token::Identifier(identifier), pos) => ASTExpression::new(
                     ASTExpressionKind::FieldAccess {
                         expression: Box::new(res),
                         field_name: identifier,
                     },
                     pos,
                 ),
-                (Token::ConstInteger(index), pos) if index >= 0 => ASTExpression::no_hint(
+                (Token::ConstInteger(index), pos) if index >= 0 => ASTExpression::new(
                     ASTExpressionKind::TupleAccess {
                         expression: Box::new(res),
                         field_index: index as usize,
@@ -84,7 +84,17 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
         }
     }
 
-    res.type_hint = parse_type_hint(block)?;
+    let type_hint = parse_type_hint(block)?;
+    if !matches!(type_hint, ASTType::Any(_)) {
+        let pos = res.pos + type_hint.get_pos();
+        res = ASTExpression::new(
+            ASTExpressionKind::TypeHint {
+                expression: Box::new(res),
+                type_hint,
+            },
+            pos,
+        )
+    }
 
     Ok(res)
 }
@@ -150,7 +160,7 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
                 let pos = expression1.pos + expression2.pos;
                 vals.insert(
                     i,
-                    ASTExpression::no_hint(
+                    ASTExpression::new(
                         ASTExpressionKind::BinaryOperation {
                             expression1: Box::new(expression1),
                             operator,

@@ -1,5 +1,4 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{
     IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
     IRTypeLabel, IRVariableLabel, IR,
@@ -108,7 +107,7 @@ impl Normalizer {
         self.type_resolver = TypeResolver::new(resolver_structs);
 
         // check that there is one main function with zero arguments and find it
-        let main_name = transform_function_name("main".to_string());
+        let main_name = "main".to_string();
         for (key, val) in &self.functions_name_map {
             if key.0 == main_name && key.1 != 0 {
                 return Err(CompilerError {
@@ -165,7 +164,7 @@ impl Normalizer {
         // variables_name_map got populated instead of global one
         swap(&mut self.variables_name_map, &mut self.global_variables_name_map);
 
-        if let Some(mut vec) = self.functions_name_map.get(&(transform_function_name("main".to_string()), 0)).cloned() {
+        if let Some(mut vec) = self.functions_name_map.get(&("main".to_string(), 0)).cloned() {
             if vec.len() != 1 {
                 return Err(CompilerError {
                     message: "Multiple main functions found".to_string(),
@@ -369,8 +368,6 @@ impl Normalizer {
     fn normalize_expression(&mut self, expression: ASTExpression) -> CompilerResult<(IRExpression, IRTypeLabel, ValuePhysicality)> {
         let pos = expression.pos;
         let type_label = self.type_resolver.new_type_label(pos);
-        let type_hint = self.normalize_type(expression.type_hint)?;
-        self.type_resolver.hint_equal(type_label, type_hint)?;
 
         let (expr, is_phys) = match expression.kind {
             ASTExpressionKind::Integer(x) => {
@@ -545,6 +542,7 @@ impl Normalizer {
                 )
             }
 
+            ASTExpressionKind::TupleInitialization { .. } => unreachable!("ASTExpression::TupleInitialization should be eliminated by lowerer"),
             ASTExpressionKind::TupleAccess { .. } => unreachable!("ASTExpression::TupleAccess should be eliminated by lowerer"),
             ASTExpressionKind::MethodCall { .. } => unreachable!("ASTExpression::MethodCall should be eliminated by lowerer"),
             ASTExpressionKind::BinaryOperation { .. } => unreachable!("ASTExpression::BinaryOperation should be eliminated by lowerer"),
@@ -561,6 +559,16 @@ impl Normalizer {
                     },
                     ValuePhysicality::Temporary,
                 )
+            }
+
+            ASTExpressionKind::TypeHint { expression, type_hint } => {
+                let type_hint = self.normalize_type(type_hint)?;
+                self.type_resolver.hint_equal(type_label, type_hint)?;
+
+                let (expr, type_label2, is_phys) = self.normalize_expression(*expression)?;
+                self.type_resolver.hint_equal(type_label, type_label2)?;
+
+                (expr, is_phys)
             }
         };
 
@@ -624,11 +632,21 @@ impl Normalizer {
         for statement in block.children {
             match statement {
                 ASTStatement::Assignment { assign_to, value, pos } => {
+                    // check if lhs is a variable that should be implicitly created
+                    fn get_lhs_variable(expr: &ASTExpression) -> Option<String> {
+                        match &expr.kind {
+                            ASTExpressionKind::Variable(name) => Some(name.clone()),
+                            ASTExpressionKind::TypeHint { expression, type_hint: _ } =>
+                                get_lhs_variable(expression),
+                            _ => None
+                        }
+                    }
+
                     // if an unknown variable is assigned, create it
-                    if let ASTExpressionKind::Variable(name) = &assign_to.kind
-                        && !self.variables_name_map.contains_key(name)
+                    if let Some(name) = get_lhs_variable(&assign_to)
+                        && !self.variables_name_map.contains_key(&name)
                     {
-                        let label = self.new_var(name);
+                        let label = self.new_var(&name);
                         self.curr_func_vars.push(label);
                         let type_label = self.type_resolver.new_type_label(assign_to.pos);
                         self.ir.variable_types.push(type_label);
@@ -648,7 +666,9 @@ impl Normalizer {
 
                     res.statements.push(IRStatement::Assignment { assign_to, value });
                 }
-                ASTStatement::AssignmentOperator { .. } | ASTStatement::AssignmentIncrement { .. } | ASTStatement::AssignmentDecrement { .. } => unreachable!(), // lowerer took care of that
+                ASTStatement::AssignmentOperator { .. } => unreachable!("ASTStatement::AssignmentOperator should be eliminated by lowerer"),
+                ASTStatement::AssignmentIncrement { .. } => unreachable!("ASTStatement::AssignmentIncrement should be eliminated by lowerer"),
+                ASTStatement::AssignmentDecrement { .. } => unreachable!("ASTStatement::AssignmentDecrement should be eliminated by lowerer"),
 
                 ASTStatement::Block { block } => {
                     let block = self.normalize_block(block)?;
@@ -661,7 +681,7 @@ impl Normalizer {
                 }
                 ASTStatement::Print { values } => {
                     let mut vals = values;
-                    vals.push(ASTExpression::no_hint(ASTExpressionKind::String("\n".to_string()), FilePosition::unknown()));
+                    vals.push(ASTExpression::new(ASTExpressionKind::String("\n".to_string()), FilePosition::unknown()));
                     for val in vals {
                         let (expr, type_label, _is_phys) = self.normalize_expression(val)?;
                         self.relevant_types.push(type_label);

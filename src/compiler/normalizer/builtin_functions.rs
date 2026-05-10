@@ -1,5 +1,4 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::lowerer::transform_function_name;
 use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IRExpression, IRPrimitiveType, IRType, IRTypeLabel};
 use crate::compiler::normalizer::{Normalizer, ValuePhysicality};
 
@@ -9,18 +8,18 @@ pub fn is_builtin_identifier(name: &str) -> bool {
 
 impl Normalizer {
     pub fn is_builtin_function(function_name: &String) -> bool {
-        function_name == &transform_function_name("_builtin_alloc".to_string()) ||
-            function_name == &transform_function_name("_builtin_index".to_string()) ||
-            function_name == &transform_function_name("_builtin_add".to_string()) ||
-            function_name == &transform_function_name("_builtin_sub".to_string()) ||
-            function_name == &transform_function_name("_builtin_mul".to_string()) ||
-            function_name == &transform_function_name("_builtin_div".to_string()) ||
-            function_name == &transform_function_name("_builtin_eq".to_string()) ||
-            function_name == &transform_function_name("_builtin_noteq".to_string()) ||
-            function_name == &transform_function_name("_builtin_lesser".to_string()) ||
-            function_name == &transform_function_name("_builtin_greater".to_string()) ||
-            function_name == &transform_function_name("_builtin_lessereq".to_string()) ||
-            function_name == &transform_function_name("_builtin_greatereq".to_string())
+        function_name == "_builtin_alloc" ||
+            function_name == "_builtin_index" ||
+            function_name == "_builtin_add" ||
+            function_name == "_builtin_sub" ||
+            function_name == "_builtin_mul" ||
+            function_name == "_builtin_div" ||
+            function_name == "_builtin_eq" ||
+            function_name == "_builtin_noteq" ||
+            function_name == "_builtin_lesser" ||
+            function_name == "_builtin_greater" ||
+            function_name == "_builtin_lessereq" ||
+            function_name == "_builtin_greatereq"
     }
 
     pub fn get_builtin_call(
@@ -31,18 +30,18 @@ impl Normalizer {
         template_types: Vec<IRTypeLabel>,
         call_pos: FilePosition,
     ) -> CompilerResult<(BuiltinFunctionCall, ValuePhysicality, IRTypeLabel)> {
-        let alloc_label = transform_function_name("_builtin_alloc".to_string());
-        let index_label = transform_function_name("_builtin_index".to_string());
-        let add_label = transform_function_name("_builtin_add".to_string());
-        let sub_label = transform_function_name("_builtin_sub".to_string());
-        let mul_label = transform_function_name("_builtin_mul".to_string());
-        let div_label = transform_function_name("_builtin_div".to_string());
-        let eq_label = transform_function_name("_builtin_eq".to_string());
-        let noteq_label = transform_function_name("_builtin_noteq".to_string());
-        let lesser_label = transform_function_name("_builtin_lesser".to_string());
-        let greater_label = transform_function_name("_builtin_greater".to_string());
-        let lessereq_label = transform_function_name("_builtin_lessereq".to_string());
-        let greatereq_label = transform_function_name("_builtin_greatereq".to_string());
+        let alloc_label = "_builtin_alloc".to_string();
+        let index_label = "_builtin_index".to_string();
+        let add_label = "_builtin_add".to_string();
+        let sub_label = "_builtin_sub".to_string();
+        let mul_label = "_builtin_mul".to_string();
+        let div_label = "_builtin_div".to_string();
+        let eq_label = "_builtin_eq".to_string();
+        let noteq_label = "_builtin_noteq".to_string();
+        let lesser_label = "_builtin_lesser".to_string();
+        let greater_label = "_builtin_greater".to_string();
+        let lessereq_label = "_builtin_lessereq".to_string();
+        let greatereq_label = "_builtin_greatereq".to_string();
 
         let num_arguments = match &function_name {
             label if label == &alloc_label => 1,
