@@ -2,7 +2,7 @@ use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::preprocessor::{parse_blocks, Fragment, PosChar};
-use crate::compiler::tokenizer::{tokenize_fragments, Constant, Token, TokenBlock};
+use crate::compiler::tokenizer::{tokenize_fragments, Token, TokenBlock};
 
 fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>, pos: FilePosition) -> CompilerResult<Vec<ASTExpression>> {
     let mut res = Vec::new();
@@ -82,7 +82,7 @@ pub fn parse_out_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
     if block.peek().0 == Token::Out {
         let print_pos = block.get().1;
         match block.get() {
-            (Token::Constant(Constant::String(string)), pos) => Ok(Some(ASTStatement::Print {
+            (Token::ConstString(string), pos) => Ok(Some(ASTStatement::Print {
                 values: parse_format_string(structs, string, pos)?,
             })),
             _ => Err(CompilerError {

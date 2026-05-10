@@ -9,12 +9,16 @@ are identifiers which are later resolved by normalizer as well since they requir
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
+    End,
     Identifier(String),
-    Constant(Constant),
+    ConstInteger(i32),
+    ConstFloat(f32),
+    ConstString(Vec<PosChar>),
+    ConstBoolean(bool),
+
     BraceBlock(TokenBlock),
     BracketBlock(TokenBlock),
     ParenthesisBlock(TokenBlock),
-    End,
 
     // keywords
     If,
@@ -36,26 +40,26 @@ pub enum Token {
     Operator,
 
     // symbols
-    Plus,
-    Star,
-    Slash,
-    Assign,
-    Equals,
-    NotEquals,
-    LessThan,
-    LessThanOrEqual,
-    GreaterThan,
-    GreaterThanOrEqual,
-    Minus,
-    Reference,
-    Dot,
-    Increase,
-    Decrease,
-    Increment,
-    Decrement,
-    Colon,
-    QuestionMark,
-    Pipe,
+    Plus, // +
+    Star, // *
+    Slash, // /
+    Assign, // =
+    Equals, // ==
+    NotEquals, // !=
+    LessThan, // <
+    LessThanOrEqual, // <=
+    GreaterThan, // >
+    GreaterThanOrEqual, // >=
+    Minus, // -
+    Reference, // &
+    Dot, // .
+    Increase, // +=
+    Decrease, // -=
+    Increment, // ++
+    Decrement, // --
+    Colon, // :
+    QuestionMark, // ?
+    Pipe, // |
 }
 
 fn str_to_keyword(s: &str) -> Option<Token> {
@@ -113,14 +117,6 @@ const fn symbol_from_two_chars(c1: char, c2: char) -> Option<Token> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum Constant {
-    Integer(i32),
-    Float(f32),
-    String(Vec<PosChar>),
-    Boolean(bool),
-}
-
 // a block usually represents contents  an if statement, while loop, or function
 // the whole program is also a block
 // blocks are formed by indentation levels
@@ -170,15 +166,15 @@ fn string_to_token(string: &str) -> Token {
     }
 
     if let Ok(integer) = string.parse::<i32>() {
-        return Token::Constant(Constant::Integer(integer));
+        return Token::ConstInteger(integer);
     }
 
     if let Ok(float) = string.parse::<f32>() {
-        return Token::Constant(Constant::Float(float));
+        return Token::ConstFloat(float);
     }
 
     if string == "true" || string == "false" {
-        return Token::Constant(Constant::Boolean(string == "true"));
+        return Token::ConstBoolean(string == "true");
     }
 
     Token::Identifier(string.to_string())
@@ -210,7 +206,7 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
         match frag {
             Fragment::String(s, pos) => {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                tokens.push((Token::Constant(Constant::String(s.clone())), *pos));
+                tokens.push((Token::ConstString(s.clone()), *pos));
             }
             Fragment::Char(pos_char) => {
                 let c = pos_char.c;

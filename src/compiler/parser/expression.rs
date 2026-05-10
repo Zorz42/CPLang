@@ -3,7 +3,7 @@ use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTOperator
 use crate::compiler::parser::function::parse_function_call;
 use crate::compiler::parser::structure::parse_struct_instantiation;
 use crate::compiler::parser::typed::parse_type_hint;
-use crate::compiler::tokenizer::{Constant, Token, TokenBlock};
+use crate::compiler::tokenizer::{Token, TokenBlock};
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
 fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<ASTExpression> {
@@ -13,12 +13,11 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
     }
 
     let mut res = match block.get() {
-        (Token::Constant(constant), pos) => match constant {
-            Constant::Integer(int) => ASTExpression::no_hint(ASTExpressionKind::Integer(int), pos),
-            Constant::Float(float) => ASTExpression::no_hint(ASTExpressionKind::Float(float), pos),
-            Constant::String(string) => ASTExpression::no_hint(ASTExpressionKind::String(string.iter().map(|x| x.c).collect()), pos),
-            Constant::Boolean(boolean) => ASTExpression::no_hint(ASTExpressionKind::Boolean(boolean), pos),
-        },
+        (Token::ConstInteger(int), pos) => ASTExpression::no_hint(ASTExpressionKind::Integer(int), pos),
+        (Token::ConstFloat(float), pos) => ASTExpression::no_hint(ASTExpressionKind::Float(float), pos),
+        (Token::ConstString(string), pos) => ASTExpression::no_hint(ASTExpressionKind::String(string.iter().map(|x| x.c).collect()), pos),
+        (Token::ConstBoolean(boolean), pos) => ASTExpression::no_hint(ASTExpressionKind::Boolean(boolean), pos),
+
         (Token::Identifier(identifier), pos) => {
             // we need to know if this is a struct instantiation or a variable
             if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
