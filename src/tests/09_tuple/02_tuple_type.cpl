@@ -1,0 +1,9 @@
+//OUT=10 hello
+
+struct MyStruct
+    x: i32, string
+
+fn main
+    a = MyStruct x 10, "hello"
+
+    out "{a.x.0} {a.x.1}"

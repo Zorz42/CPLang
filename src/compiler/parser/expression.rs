@@ -67,9 +67,16 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                     },
                     pos,
                 ),
+                (Token::ConstInteger(index), pos) if index >= 0 => ASTExpression::no_hint(
+                    ASTExpressionKind::TupleAccess {
+                        expression: Box::new(res),
+                        field_index: index as usize,
+                    },
+                    pos,
+                ),
                 (_, pos) => {
                     return Err(CompilerError {
-                        message: "Expected identifier after dot".to_owned(),
+                        message: "Expected identifier or non-negative integer after dot".to_owned(),
                         position: Some(pos),
                     });
                 }
@@ -94,6 +101,7 @@ const fn token_to_operator(symbol: &Token) -> Option<ASTOperator> {
         Token::LessThanOrEqual => Some(ASTOperator::LesserEq),
         Token::Minus => Some(ASTOperator::Minus),
         Token::NotEquals => Some(ASTOperator::NotEquals),
+        Token::Comma => Some(ASTOperator::Comma),
         _ => None,
     }
 }
@@ -121,6 +129,7 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
             ASTOperator::LesserEq,
             ASTOperator::NotEquals,
         ],
+        vec![ASTOperator::Comma],
     ];
 
     for operators in operator_precedence {

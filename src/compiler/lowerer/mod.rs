@@ -118,6 +118,9 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
             *expression = ASTExpression::no_hint(ASTExpressionKind::AutoRef(Box::new(lower_expression(*expression))), expr_pos);
             ASTExpression::no_hint(ASTExpressionKind::FieldAccess { expression, field_name }, pos)
         }
+        ASTExpressionKind::TupleAccess { mut expression, field_index } => {
+            todo!()
+        }
         ASTExpressionKind::MethodCall { expression, mut call } => {
             call.arguments = call.arguments.into_iter().map(lower_expression).collect();
             let expression = ASTExpression::no_hint(ASTExpressionKind::AutoRef(Box::new(lower_expression(*expression))), pos);
@@ -149,6 +152,7 @@ fn lower_expression(expression: ASTExpression) -> ASTExpression {
                 ASTOperator::GreaterEq => ">=",
                 ASTOperator::LesserEq => "<=",
                 ASTOperator::Minus => "-",
+                ASTOperator::Comma => unreachable!(),
             };
 
             ASTExpression::no_hint(

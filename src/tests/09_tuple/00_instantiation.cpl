@@ -1,5 +1,6 @@
-//OUT=ok
+//OUT=1 2
 
 fn main
-    // TODO: tuple tests
-    out "ok"
+    a = 1, 2
+
+    out "{a.0} {a.1}"

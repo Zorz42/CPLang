@@ -327,7 +327,7 @@ impl Normalizer {
             swap(&mut self.template_types, &mut prev_template_types);
 
             #[cfg(feature = "trace")] {
-                println!("Mathing: {ok}");
+                println!("Matching: {ok}");
                 println!("===============");
             }
             if ok {
@@ -545,6 +545,7 @@ impl Normalizer {
                 )
             }
 
+            ASTExpressionKind::TupleAccess { .. } => unreachable!("ASTExpression::TupleAccess should be eliminated by lowerer"),
             ASTExpressionKind::MethodCall { .. } => unreachable!("ASTExpression::MethodCall should be eliminated by lowerer"),
             ASTExpressionKind::BinaryOperation { .. } => unreachable!("ASTExpression::BinaryOperation should be eliminated by lowerer"),
 

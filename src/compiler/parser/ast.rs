@@ -78,6 +78,7 @@ pub enum ASTOperator {
     GreaterEq,
     LesserEq,
     Minus,
+    Comma, // for tuples
 }
 
 #[derive(Debug, Clone)]
@@ -115,6 +116,10 @@ pub enum ASTExpressionKind {
     FieldAccess {
         expression: Box<ASTExpression>,
         field_name: String,
+    },
+    TupleAccess {
+        expression: Box<ASTExpression>,
+        field_index: usize,
     },
     MethodCall {
         expression: Box<ASTExpression>,
