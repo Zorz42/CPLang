@@ -61,7 +61,11 @@ mod tests {
                     };
                     if pos != correct_pos {
                         display_error(&e, test_file, &binding);
-                        assert_eq!(pos, correct_pos);
+                        if pos != correct_pos {
+                            panic!("error position mismatch, error position is {} {} {} {}",
+                                   pos.first_pos.0, pos.first_pos.1,
+                                   pos.last_pos.0, pos.last_pos.1);
+                        }
                     }
                 } else if line_start != -1 {
                     panic!("Expected error position, but got None");

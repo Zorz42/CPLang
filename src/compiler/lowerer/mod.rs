@@ -130,7 +130,13 @@ impl Lowerer {
 
         block.push(ASTStatement::Assignment {
             assign_to: ASTExpression {
-                kind: ASTExpressionKind::Variable(tmp_name.clone()),
+                kind: ASTExpressionKind::TypeHint {
+                    expression: Box::new(ASTExpression {
+                        kind: ASTExpressionKind::Variable(tmp_name.clone()),
+                        pos,
+                    }),
+                    type_hint: ASTType::Identifier(name.to_owned(), pos, template_arguments.clone()),
+                },
                 pos,
             },
             value,
