@@ -10,7 +10,7 @@ pub fn parse_type(block: &mut TokenBlock) -> CompilerResult<ASTType> {
     let mut pos = FilePosition::unknown();
     loop {
         pos += block.peek().1;
-       
+
         res.push(match block.get() {
             (Token::QuestionMark, pos) => ASTType::Any(pos),
             (Token::Reference, pos) => {
@@ -30,10 +30,12 @@ pub fn parse_type(block: &mut TokenBlock) -> CompilerResult<ASTType> {
                 ASTType::Identifier(name, pos + template_pos, template_args)
             }
             (Token::ParenthesisBlock(mut block), _) => parse_type(&mut block)?,
-            (_, pos) => return Err(CompilerError {
-                message: ERR_MESSAGE.to_string(),
-                position: Some(pos),
-            }),
+            (_, pos) => {
+                return Err(CompilerError {
+                    message: ERR_MESSAGE.to_string(),
+                    position: Some(pos),
+                });
+            }
         });
 
         // look for tuples

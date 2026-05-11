@@ -103,7 +103,10 @@ mod test_type_resolver {
         resolver.hint_is(typ2, IRPrimitiveType::I32).unwrap();
         resolver.hint_is(typ3, IRPrimitiveType::Void).unwrap();
         let (res, _) = resolver.gather_types(vec![typ1]).unwrap();
-        assert_eq!(res[&typ1], IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::I32), IRType::Primitive(IRPrimitiveType::Void)]));
+        assert_eq!(
+            res[&typ1],
+            IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::I32), IRType::Primitive(IRPrimitiveType::Void)])
+        );
     }
 
     #[test]
@@ -169,7 +172,10 @@ mod test_type_resolver {
         resolver.hint_struct(typ1, 0, vec![typ2]).unwrap();
         resolver.hint_is_field(typ3, typ1, 0).unwrap();
         resolver.hint_is(typ3, IRPrimitiveType::Bool).unwrap();
-        assert_eq!(resolver.fetch_final_ir_type(typ1), Some(IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::Bool)])));
+        assert_eq!(
+            resolver.fetch_final_ir_type(typ1),
+            Some(IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::Bool)]))
+        );
     }
 
     #[test]
@@ -184,9 +190,10 @@ mod test_type_resolver {
         assert!(resolver.are_equal(typ1, typ3));
         resolver.hint_is_ref(typ2, typ3).unwrap();
         resolver.hint_is(typ2, IRPrimitiveType::String).unwrap();
-        assert_eq!(resolver.fetch_final_ir_type(typ4), Some(IRType::Struct(0, vec![
-            IRType::Reference(Box::new(IRType::Primitive(IRPrimitiveType::String)))
-        ])));
+        assert_eq!(
+            resolver.fetch_final_ir_type(typ4),
+            Some(IRType::Struct(0, vec![IRType::Reference(Box::new(IRType::Primitive(IRPrimitiveType::String)))]))
+        );
     }
 
     #[test]
@@ -200,7 +207,10 @@ mod test_type_resolver {
         resolver.hint_is_field(typ3, typ1, 0).unwrap();
         resolver.hint_is(typ3, IRPrimitiveType::Bool).unwrap();
         resolver.hint_equal(typ1, typ4).unwrap();
-        assert_eq!(resolver.fetch_final_ir_type(typ4), Some(IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::Bool)])));
+        assert_eq!(
+            resolver.fetch_final_ir_type(typ4),
+            Some(IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::Bool)]))
+        );
     }
 
     #[test]

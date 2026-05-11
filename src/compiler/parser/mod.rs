@@ -37,7 +37,7 @@ pub fn parse_tokens(mut program_block: TokenBlock) -> CompilerResult<Ast> {
             res.structs.push(struct_declaration);
         } else {
             let global_declaration = parse_global_variable_declaration(&res.structs, &mut program_block)?;
-            
+
             res.global_variables.push(global_declaration);
         }
     }

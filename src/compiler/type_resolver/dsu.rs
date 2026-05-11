@@ -9,12 +9,12 @@ enum NodeType {
 }
 
 #[derive(Clone)]
-pub struct Dsu<T: Add<Output=T> + Default> {
+pub struct Dsu<T: Add<Output = T> + Default> {
     parent: Vec<NodeType>,
     value: Vec<T>,
 }
 
-impl<T: Add<Output=T> + Default> Dsu<T> {
+impl<T: Add<Output = T> + Default> Dsu<T> {
     pub const fn new() -> Self {
         Self {
             parent: Vec::new(),
@@ -85,7 +85,7 @@ impl<T: Add<Output=T> + Default> Dsu<T> {
     }
 }
 
-impl<T: Add<Output=T> + Default> Default for Dsu<T> {
+impl<T: Add<Output = T> + Default> Default for Dsu<T> {
     fn default() -> Self {
         Self::new()
     }

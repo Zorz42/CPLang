@@ -1,5 +1,7 @@
 use crate::compiler::error::FilePosition;
-use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType, Ast};
+use crate::compiler::parser::ast::{
+    ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType, Ast,
+};
 use std::collections::{HashMap, HashSet};
 // Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
@@ -87,7 +89,6 @@ pub fn transform_method_name(name: String) -> String {
     format!("Method:{name}")
 }
 
-
 impl Lowerer {
     fn new_tmp_name(&mut self) -> String {
         self.tmp_index += 1;
@@ -105,10 +106,8 @@ impl Lowerer {
     fn lower_type(&mut self, typ: ASTType) -> ASTType {
         match typ {
             ASTType::Any(_) | ASTType::Primitive(_, _) => typ,
-            ASTType::Reference(typ, pos) =>
-                ASTType::Reference(Box::new(self.lower_type(*typ)), pos),
-            ASTType::Identifier(name, pos, typ) =>
-                ASTType::Identifier(name, pos, self.lower_types(typ)),
+            ASTType::Reference(typ, pos) => ASTType::Reference(Box::new(self.lower_type(*typ)), pos),
+            ASTType::Identifier(name, pos, typ) => ASTType::Identifier(name, pos, self.lower_types(typ)),
             ASTType::Tuple(types, pos) => {
                 //let types = self.lower_types(types);
                 self.touch_tuple(types.len());
@@ -157,7 +156,14 @@ impl Lowerer {
     y = $tmp.f2
     z = $tmp.f3
      */
-    fn gen_struct_destructuring(&mut self, pos: FilePosition, value: ASTExpression, name: &str, fields: &[ASTExpression], template_arguments: &[ASTType]) -> ASTStatement {
+    fn gen_struct_destructuring(
+        &mut self,
+        pos: FilePosition,
+        value: ASTExpression,
+        name: &str,
+        fields: &[ASTExpression],
+        template_arguments: &[ASTType],
+    ) -> ASTStatement {
         let tmp_name = self.new_tmp_name();
         let mut block = Vec::new();
 
@@ -195,9 +201,7 @@ impl Lowerer {
         }
 
         ASTStatement::SemiBlock {
-            block: ASTBlock {
-                children: block,
-            },
+            block: ASTBlock { children: block },
         }
     }
 
@@ -231,16 +235,14 @@ impl Lowerer {
             ASTExpressionKind::TupleInitialization(expressions) => {
                 self.touch_tuple(expressions.len());
 
-                self.lower_expression(
-                    ASTExpression::new(
-                        ASTExpressionKind::StructInitialization {
-                            name: gen_tuple_name(expressions.len()),
-                            fields: expressions,
-                            template_arguments: Vec::new(),
-                        },
-                        pos,
-                    )
-                )
+                self.lower_expression(ASTExpression::new(
+                    ASTExpressionKind::StructInitialization {
+                        name: gen_tuple_name(expressions.len()),
+                        fields: expressions,
+                        template_arguments: Vec::new(),
+                    },
+                    pos,
+                ))
             }
 
             ASTExpressionKind::Reference(mut expression) => {
@@ -255,30 +257,27 @@ impl Lowerer {
                 name,
                 fields,
                 template_arguments,
-            } =>
-                ASTExpression::new(
-                    ASTExpressionKind::StructInitialization {
-                        name,
-                        fields: self.lower_expressions(fields),
-                        template_arguments: self.lower_types(template_arguments),
-                    },
-                    pos,
-                ),
+            } => ASTExpression::new(
+                ASTExpressionKind::StructInitialization {
+                    name,
+                    fields: self.lower_expressions(fields),
+                    template_arguments: self.lower_types(template_arguments),
+                },
+                pos,
+            ),
             ASTExpressionKind::FieldAccess { mut expression, field_name } => {
                 // auto deref struct so that you can easily access fields of a reference
                 let expr_pos = expression.pos;
                 *expression = ASTExpression::new(ASTExpressionKind::AutoRef(Box::new(self.lower_expression(*expression))), expr_pos);
                 ASTExpression::new(ASTExpressionKind::FieldAccess { expression, field_name }, pos)
             }
-            ASTExpressionKind::TupleAccess { expression, field_index } => {
-                self.lower_expression(ASTExpression::new(
-                    ASTExpressionKind::FieldAccess {
-                        expression,
-                        field_name: field_index.to_string(),
-                    },
-                    pos,
-                ))
-            }
+            ASTExpressionKind::TupleAccess { expression, field_index } => self.lower_expression(ASTExpression::new(
+                ASTExpressionKind::FieldAccess {
+                    expression,
+                    field_name: field_index.to_string(),
+                },
+                pos,
+            )),
             ASTExpressionKind::MethodCall { expression, mut call } => {
                 call.arguments = self.lower_expressions(call.arguments);
                 let expression = ASTExpression::new(ASTExpressionKind::AutoRef(Box::new(self.lower_expression(*expression))), pos);
@@ -313,10 +312,7 @@ impl Lowerer {
 
                 let vec = flatten_commas(expression);
 
-                self.lower_expression(ASTExpression::new(
-                    ASTExpressionKind::TupleInitialization(vec),
-                    pos,
-                ))
+                self.lower_expression(ASTExpression::new(ASTExpressionKind::TupleInitialization(vec), pos))
             }
             ASTExpressionKind::BinaryOperation {
                 mut expression1,
@@ -326,19 +322,20 @@ impl Lowerer {
                 *expression1 = self.lower_expression(*expression1);
                 *expression2 = self.lower_expression(*expression2);
 
-                let name = "operator".to_string() + match operator {
-                    ASTOperator::Plus => "+",
-                    ASTOperator::Mul => "*",
-                    ASTOperator::Div => "/",
-                    ASTOperator::Equals => "==",
-                    ASTOperator::NotEquals => "!=",
-                    ASTOperator::Greater => ">",
-                    ASTOperator::Lesser => "<",
-                    ASTOperator::GreaterEq => ">=",
-                    ASTOperator::LesserEq => "<=",
-                    ASTOperator::Minus => "-",
-                    ASTOperator::Comma => unreachable!(),
-                };
+                let name = "operator".to_string()
+                    + match operator {
+                        ASTOperator::Plus => "+",
+                        ASTOperator::Mul => "*",
+                        ASTOperator::Div => "/",
+                        ASTOperator::Equals => "==",
+                        ASTOperator::NotEquals => "!=",
+                        ASTOperator::Greater => ">",
+                        ASTOperator::Lesser => "<",
+                        ASTOperator::GreaterEq => ">=",
+                        ASTOperator::LesserEq => "<=",
+                        ASTOperator::Minus => "-",
+                        ASTOperator::Comma => unreachable!(),
+                    };
 
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {
@@ -356,13 +353,7 @@ impl Lowerer {
             ASTExpressionKind::TypeHint { mut expression, type_hint } => {
                 let type_hint = self.lower_type(type_hint);
                 *expression = self.lower_expression(*expression);
-                ASTExpression::new(
-                    ASTExpressionKind::TypeHint {
-                        expression,
-                        type_hint,
-                    },
-                    pos,
-                )
+                ASTExpression::new(ASTExpressionKind::TypeHint { expression, type_hint }, pos)
             }
         }
     }
@@ -394,18 +385,18 @@ impl Lowerer {
                 };
                 // destructure struct initialization
                 match &assignment {
-                    ASTStatement::Assignment {
-                        assign_to,
-                        value,
-                        pos,
-                    } => match &assign_to.kind {
-                        ASTExpressionKind::StructInitialization { name, fields, template_arguments } => {
+                    ASTStatement::Assignment { assign_to, value, pos } => match &assign_to.kind {
+                        ASTExpressionKind::StructInitialization {
+                            name,
+                            fields,
+                            template_arguments,
+                        } => {
                             let statement = self.gen_struct_destructuring(*pos, value.clone(), name, fields, template_arguments);
                             self.lower_statement(statement)
                         }
-                        _ => assignment
-                    }
-                    _ => assignment
+                        _ => assignment,
+                    },
+                    _ => assignment,
                 }
             }
             ASTStatement::AssignmentOperator { assign_to, value, operator } => {
@@ -425,12 +416,12 @@ impl Lowerer {
             ASTStatement::Block { block } => ASTStatement::Block {
                 block: ASTBlock {
                     children: self.lower_statements(block.children),
-                }
+                },
             },
             ASTStatement::SemiBlock { block } => ASTStatement::SemiBlock {
                 block: ASTBlock {
                     children: self.lower_statements(block.children),
-                }
+                },
             },
             ASTStatement::If { condition, block, else_block } => ASTStatement::If {
                 block: self.lower_block(block),

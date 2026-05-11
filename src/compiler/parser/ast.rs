@@ -106,10 +106,7 @@ pub struct ASTExpression {
 
 impl ASTExpression {
     pub const fn new(kind: ASTExpressionKind, pos: FilePosition) -> Self {
-        Self {
-            kind,
-            pos,
-        }
+        Self { kind, pos }
     }
 }
 

@@ -17,8 +17,8 @@ pub enum Token {
     ConstBoolean(bool),
 
     ParenthesisBlock(TokenBlock), // ()
-    BracketBlock(TokenBlock), // []
-    BraceBlock(TokenBlock), // {}
+    BracketBlock(TokenBlock),     // []
+    BraceBlock(TokenBlock),       // {}
 
     // keywords
     If,
@@ -40,27 +40,27 @@ pub enum Token {
     Operator,
 
     // symbols
-    Plus, // +
-    Star, // *
-    Slash, // /
-    Assign, // =
-    Equals, // ==
-    NotEquals, // !=
-    LessThan, // <
-    LessThanOrEqual, // <=
-    GreaterThan, // >
+    Plus,               // +
+    Star,               // *
+    Slash,              // /
+    Assign,             // =
+    Equals,             // ==
+    NotEquals,          // !=
+    LessThan,           // <
+    LessThanOrEqual,    // <=
+    GreaterThan,        // >
     GreaterThanOrEqual, // >=
-    Minus, // -
-    Reference, // &
-    Dot, // .
-    Comma, // ,
-    Increase, // +=
-    Decrease, // -=
-    Increment, // ++
-    Decrement, // --
-    Colon, // :
-    QuestionMark, // ?
-    Pipe, // |
+    Minus,              // -
+    Reference,          // &
+    Dot,                // .
+    Comma,              // ,
+    Increase,           // +=
+    Decrease,           // -=
+    Increment,          // ++
+    Decrement,          // --
+    Colon,              // :
+    QuestionMark,       // ?
+    Pipe,               // |
 }
 
 fn str_to_keyword(s: &str) -> Option<Token> {

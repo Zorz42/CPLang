@@ -1,14 +1,10 @@
 use crate::compiler::normalizer::ir::{IRStructLabel, IRTypeLabel};
-use crate::compiler::type_resolver::dsu::Dsu;
 use crate::compiler::type_resolver::TypeResolver;
+use crate::compiler::type_resolver::dsu::Dsu;
 use std::collections::HashMap;
 use std::ops::Add;
 
-fn compactify<T: Add<Output=T> + Default>(
-    set1: &[IRTypeLabel],
-    set2: &[IRTypeLabel],
-    dsu: &mut Dsu<T>,
-) -> Option<(Vec<usize>, Vec<usize>)> {
+fn compactify<T: Add<Output = T> + Default>(set1: &[IRTypeLabel], set2: &[IRTypeLabel], dsu: &mut Dsu<T>) -> Option<(Vec<usize>, Vec<usize>)> {
     let mut mp1 = HashMap::new();
     let mut mp2 = HashMap::new();
     let mut comps1 = Vec::new();
@@ -103,7 +99,10 @@ impl TypeResolver {
                 return false;
             }
 
-            if let Some(struct1) = struct1 && let Some(struct2) = struct2 && !self.compare_sets(struct1.1, struct2.1) {
+            if let Some(struct1) = struct1
+                && let Some(struct2) = struct2
+                && !self.compare_sets(struct1.1, struct2.1)
+            {
                 return false;
             }
         }
@@ -111,4 +110,3 @@ impl TypeResolver {
         true
     }
 }
-

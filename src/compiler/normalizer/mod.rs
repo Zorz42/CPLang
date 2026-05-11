@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel, IR,
+    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
+    IRTypeLabel, IRVariableLabel,
 };
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
@@ -11,9 +11,9 @@ use std::collections::{HashMap, HashSet};
 use std::mem::swap;
 
 pub mod builtin_functions;
+mod function_cmp;
 pub mod ir;
 mod ir_debug;
-mod function_cmp;
 
 #[derive(PartialEq, Eq)]
 enum ValuePhysicality {
@@ -183,9 +183,7 @@ impl Normalizer {
 
             for (variable_label, value) in global_assignments {
                 main_block.push(IRStatement::Assignment {
-                    assign_to: IRExpression::Variable {
-                        variable_label,
-                    },
+                    assign_to: IRExpression::Variable { variable_label },
                     value,
                 });
             }
@@ -289,7 +287,8 @@ impl Normalizer {
         let mut matching = HashSet::new();
 
         for (i, sign) in candidates.into_iter().enumerate() {
-            #[cfg(feature = "trace")] {
+            #[cfg(feature = "trace")]
+            {
                 println!("===============");
                 println!("Trying to match {function_arguments:?} {sign:?}");
             }
@@ -325,7 +324,8 @@ impl Normalizer {
             self.type_resolver = prev_resolver;
             swap(&mut self.template_types, &mut prev_template_types);
 
-            #[cfg(feature = "trace")] {
+            #[cfg(feature = "trace")]
+            {
                 println!("Matching: {ok}");
                 println!("===============");
             }
@@ -621,7 +621,7 @@ impl Normalizer {
                 let type_label2 = self.normalize_type(*typ)?;
                 self.type_resolver.hint_is_ref(type_label2, type_label)?;
             }
-            ASTType::Tuple(_, _) => unreachable!("ASTType::Tuple should be eliminated by lowerer")
+            ASTType::Tuple(_, _) => unreachable!("ASTType::Tuple should be eliminated by lowerer"),
         }
         Ok(type_label)
     }
@@ -637,9 +637,8 @@ impl Normalizer {
                     fn get_lhs_variable(expr: &ASTExpression) -> Option<String> {
                         match &expr.kind {
                             ASTExpressionKind::Variable(name) => Some(name.clone()),
-                            ASTExpressionKind::TypeHint { expression, type_hint: _ } =>
-                                get_lhs_variable(expression),
-                            _ => None
+                            ASTExpressionKind::TypeHint { expression, type_hint: _ } => get_lhs_variable(expression),
+                            _ => None,
                         }
                     }
 
@@ -742,9 +741,13 @@ impl Normalizer {
                     self.instance_cache.insert(function_name.clone(), Vec::new());
                 }
 
-                self.instance_cache.get_mut(&function_name).unwrap().push((arg_types, template_types, instance_label));
+                self.instance_cache
+                    .get_mut(&function_name)
+                    .unwrap()
+                    .push((arg_types, template_types, instance_label));
             } else {
-                self.instance_cache_queue.push((function_name, ret_type, arg_types, template_types, instance_label));
+                self.instance_cache_queue
+                    .push((function_name, ret_type, arg_types, template_types, instance_label));
             }
         }
     }
@@ -822,7 +825,6 @@ impl Normalizer {
         swap(&mut prev_variables_name_map, &mut self.variables_name_map);
         swap(&mut prev_template_types, &mut self.template_types);
 
-
         if self.depth == RECURSION_LIMIT {
             return Err(CompilerError {
                 message: format!(
@@ -842,7 +844,13 @@ impl Normalizer {
 
         self.active_instances.insert(instance_label);
 
-        self.instance_cache_queue.push((sign.name.clone(), self.curr_func_ret_type, arg_types.clone(), template_types.clone(), instance_label));
+        self.instance_cache_queue.push((
+            sign.name.clone(),
+            self.curr_func_ret_type,
+            arg_types.clone(),
+            template_types.clone(),
+            instance_label,
+        ));
 
         for (idx, (template_arg, _pos)) in sign.template.into_iter().enumerate() {
             self.template_types.insert(template_arg, template_types[idx]);

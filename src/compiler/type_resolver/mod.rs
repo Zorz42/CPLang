@@ -5,8 +5,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem::swap;
 use std::ops::Add;
 
-pub mod dsu;
 mod compare_sets;
+pub mod dsu;
 mod test;
 
 #[derive(Default, Clone)]
@@ -236,10 +236,11 @@ impl TypeResolver {
             }
             let num_known_fields = self.get_num_known_fields(node);
 
-
-            if let Some(struct_label) = self.type_dsu.get(node).known_struct &&
-                num_known_fields == self.structs_ord[struct_label].len() &&
-                self.ref_is_fixed(node) && self.dsu.get(node).ref_depth == 0 {
+            if let Some(struct_label) = self.type_dsu.get(node).known_struct
+                && num_known_fields == self.structs_ord[struct_label].len()
+                && self.ref_is_fixed(node)
+                && self.dsu.get(node).ref_depth == 0
+            {
                 let mut struct_fields = Vec::new();
                 for field_label in self.structs_ord[struct_label].clone() {
                     let type_label = self.type_dsu.get(node).child_fields[&field_label];
@@ -297,8 +298,10 @@ impl TypeResolver {
         }
 
         // merge known_struct
-        if let Some(s1) = self.type_dsu.get(label1).known_struct &&
-            let Some(s2) = self.type_dsu.get(label2).known_struct && s1 != s2 {
+        if let Some(s1) = self.type_dsu.get(label1).known_struct
+            && let Some(s2) = self.type_dsu.get(label2).known_struct
+            && s1 != s2
+        {
             return Err(CompilerError {
                 message: "This type cannot be two different struct types at the same time.".to_string(),
                 position: Some(self.type_positions[label1]),
@@ -489,7 +492,6 @@ impl TypeResolver {
 
             self.set_field(field_type, field_label, struct_type_label)?;
         }
-
 
         self.set_ref(struct_type_label, 0)?;
 

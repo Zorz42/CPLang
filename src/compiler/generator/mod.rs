@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
-    IRType, IRTypeLabel, IRVariableLabel, IR,
+    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct,
+    IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
 };
 use std::collections::HashMap;
 
@@ -58,7 +58,10 @@ int main(){
     ";
     let main_code = main_code.replace("$main$", &gen_function_label(ir.main_function));
 
-    format!("{}\n{}\n{}\n{}\n{}\n{}", imports, global_variables, ctx.struct_declarations, function_signatures, functions, main_code)
+    format!(
+        "{}\n{}\n{}\n{}\n{}\n{}",
+        imports, global_variables, ctx.struct_declarations, function_signatures, functions, main_code
+    )
 }
 
 fn gen_primitive_type(typ: IRPrimitiveType) -> String {
@@ -70,7 +73,7 @@ fn gen_primitive_type(typ: IRPrimitiveType) -> String {
         IRPrimitiveType::String => "char*",
         IRPrimitiveType::Void => "void",
     }
-        .to_owned()
+    .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -149,28 +152,17 @@ fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> St
             let typ = ctx.types[&typ].clone();
             format!("malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
         }
-        BuiltinFunctionCall::Index { arr, idx } =>
-            format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
-        BuiltinFunctionCall::Add { arg1, arg2 } =>
-            format!("({} + {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
-        BuiltinFunctionCall::Sub { arg1, arg2 } =>
-            format!("({} - {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
-        BuiltinFunctionCall::Mul { arg1, arg2 } =>
-            format!("({} * {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
-        BuiltinFunctionCall::Div { arg1, arg2 } =>
-            format!("({} / {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
-        BuiltinFunctionCall::Eq { arg1, arg2 } =>
-            format!("({} == {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
-        BuiltinFunctionCall::NotEq { arg1, arg2 } =>
-            format!("({} != {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
-        BuiltinFunctionCall::Lesser { arg1, arg2 } =>
-            format!("({} < {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
-        BuiltinFunctionCall::LesserEq { arg1, arg2 } =>
-            format!("({} <= {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
-        BuiltinFunctionCall::Greater { arg1, arg2 } =>
-            format!("({} > {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
-        BuiltinFunctionCall::GreaterEq { arg1, arg2 } =>
-            format!("({} >= {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Index { arr, idx } => format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
+        BuiltinFunctionCall::Add { arg1, arg2 } => format!("({} + {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Sub { arg1, arg2 } => format!("({} - {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Mul { arg1, arg2 } => format!("({} * {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Div { arg1, arg2 } => format!("({} / {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Eq { arg1, arg2 } => format!("({} == {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::NotEq { arg1, arg2 } => format!("({} != {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Lesser { arg1, arg2 } => format!("({} < {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::LesserEq { arg1, arg2 } => format!("({} <= {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::Greater { arg1, arg2 } => format!("({} > {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
+        BuiltinFunctionCall::GreaterEq { arg1, arg2 } => format!("({} >= {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
     }
 }
 

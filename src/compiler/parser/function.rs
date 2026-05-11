@@ -8,7 +8,9 @@ use crate::compiler::tokenizer::{Token, TokenBlock};
 
 pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<Option<(ASTFunctionSignature, TokenBlock)>> {
     match block.peek() {
-        (Token::Fn, _) => { block.get(); }
+        (Token::Fn, _) => {
+            block.get();
+        }
         (Token::Operator, _) => {}
         _ => return Ok(None),
     }
@@ -29,29 +31,33 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<Opti
         }
         (Token::Operator, pos) => {
             let (op, op_pos) = block.get();
-            res_signature.name = "operator".to_string() + match op {
-                Token::Plus => "+",
-                Token::Minus => "-",
-                Token::Star => "*",
-                Token::Slash => "/",
-                Token::Equals => "==",
-                Token::NotEquals => "!=",
-                Token::LessThan => "<",
-                Token::LessThanOrEqual => "<=",
-                Token::GreaterThan => ">",
-                Token::GreaterThanOrEqual => ">=",
-                _ => return Err(CompilerError {
-                    message: "Unexpected token".to_string(),
-                    position: Some(op_pos),
-                }),
-            };
+            res_signature.name = "operator".to_string()
+                + match op {
+                    Token::Plus => "+",
+                    Token::Minus => "-",
+                    Token::Star => "*",
+                    Token::Slash => "/",
+                    Token::Equals => "==",
+                    Token::NotEquals => "!=",
+                    Token::LessThan => "<",
+                    Token::LessThanOrEqual => "<=",
+                    Token::GreaterThan => ">",
+                    Token::GreaterThanOrEqual => ">=",
+                    _ => {
+                        return Err(CompilerError {
+                            message: "Unexpected token".to_string(),
+                            position: Some(op_pos),
+                        });
+                    }
+                };
             res_signature.pos = pos + op_pos;
         }
-        (_, pos) =>
+        (_, pos) => {
             return Err(CompilerError {
                 message: "Unexpected token".to_string(),
                 position: Some(pos),
-            }),
+            });
+        }
     }
 
     if is_builtin_identifier(&res_signature.name) {

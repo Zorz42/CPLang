@@ -8,18 +8,18 @@ pub fn is_builtin_identifier(name: &str) -> bool {
 
 impl Normalizer {
     pub fn is_builtin_function(function_name: &String) -> bool {
-        function_name == "_builtin_alloc" ||
-            function_name == "_builtin_index" ||
-            function_name == "_builtin_add" ||
-            function_name == "_builtin_sub" ||
-            function_name == "_builtin_mul" ||
-            function_name == "_builtin_div" ||
-            function_name == "_builtin_eq" ||
-            function_name == "_builtin_noteq" ||
-            function_name == "_builtin_lesser" ||
-            function_name == "_builtin_greater" ||
-            function_name == "_builtin_lessereq" ||
-            function_name == "_builtin_greatereq"
+        function_name == "_builtin_alloc"
+            || function_name == "_builtin_index"
+            || function_name == "_builtin_add"
+            || function_name == "_builtin_sub"
+            || function_name == "_builtin_mul"
+            || function_name == "_builtin_div"
+            || function_name == "_builtin_eq"
+            || function_name == "_builtin_noteq"
+            || function_name == "_builtin_lesser"
+            || function_name == "_builtin_greater"
+            || function_name == "_builtin_lessereq"
+            || function_name == "_builtin_greatereq"
     }
 
     pub fn get_builtin_call(
@@ -84,7 +84,12 @@ impl Normalizer {
 
         if template_types.len() < template_arguments_limit.0 || template_arguments_limit.1 < template_types.len() {
             return Err(CompilerError {
-                message: format!("{function_name} function takes at between {} and {} template arguments, not {}", template_arguments_limit.0, template_arguments_limit.1, template_types.len()),
+                message: format!(
+                    "{function_name} function takes at between {} and {} template arguments, not {}",
+                    template_arguments_limit.0,
+                    template_arguments_limit.1,
+                    template_types.len()
+                ),
                 position: Some(call_pos),
             });
         }
@@ -147,10 +152,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;
@@ -180,10 +187,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;
@@ -213,10 +222,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;
@@ -246,10 +257,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;
@@ -279,10 +292,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;
@@ -315,10 +330,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;
@@ -351,10 +368,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;
@@ -387,10 +406,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;
@@ -423,10 +444,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;
@@ -459,10 +482,12 @@ impl Normalizer {
 
                 match typ {
                     IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
-                    _ => return Err(CompilerError {
-                        message: format!("Builtin operator does not support {typ:?}"),
-                        position: Some(call_pos),
-                    })
+                    _ => {
+                        return Err(CompilerError {
+                            message: format!("Builtin operator does not support {typ:?}"),
+                            position: Some(call_pos),
+                        });
+                    }
                 }
 
                 self.type_resolver.hint_equal(expr_types[0], template_types[0])?;

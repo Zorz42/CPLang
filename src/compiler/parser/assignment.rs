@@ -49,13 +49,18 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
     Ok(Some(res))
 }
 
-pub fn parse_global_variable_declaration(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<(String, ASTType, Option<ASTExpression>, FilePosition)> {
+pub fn parse_global_variable_declaration(
+    structs: &Vec<ASTStructDeclaration>,
+    block: &mut TokenBlock,
+) -> CompilerResult<(String, ASTType, Option<ASTExpression>, FilePosition)> {
     let (ident, ident_pos) = match block.get() {
         (Token::Identifier(ident), ident_pos) => (ident, ident_pos),
-        (_, pos) => return Err(CompilerError {
-            message: "Unexpected token, expected one of: fn, struct, identifier".to_owned(),
-            position: Some(pos),
-        }),
+        (_, pos) => {
+            return Err(CompilerError {
+                message: "Unexpected token, expected one of: fn, struct, identifier".to_owned(),
+                position: Some(pos),
+            });
+        }
     };
 
     let hint = parse_type_hint(block)?;

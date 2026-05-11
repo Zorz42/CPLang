@@ -2,7 +2,7 @@
 #[allow(clippy::module_inception)]
 mod tests {
     use crate::compiler::compile;
-    use crate::compiler::error::{display_error, FilePosition};
+    use crate::compiler::error::{FilePosition, display_error};
     use std::hash::Hasher;
     use std::thread::sleep;
     use std::time::Duration;
@@ -62,9 +62,10 @@ mod tests {
                     if pos != correct_pos {
                         display_error(&e, test_file, &binding);
                         if pos != correct_pos {
-                            panic!("error position mismatch, error position is {} {} {} {}",
-                                   pos.first_pos.0, pos.first_pos.1,
-                                   pos.last_pos.0, pos.last_pos.1);
+                            panic!(
+                                "error position mismatch, error position is {} {} {} {}",
+                                pos.first_pos.0, pos.first_pos.1, pos.last_pos.0, pos.last_pos.1
+                            );
                         }
                     }
                 } else if line_start != -1 {

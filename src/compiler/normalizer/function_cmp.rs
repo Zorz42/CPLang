@@ -1,6 +1,6 @@
 use crate::compiler::error::{CompilerResult, FilePosition};
-use crate::compiler::normalizer::ir::IRTypeLabel;
 use crate::compiler::normalizer::Normalizer;
+use crate::compiler::normalizer::ir::IRTypeLabel;
 use crate::compiler::parser::ast::ASTFunctionSignature;
 use crate::compiler::type_resolver::TypeResolver;
 use std::collections::HashMap;
@@ -28,7 +28,8 @@ impl Normalizer {
 
     // is func1 more specific than func2 - so every call that satisfies func1 also satisfies func2
     pub fn check_is_function_more_specific(&mut self, func1: &ASTFunctionSignature, func2: &ASTFunctionSignature) -> bool {
-        #[cfg(feature = "trace")] {
+        #[cfg(feature = "trace")]
+        {
             println!("===============");
             println!("Comparing {func1:?} {func2:?}");
         }
@@ -52,7 +53,8 @@ impl Normalizer {
 
         let res = self.type_resolver.compare_sets(args1, args2);
         swap(&mut old_resolver, &mut self.type_resolver);
-        #[cfg(feature = "trace")] {
+        #[cfg(feature = "trace")]
+        {
             println!("Verdict: {res}");
             println!("===============");
         }

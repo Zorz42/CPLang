@@ -26,7 +26,9 @@ pub fn parse_template_instantiation(block: &mut TokenBlock) -> CompilerResult<(V
     let mut template = Vec::new();
     let mut pos = FilePosition::unknown();
     if let Token::BracketBlock(_) = block.peek().0 {
-        let (Token::BracketBlock(mut block), block_pos) = block.get() else { unreachable!() };
+        let (Token::BracketBlock(mut block), block_pos) = block.get() else {
+            unreachable!()
+        };
         pos = block_pos;
         while block.has_tokens() {
             template.push(parse_type(&mut block)?);
