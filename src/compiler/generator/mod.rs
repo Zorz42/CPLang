@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct,
-    IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
+    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
+    IRType, IRTypeLabel, IRVariableLabel, IR,
 };
 use std::collections::HashMap;
 
@@ -19,9 +19,43 @@ struct GeneratorContext {
     autorefs: Vec<i32>,
 }
 
-pub fn generate_code(ir: IR) -> String {
-    let imports = "#include<stdio.h>\n#include<stdlib.h>\n\n".to_owned();
+const OUTPUT_TEMPLATE: &str = r#"
+#include<sys/mman.h>
+#include<stdint.h>
+#include<stddef.h>
+#include<stdio.h>
+#include<stdlib.h>
 
+#define ARENA_SIZE 1024ull*1024*1024
+static uint8_t* arena;
+
+void bump_init(void) {
+    arena=mmap(NULL,ARENA_SIZE,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);
+}
+
+void* bump_malloc(size_t size) {
+    size=(size+7)&~7ull;
+    void*ptr=arena;
+    arena+=size;
+    return ptr;
+}
+
+{{global_variables}}
+
+{{struct_declarations}}
+
+{{function_signatures}}
+
+{{functions}}
+
+int main(){
+    bump_init();
+    {{main}}();
+    return 0;
+}
+"#;
+
+pub fn generate_code(ir: IR) -> String {
     let mut ctx = GeneratorContext {
         types: ir.types,
         var_types: ir.variable_types,
@@ -50,18 +84,12 @@ pub fn generate_code(ir: IR) -> String {
         functions += &gen_function(&mut ctx, func);
     }
 
-    let main_code = "
-int main(){
-    $main$();
-    return 0;
-}
-    ";
-    let main_code = main_code.replace("$main$", &gen_function_label(ir.main_function));
-
-    format!(
-        "{}\n{}\n{}\n{}\n{}\n{}",
-        imports, global_variables, ctx.struct_declarations, function_signatures, functions, main_code
-    )
+    OUTPUT_TEMPLATE
+        .replace("{{global_variables}}", &global_variables)
+        .replace("{{main}}", &gen_function_label(ir.main_function))
+        .replace("{{struct_declarations}}", &ctx.struct_declarations)
+        .replace("{{function_signatures}}", &function_signatures)
+        .replace("{{functions}}", &functions)
 }
 
 fn gen_primitive_type(typ: IRPrimitiveType) -> String {
@@ -73,7 +101,7 @@ fn gen_primitive_type(typ: IRPrimitiveType) -> String {
         IRPrimitiveType::String => "char*",
         IRPrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -150,7 +178,7 @@ fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> St
     match call {
         BuiltinFunctionCall::Alloc { typ, num } => {
             let typ = ctx.types[&typ].clone();
-            format!("malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
+            format!("bump_malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
         }
         BuiltinFunctionCall::Index { arr, idx } => format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
         BuiltinFunctionCall::Add { arg1, arg2 } => format!("({} + {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
