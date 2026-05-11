@@ -1,4 +1,4 @@
-use crate::compiler::{INPUT_NAMES, gain_input_sources};
+use crate::compiler::{gain_input_sources, INPUT_NAMES};
 use std::fmt::{Debug, Formatter};
 use std::ops::{Add, AddAssign};
 

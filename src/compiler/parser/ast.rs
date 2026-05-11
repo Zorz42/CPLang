@@ -138,6 +138,10 @@ pub enum ASTExpressionKind {
         expression: Box<ASTExpression>,
         call: ASTFunctionCall,
     },
+    Index {
+        expression: Box<ASTExpression>,
+        arguments: Vec<ASTExpression>,
+    },
     Dereference(Box<ASTExpression>),
     BinaryOperation {
         expression1: Box<ASTExpression>,

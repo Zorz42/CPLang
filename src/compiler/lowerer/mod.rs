@@ -358,6 +358,20 @@ impl Lowerer {
                 *expression = self.lower_expression(*expression);
                 ASTExpression::new(ASTExpressionKind::TypeHint { expression, type_hint }, pos)
             }
+
+            ASTExpressionKind::Index { expression, arguments } => {
+                self.lower_expression(ASTExpression {
+                    kind: ASTExpressionKind::MethodCall {
+                        expression,
+                        call: ASTFunctionCall {
+                            name: "operator[]".to_owned(),
+                            arguments,
+                            template_arguments: Vec::new(),
+                        },
+                    },
+                    pos,
+                })
+            }
         }
     }
 

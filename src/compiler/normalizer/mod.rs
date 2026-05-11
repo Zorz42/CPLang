@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel,
+    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
+    IRVariableLabel, IR,
 };
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
@@ -542,11 +542,6 @@ impl Normalizer {
                 )
             }
 
-            ASTExpressionKind::TupleInitialization { .. } => unreachable!("ASTExpression::TupleInitialization should be eliminated by lowerer"),
-            ASTExpressionKind::TupleAccess { .. } => unreachable!("ASTExpression::TupleAccess should be eliminated by lowerer"),
-            ASTExpressionKind::MethodCall { .. } => unreachable!("ASTExpression::MethodCall should be eliminated by lowerer"),
-            ASTExpressionKind::BinaryOperation { .. } => unreachable!("ASTExpression::BinaryOperation should be eliminated by lowerer"),
-
             ASTExpressionKind::AutoRef(expression) => {
                 let (expression, type_label1, _is_phys) = self.normalize_expression(*expression)?;
                 let autoref_label = self.type_resolver.new_autoref_label(type_label, type_label1);
@@ -570,6 +565,12 @@ impl Normalizer {
 
                 (expr, is_phys)
             }
+
+            ASTExpressionKind::TupleInitialization { .. } => unreachable!("ASTExpression::TupleInitialization should be eliminated by lowerer"),
+            ASTExpressionKind::TupleAccess { .. } => unreachable!("ASTExpression::TupleAccess should be eliminated by lowerer"),
+            ASTExpressionKind::MethodCall { .. } => unreachable!("ASTExpression::MethodCall should be eliminated by lowerer"),
+            ASTExpressionKind::BinaryOperation { .. } => unreachable!("ASTExpression::BinaryOperation should be eliminated by lowerer"),
+            ASTExpressionKind::Index { .. } => unreachable!("ASTExpression::Index should be eliminated by lowerer"),
         };
 
         Ok((expr, type_label, is_phys))

@@ -1,0 +1,19 @@
+//OUT=10
+
+struct Vec[T]
+    size: i32
+    vec: &T
+
+    fn operator[] i: i32
+        ret &_builtin_index(self.vec i)
+
+fn new_vec size
+    ret Vec size size vec _builtin_alloc(size)
+
+fn new_vec
+    ret new_vec(0)
+
+fn main
+    vec = new_vec(10)
+    |vec[0] = 10
+    out "{|vec[0]}"

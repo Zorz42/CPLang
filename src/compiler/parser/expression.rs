@@ -47,40 +47,65 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
         }
     };
 
-    while Token::Dot == block.peek().0 {
-        block.get();
+    // parse all field accesses and indexes
+    loop {
+        match block.peek().0 {
+            // field access
+            Token::Dot => {
+                block.get();
 
-        res = if let Some((call, pos)) = parse_function_call(structs, block)? {
-            ASTExpression::new(
-                ASTExpressionKind::MethodCall {
-                    expression: Box::new(res),
-                    call,
-                },
-                pos,
-            )
-        } else {
-            match block.get() {
-                (Token::Identifier(identifier), pos) => ASTExpression::new(
-                    ASTExpressionKind::FieldAccess {
-                        expression: Box::new(res),
-                        field_name: identifier,
-                    },
-                    pos,
-                ),
-                (Token::ConstInteger(index), pos) if index >= 0 => ASTExpression::new(
-                    ASTExpressionKind::TupleAccess {
-                        expression: Box::new(res),
-                        field_index: index as usize,
-                    },
-                    pos,
-                ),
-                (_, pos) => {
-                    return Err(CompilerError {
-                        message: "Expected identifier or non-negative integer after dot".to_owned(),
-                        position: Some(pos),
-                    });
+                res = if let Some((call, pos)) = parse_function_call(structs, block)? {
+                    ASTExpression::new(
+                        ASTExpressionKind::MethodCall {
+                            expression: Box::new(res),
+                            call,
+                        },
+                        pos,
+                    )
+                } else {
+                    match block.get() {
+                        (Token::Identifier(identifier), pos) => ASTExpression::new(
+                            ASTExpressionKind::FieldAccess {
+                                expression: Box::new(res),
+                                field_name: identifier,
+                            },
+                            pos,
+                        ),
+                        (Token::ConstInteger(index), pos) if index >= 0 => ASTExpression::new(
+                            ASTExpressionKind::TupleAccess {
+                                expression: Box::new(res),
+                                field_index: index as usize,
+                            },
+                            pos,
+                        ),
+                        (_, pos) => {
+                            return Err(CompilerError {
+                                message: "Expected identifier or non-negative integer after dot".to_owned(),
+                                position: Some(pos),
+                            });
+                        }
+                    }
                 }
             }
+            // index
+            Token::BracketBlock(_) => {
+                let pos = res.pos + block.peek().1;
+                let Token::BracketBlock(mut block) = block.get().0 else { unreachable!() };
+                let mut arguments = Vec::new();
+
+                while block.has_tokens() {
+                    arguments.push(parse_expression(structs, &mut block)?);
+                }
+
+                res = ASTExpression::new(
+                    ASTExpressionKind::Index {
+                        expression: Box::new(res),
+                        arguments,
+                    },
+                    pos,
+                );
+            }
+            _ => break,
         }
     }
 
