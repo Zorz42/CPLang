@@ -11,6 +11,7 @@
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::assigning_clones)]
 #![allow(clippy::format_push_string)]
+#![allow(clippy::cast_sign_loss)]
 
 use crate::compiler::error::CompilerResult;
 use crate::compiler::generator::generate_code;

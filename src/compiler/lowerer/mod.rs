@@ -104,8 +104,7 @@ impl Lowerer {
 
     fn lower_type(&mut self, typ: ASTType) -> ASTType {
         match typ {
-            ASTType::Any(_) => typ,
-            ASTType::Primitive(_, _) => typ,
+            ASTType::Any(_) | ASTType::Primitive(_, _) => typ,
             ASTType::Reference(typ, pos) =>
                 ASTType::Reference(Box::new(self.lower_type(*typ)), pos),
             ASTType::Identifier(name, pos, typ) =>
@@ -158,7 +157,7 @@ impl Lowerer {
     y = $tmp.f2
     z = $tmp.f3
      */
-    fn gen_struct_destructuring(&mut self, pos: FilePosition, value: ASTExpression, name: &str, fields: &Vec<ASTExpression>, template_arguments: &Vec<ASTType>) -> ASTStatement {
+    fn gen_struct_destructuring(&mut self, pos: FilePosition, value: ASTExpression, name: &str, fields: &[ASTExpression], template_arguments: &[ASTType]) -> ASTStatement {
         let tmp_name = self.new_tmp_name();
         let mut block = Vec::new();
 
@@ -169,7 +168,7 @@ impl Lowerer {
                         kind: ASTExpressionKind::Variable(tmp_name.clone()),
                         pos,
                     }),
-                    type_hint: ASTType::Identifier(name.to_owned(), pos, template_arguments.clone()),
+                    type_hint: ASTType::Identifier(name.to_owned(), pos, template_arguments.to_vec()),
                 },
                 pos,
             },
@@ -192,7 +191,7 @@ impl Lowerer {
                     pos,
                 },
                 pos,
-            })
+            });
         }
 
         ASTStatement::SemiBlock {
@@ -211,8 +210,7 @@ impl Lowerer {
     }
 
     fn touch_tuple(&mut self, tuple_size: usize) {
-        if !self.used_tuples.contains(&tuple_size) {
-            self.used_tuples.insert(tuple_size);
+        if self.used_tuples.insert(tuple_size) {
             let mut fields = Vec::new();
             for i in 0..tuple_size {
                 fields.push(i.to_string());

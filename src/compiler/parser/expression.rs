@@ -93,7 +93,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                 type_hint,
             },
             pos,
-        )
+        );
     }
 
     Ok(res)
