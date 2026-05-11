@@ -16,9 +16,9 @@ pub enum Token {
     ConstString(Vec<PosChar>),
     ConstBoolean(bool),
 
-    BraceBlock(TokenBlock),
-    BracketBlock(TokenBlock),
-    ParenthesisBlock(TokenBlock),
+    ParenthesisBlock(TokenBlock), // ()
+    BracketBlock(TokenBlock), // []
+    BraceBlock(TokenBlock), // {}
 
     // keywords
     If,

@@ -25,6 +25,12 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
         lowerer.struct_fields.insert(structure.name.clone(), fields);
     }
 
+    for structure in &mut ast.structs {
+        for (_, typ) in &mut structure.fields {
+            *typ = lowerer.lower_type(typ.clone());
+        }
+    }
+
     ast.functions = ast
         .functions
         .into_iter()
@@ -46,9 +52,13 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
                 .into_iter()
                 .map(|(name, pos)| ASTType::Identifier(name, pos, Vec::new()))
                 .collect::<Vec<_>>();
+            let struct_template_types = lowerer.lower_types(struct_template_types);
+
             sign.template.append(&mut struct_template);
             let typ = ASTType::Reference(Box::new(ASTType::Identifier(structure.name.clone(), sign.pos, struct_template_types)), sign.pos);
+            let typ = lowerer.lower_type(typ);
             sign.args.insert(0, ("self".to_string(), typ, sign.pos));
+
             let block = lowerer.lower_block(block);
 
             ast.functions.push((sign, block));
@@ -82,6 +92,30 @@ impl Lowerer {
     fn new_tmp_name(&mut self) -> String {
         self.tmp_index += 1;
         format!("$tmp{}", self.tmp_index - 1)
+    }
+
+    fn lower_types(&mut self, types: Vec<ASTType>) -> Vec<ASTType> {
+        let mut res = Vec::new();
+        for typ in types {
+            res.push(self.lower_type(typ));
+        }
+        res
+    }
+
+    fn lower_type(&mut self, typ: ASTType) -> ASTType {
+        match typ {
+            ASTType::Any(_) => typ,
+            ASTType::Primitive(_, _) => typ,
+            ASTType::Reference(typ, pos) =>
+                ASTType::Reference(Box::new(self.lower_type(*typ)), pos),
+            ASTType::Identifier(name, pos, typ) =>
+                ASTType::Identifier(name, pos, self.lower_types(typ)),
+            ASTType::Tuple(types, pos) => {
+                //let types = self.lower_types(types);
+                self.touch_tuple(types.len());
+                ASTType::Identifier(gen_tuple_name(types.len()), pos, Vec::new())
+            }
+        }
     }
 
     /* transform a += b into
@@ -124,7 +158,7 @@ impl Lowerer {
     y = $tmp.f2
     z = $tmp.f3
      */
-    fn gen_struct_descructuring(&mut self, pos: FilePosition, value: ASTExpression, name: &str, fields: &Vec<ASTExpression>, template_arguments: &Vec<ASTType>) -> ASTStatement {
+    fn gen_struct_destructuring(&mut self, pos: FilePosition, value: ASTExpression, name: &str, fields: &Vec<ASTExpression>, template_arguments: &Vec<ASTType>) -> ASTStatement {
         let tmp_name = self.new_tmp_name();
         let mut block = Vec::new();
 
@@ -176,6 +210,17 @@ impl Lowerer {
         res
     }
 
+    fn touch_tuple(&mut self, tuple_size: usize) {
+        if !self.used_tuples.contains(&tuple_size) {
+            self.used_tuples.insert(tuple_size);
+            let mut fields = Vec::new();
+            for i in 0..tuple_size {
+                fields.push(i.to_string());
+            }
+            self.struct_fields.insert(gen_tuple_name(tuple_size), fields);
+        }
+    }
+
     fn lower_expression(&mut self, expression: ASTExpression) -> ASTExpression {
         let pos = expression.pos;
         match expression.kind {
@@ -186,14 +231,7 @@ impl Lowerer {
             | ASTExpressionKind::Variable(_) => expression,
 
             ASTExpressionKind::TupleInitialization(expressions) => {
-                if !self.used_tuples.contains(&expressions.len()) {
-                    self.used_tuples.insert(expressions.len());
-                    let mut fields = Vec::new();
-                    for i in 0..expressions.len() {
-                        fields.push(i.to_string());
-                    }
-                    self.struct_fields.insert(gen_tuple_name(expressions.len()), fields);
-                }
+                self.touch_tuple(expressions.len());
 
                 self.lower_expression(
                     ASTExpression::new(
@@ -224,7 +262,7 @@ impl Lowerer {
                     ASTExpressionKind::StructInitialization {
                         name,
                         fields: self.lower_expressions(fields),
-                        template_arguments,
+                        template_arguments: self.lower_types(template_arguments),
                     },
                     pos,
                 ),
@@ -318,6 +356,7 @@ impl Lowerer {
                 ASTExpression::new(ASTExpressionKind::AutoRef(expression), pos)
             }
             ASTExpressionKind::TypeHint { mut expression, type_hint } => {
+                let type_hint = self.lower_type(type_hint);
                 *expression = self.lower_expression(*expression);
                 ASTExpression::new(
                     ASTExpressionKind::TypeHint {
@@ -363,7 +402,7 @@ impl Lowerer {
                         pos,
                     } => match &assign_to.kind {
                         ASTExpressionKind::StructInitialization { name, fields, template_arguments } => {
-                            let statement = self.gen_struct_descructuring(*pos, value.clone(), name, fields, template_arguments);
+                            let statement = self.gen_struct_destructuring(*pos, value.clone(), name, fields, template_arguments);
                             self.lower_statement(statement)
                         }
                         _ => assignment

@@ -621,6 +621,7 @@ impl Normalizer {
                 let type_label2 = self.normalize_type(*typ)?;
                 self.type_resolver.hint_is_ref(type_label2, type_label)?;
             }
+            ASTType::Tuple(_, _) => unreachable!("ASTType::Tuple should be eliminated by lowerer")
         }
         Ok(type_label)
     }

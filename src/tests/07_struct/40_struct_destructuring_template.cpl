@@ -1,0 +1,10 @@
+//OUT=10 20
+
+struct Point[T]
+    x: T
+    y: T
+
+fn main
+    p = Point x 10 y 20
+    Point[i32] x x y y = p
+    out "{x} {y}"

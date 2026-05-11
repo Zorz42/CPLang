@@ -193,12 +193,13 @@ pub enum ASTType {
     Primitive(ASTPrimitiveType, FilePosition),
     Reference(Box<Self>, FilePosition),
     Identifier(String, FilePosition, Vec<Self>),
+    Tuple(Vec<Self>, FilePosition),
 }
 
 impl ASTType {
     pub const fn get_pos(&self) -> FilePosition {
         match self {
-            Self::Any(pos) | Self::Primitive(_, pos) | Self::Reference(_, pos) | Self::Identifier(_, pos, _) => *pos,
+            Self::Any(pos) | Self::Primitive(_, pos) | Self::Reference(_, pos) | Self::Identifier(_, pos, _) | Self::Tuple(_, pos) => *pos,
         }
     }
 }
