@@ -99,8 +99,8 @@ impl Normalizer {
                 // size should be an integer
                 self.type_resolver.hint_is(expr_types[0], IRPrimitiveType::I32)?;
 
-                let typ = self.type_resolver.new_type_label(FilePosition::unknown());
-                let ref_typ = self.type_resolver.new_type_label(FilePosition::unknown());
+                let typ = self.type_resolver.new_type_label(call_pos);
+                let ref_typ = self.type_resolver.new_type_label(call_pos);
                 self.type_resolver.hint_is_ref(typ, ref_typ)?;
 
                 if let Some(template_typ) = template_types.first() {

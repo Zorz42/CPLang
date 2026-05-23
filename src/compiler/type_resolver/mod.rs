@@ -539,29 +539,20 @@ impl TypeResolver {
         println!();*/
 
         // go through all ref pairs and naiively match them by reference depth if not both sides are determined
-        let mut remaining_ref_pairs = self.auto_ref_pairs.clone();
-        loop {
-            let mut new_ref_pairs = Vec::new();
-            let old_size = remaining_ref_pairs.len();
-            for (type1, type2) in remaining_ref_pairs {
-                let is_det1 = self.ref_is_fixed(type1);
-                let is_det2 = self.ref_is_fixed(type2);
-                match (is_det1, is_det2) {
-                    (true, true) => {
-                        // nothing to do here, both sides are already fixed
+        for (mut type1, mut type2) in self.auto_ref_pairs.clone() {
+            if self.ref_dsu.get_repr(type1) != self.ref_dsu.get_repr(type2) {
+                let mut diff = 0;
+                if self.ref_is_fixed(type1) || self.ref_is_fixed(type2) {
+                    if self.ref_is_fixed(type2) {
+                        swap(&mut type1, &mut type2);
                     }
-                    (false, true) | (true, false) => {
-                        self.hint_equal(type1, type2)?;
-                    }
-                    (false, false) => {
-                        // this will have to be dealt with in the next iteration
-                        new_ref_pairs.push((type1, type2));
+                    for node in self.ref_dsu.get(type2).nodes.clone() {
+                        diff = i32::min(diff, self.dsu.get(node).ref_depth);
                     }
                 }
-            }
-            remaining_ref_pairs = new_ref_pairs;
-            if old_size == remaining_ref_pairs.len() {
-                break;
+
+                self.merge_ref(type1, type2, -diff)?;
+                self.run_queue()?;
             }
         }
 
