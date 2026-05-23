@@ -154,11 +154,11 @@ impl TypeResolver {
     }
 
     pub fn fetch_final_ir_type(&mut self, label: IRTypeLabel) -> Option<IRType> {
-        let mut typ = self.type_dsu.get(label).typ.clone()?;
         let dep = self.dsu.get(label).ref_depth;
         if dep < 0 || !self.ref_is_fixed(label) {
             return None;
         }
+        let mut typ = self.type_dsu.get(label).typ.clone()?;
 
         for _ in 0..dep {
             typ = IRType::Reference(Box::new(typ));
@@ -422,6 +422,9 @@ impl TypeResolver {
                 self.type_dsu.get(node).ref_map.insert(key, node);
             }
         }
+
+        self.push_type_parents(label1);
+
         Ok(())
     }
 
@@ -517,6 +520,15 @@ impl TypeResolver {
         Ok(())
     }
 
+    pub fn hint_is_phys(&mut self, label: IRTypeLabel) -> CompilerResult<()> {
+        #[cfg(feature = "trace")]
+        println!("hint_is_phys({label})");
+        self.set_ref(label, 0)?;
+
+        self.run_queue()?;
+        Ok(())
+    }
+
     pub fn gather_types(mut self, needed_types: Vec<IRTypeLabel>) -> CompilerResult<(HashMap<IRTypeLabel, IRType>, Vec<i32>)> {
         let mut types = HashMap::new();
         let mut autorefs = vec![0; self.auto_ref_pairs.len()];
@@ -525,6 +537,34 @@ impl TypeResolver {
             print!("{} {:?} | ", self.dsu.get(i).ref_depth, self.type_dsu.get(i).typ);
         }
         println!();*/
+
+        // go through all ref pairs and naiively match them by reference depth if not both sides are determined
+        let mut remaining_ref_pairs = self.auto_ref_pairs.clone();
+        loop {
+            let mut new_ref_pairs = Vec::new();
+            let old_size = remaining_ref_pairs.len();
+            for (type1, type2) in remaining_ref_pairs {
+                let is_det1 = self.ref_is_fixed(type1);
+                let is_det2 = self.ref_is_fixed(type2);
+                match (is_det1, is_det2) {
+                    (true, true) => {
+                        // nothing to do here, both sides are already fixed
+                    }
+                    (false, true) | (true, false) => {
+                        self.hint_equal(type1, type2)?;
+                    }
+                    (false, false) => {
+                        // this will have to be dealt with in the next iteration
+                        new_ref_pairs.push((type1, type2));
+                    }
+                }
+            }
+            remaining_ref_pairs = new_ref_pairs;
+            if old_size == remaining_ref_pairs.len() {
+                break;
+            }
+        }
+
 
         for (i, (type1, type2)) in self.auto_ref_pairs.iter().enumerate() {
             autorefs[i] = self.dsu.get(*type1).ref_depth - self.dsu.get(*type2).ref_depth;

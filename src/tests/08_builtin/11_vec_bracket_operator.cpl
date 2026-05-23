@@ -15,5 +15,5 @@ fn new_vec
 
 fn main
     vec = new_vec(10)
-    |vec[0] = 10
-    out "{|vec[0]}"
+    vec[0] = 10
+    out "{vec[0]}"

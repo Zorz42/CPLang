@@ -361,14 +361,18 @@ impl Lowerer {
 
             ASTExpressionKind::Index { expression, arguments } => {
                 self.lower_expression(ASTExpression {
-                    kind: ASTExpressionKind::MethodCall {
-                        expression,
-                        call: ASTFunctionCall {
-                            name: "operator[]".to_owned(),
-                            arguments,
-                            template_arguments: Vec::new(),
-                        },
-                    },
+                    kind: ASTExpressionKind::AutoRef(Box::new(
+                        ASTExpression {
+                            kind: ASTExpressionKind::MethodCall {
+                                expression,
+                                call: ASTFunctionCall {
+                                    name: "operator[]".to_owned(),
+                                    arguments,
+                                    template_arguments: Vec::new(),
+                                },
+                            },
+                            pos,
+                        })),
                     pos,
                 })
             }

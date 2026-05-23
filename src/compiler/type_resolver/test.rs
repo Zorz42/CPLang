@@ -256,4 +256,21 @@ mod test_type_resolver {
         resolver.hint_struct(typ3, 0, vec![typ4]).unwrap();
         assert!(resolver.hint_equal(typ1, typ3).is_err());
     }
+
+    #[test]
+    fn test_edge_case2() {
+        let mut resolver = TypeResolver::new(vec![vec![0]]);
+        let typ1 = resolver.new_type_label(FilePosition::unknown());
+        let typ2 = resolver.new_type_label(FilePosition::unknown());
+        let typ3 = resolver.new_type_label(FilePosition::unknown());
+        let typ4 = resolver.new_type_label(FilePosition::unknown());
+
+        resolver.hint_struct(typ2, 0, vec![typ1]).unwrap();
+        resolver.hint_is_field(typ3, typ2, 0).unwrap();
+        resolver.hint_autoref(typ4, typ3).unwrap();
+        resolver.hint_is(typ4, IRPrimitiveType::F32).unwrap();
+        resolver.hint_equal(typ4, typ3).unwrap();
+
+        assert_eq!(resolver.fetch_final_ir_type(typ2).unwrap(), IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::F32)]));
+    }
 }

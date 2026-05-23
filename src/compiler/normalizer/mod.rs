@@ -533,6 +533,7 @@ impl Normalizer {
                     });
                 };
                 self.type_resolver.hint_is_field(type_label, type_label2, field_label)?;
+                self.type_resolver.hint_is_phys(type_label2)?;
                 (
                     IRExpression::FieldAccess {
                         expression: Box::new(expression),
