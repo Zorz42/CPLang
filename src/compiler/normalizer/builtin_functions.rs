@@ -29,7 +29,7 @@ impl Normalizer {
         mut function_arguments: Vec<IRExpression>,
         template_types: Vec<IRTypeLabel>,
         call_pos: FilePosition,
-    ) -> CompilerResult<(BuiltinFunctionCall, ValuePhysicality, IRTypeLabel)> {
+    ) -> CompilerResult<(BuiltinFunctionCall, IRTypeLabel)> {
         let alloc_label = "_builtin_alloc".to_string();
         let index_label = "_builtin_index".to_string();
         let add_label = "_builtin_add".to_string();
@@ -113,7 +113,6 @@ impl Normalizer {
                         typ,
                         num: Box::new(function_arguments.pop().unwrap()),
                     },
-                    ValuePhysicality::Temporary,
                     ref_typ,
                 ))
             }
@@ -133,7 +132,6 @@ impl Normalizer {
                         arr: Box::new(arr_expr),
                         idx: Box::new(index_expr),
                     },
-                    ValuePhysicality::Physical,
                     arr_type,
                 ))
             }
@@ -168,7 +166,6 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     template_types[0],
                 ))
             }
@@ -203,7 +200,6 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     template_types[0],
                 ))
             }
@@ -238,7 +234,6 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     template_types[0],
                 ))
             }
@@ -273,7 +268,6 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     template_types[0],
                 ))
             }
@@ -311,7 +305,6 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     ret_type,
                 ))
             }
@@ -349,7 +342,6 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     ret_type,
                 ))
             }
@@ -387,7 +379,6 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     ret_type,
                 ))
             }
@@ -425,7 +416,6 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     ret_type,
                 ))
             }
@@ -463,7 +453,6 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     ret_type,
                 ))
             }
@@ -501,12 +490,30 @@ impl Normalizer {
                         arg1: Box::new(arg1),
                         arg2: Box::new(arg2),
                     },
-                    ValuePhysicality::Temporary,
                     ret_type,
                 ))
             }
 
             _ => unreachable!(),
+        }
+    }
+}
+
+impl BuiltinFunctionCall {
+    pub fn get_value_physicality(&self) -> ValuePhysicality {
+        match self {
+            BuiltinFunctionCall::Alloc { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::Index { .. } => ValuePhysicality::Physical,
+            BuiltinFunctionCall::Add { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::Sub { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::Mul { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::Div { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::Eq { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::NotEq { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::Lesser { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::Greater { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::LesserEq { .. } => ValuePhysicality::Temporary,
+            BuiltinFunctionCall::GreaterEq { .. } => ValuePhysicality::Temporary,
         }
     }
 }

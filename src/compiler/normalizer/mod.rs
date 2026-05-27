@@ -1,4 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
+use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
     IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
     IRVariableLabel, IR,
@@ -14,15 +15,16 @@ pub mod builtin_functions;
 mod function_cmp;
 pub mod ir;
 mod ir_debug;
-
-#[derive(PartialEq, Eq)]
-enum ValuePhysicality {
-    Temporary,
-    Physical,
-}
+mod check_refs;
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     Normalizer::default().normalize_ast(ast)
+}
+
+#[derive(PartialEq, Eq)]
+pub enum ValuePhysicality {
+    Temporary,
+    Physical,
 }
 
 #[derive(Default)]
@@ -155,7 +157,7 @@ impl Normalizer {
             let type_hint_label = self.normalize_type(type_hint)?;
             self.type_resolver.hint_equal(type_label, type_hint_label)?;
             if let Some(initial_value) = initial_value {
-                let (initial_value, value_type_label, _) = self.normalize_expression(initial_value, false)?;
+                let (initial_value, value_type_label) = self.normalize_expression(initial_value)?;
                 self.type_resolver.hint_equal(type_label, value_type_label)?;
                 global_assignments.push((var_label, initial_value));
             }
@@ -185,6 +187,7 @@ impl Normalizer {
                 main_block.push(IRStatement::Assignment {
                     assign_to: IRExpression::Variable { variable_label },
                     value,
+                    pos: FilePosition::unknown(),
                 });
             }
 
@@ -197,8 +200,9 @@ impl Normalizer {
             });
         }
 
+        let autorefs;
         // type deducer works alongside normalizer in the end we want to gather all types (which should be known by now)
-        (self.ir.types, self.ir.autorefs) = self.type_resolver.gather_types(self.relevant_types)?;
+        (self.ir.types, autorefs) = self.type_resolver.gather_types(self.relevant_types)?;
 
         // check that main has no return value
         let main_ret = self.ir.instances[self.ir.main_function].ret_type;
@@ -209,6 +213,8 @@ impl Normalizer {
                 position: None,
             });
         }
+
+        self.ir = check_refs(self.ir, &autorefs)?;
 
         Ok(self.ir)
     }
@@ -366,44 +372,37 @@ impl Normalizer {
     }
 
     // `want_phys` is meant for autorefs, if you get an autoref and want it to be a physical value.
-    fn normalize_expression(&mut self, expression: ASTExpression, want_phys: bool) -> CompilerResult<(IRExpression, IRTypeLabel, ValuePhysicality)> {
+    fn normalize_expression(&mut self, expression: ASTExpression) -> CompilerResult<(IRExpression, IRTypeLabel)> {
         let pos = expression.pos;
         let type_label = self.type_resolver.new_type_label(pos);
 
-        let (expr, is_phys) = match expression.kind {
+        let expr = match expression.kind {
             ASTExpressionKind::Integer(x) => {
                 self.type_resolver.hint_is(type_label, IRPrimitiveType::I32)?;
-                (
-                    IRExpression::Constant {
-                        constant: IRConstant::Int(i64::from(x)),
-                    },
-                    ValuePhysicality::Temporary,
-                )
+
+                IRExpression::Constant {
+                    constant: IRConstant::Int(i64::from(x)),
+                }
             }
 
             ASTExpressionKind::Float(x) => {
                 self.type_resolver.hint_is(type_label, IRPrimitiveType::F32)?;
-                (
-                    IRExpression::Constant {
-                        constant: IRConstant::Float(f64::from(x)),
-                    },
-                    ValuePhysicality::Temporary,
-                )
+
+                IRExpression::Constant {
+                    constant: IRConstant::Float(f64::from(x)),
+                }
             }
 
             ASTExpressionKind::String(x) => {
                 self.type_resolver.hint_is(type_label, IRPrimitiveType::String)?;
-                (
-                    IRExpression::Constant {
-                        constant: IRConstant::String(x),
-                    },
-                    ValuePhysicality::Temporary,
-                )
+                IRExpression::Constant {
+                    constant: IRConstant::String(x),
+                }
             }
 
             ASTExpressionKind::Boolean(x) => {
                 self.type_resolver.hint_is(type_label, IRPrimitiveType::Bool)?;
-                (IRExpression::Constant { constant: IRConstant::Bool(x) }, ValuePhysicality::Temporary)
+                IRExpression::Constant { constant: IRConstant::Bool(x) }
             }
 
             ASTExpressionKind::Variable(name) => {
@@ -417,37 +416,25 @@ impl Normalizer {
                 };
                 let var_type_label = self.ir.variable_types[label];
                 self.type_resolver.hint_equal(type_label, var_type_label)?;
-                (IRExpression::Variable { variable_label: label }, ValuePhysicality::Physical)
+                IRExpression::Variable { variable_label: label }
             }
 
             ASTExpressionKind::Reference(expression) => {
-                let (expression, type_label2, is_phys) = self.normalize_expression(*expression, false)?;
-
-                if is_phys == ValuePhysicality::Temporary {
-                    return Err(CompilerError {
-                        message: "Cannot reference non-physical value.".to_string(),
-                        position: Some(pos),
-                    });
-                }
+                let (expression, type_label2) = self.normalize_expression(*expression)?;
 
                 self.type_resolver.hint_is_ref(type_label2, type_label)?;
-                (
-                    IRExpression::Reference {
-                        expression: Box::new(expression),
-                    },
-                    ValuePhysicality::Temporary,
-                )
+                IRExpression::Reference {
+                    expression: Box::new(expression),
+                    pos,
+                }
             }
 
             ASTExpressionKind::Dereference(expression) => {
-                let (expression, type_label2, _is_phys) = self.normalize_expression(*expression, false)?;
+                let (expression, type_label2) = self.normalize_expression(*expression)?;
                 self.type_resolver.hint_is_ref(type_label, type_label2)?;
-                (
-                    IRExpression::Dereference {
-                        expression: Box::new(expression),
-                    },
-                    ValuePhysicality::Physical,
-                )
+                IRExpression::Dereference {
+                    expression: Box::new(expression),
+                }
             }
 
             ASTExpressionKind::FunctionCall(call) => {
@@ -462,15 +449,15 @@ impl Normalizer {
                 }
 
                 for expr in call.arguments {
-                    let (expr, type_label, _is_phys) = self.normalize_expression(expr, false)?;
+                    let (expr, type_label) = self.normalize_expression(expr)?;
                     expr_types.push(type_label);
                     function_arguments.push(expr);
                 }
 
                 if Self::is_builtin_function(&call.name) {
-                    let (call, physicality, return_type) = self.get_builtin_call(call.name, expr_types, function_arguments, template_types, pos)?;
+                    let (call, return_type) = self.get_builtin_call(call.name, expr_types, function_arguments, template_types, pos)?;
                     self.type_resolver.hint_equal(return_type, type_label)?;
-                    (IRExpression::BuiltinFunctionCall(call), physicality)
+                    IRExpression::BuiltinFunctionCall(call)
                 } else {
                     let (sig, block) = self.find_matching_function(&call.name, &expr_types, &template_types, pos)?;
 
@@ -488,13 +475,10 @@ impl Normalizer {
                     let ret_type = self.ir.instances[instance_label].ret_type;
                     self.type_resolver.hint_equal(ret_type, type_label)?;
 
-                    (
-                        IRExpression::InstanceCall {
-                            instance_label,
-                            instance_arguments: function_arguments,
-                        },
-                        ValuePhysicality::Temporary,
-                    )
+                    IRExpression::InstanceCall {
+                        instance_label,
+                        instance_arguments: function_arguments,
+                    }
                 }
             }
 
@@ -509,7 +493,7 @@ impl Normalizer {
 
                 let mut field_values = Vec::new();
                 for (arg, field_type_label) in fields.into_iter().zip(field_type_labels.iter()) {
-                    let (expr, typ, _is_phys) = self.normalize_expression(arg, false)?;
+                    let (expr, typ) = self.normalize_expression(arg)?;
                     field_values.push(expr);
                     self.type_resolver.hint_equal(typ, *field_type_label)?;
                     self.relevant_types.push(*field_type_label);
@@ -522,11 +506,11 @@ impl Normalizer {
                 };
                 self.type_resolver.hint_struct(type_label, struct_label, field_type_labels)?;
 
-                (struct_expr, ValuePhysicality::Temporary)
+                struct_expr
             }
 
             ASTExpressionKind::FieldAccess { expression, field_name } => {
-                let (expression, type_label2, _is_phys) = self.normalize_expression(*expression, false)?;
+                let (expression, type_label2) = self.normalize_expression(*expression)?;
                 let Some(&field_label) = self.fields_name_map.get(&field_name) else {
                     return Err(CompilerError {
                         message: format!("Unknown field {field_name}"),
@@ -535,45 +519,32 @@ impl Normalizer {
                 };
                 self.type_resolver.hint_is_field(type_label, type_label2, field_label)?;
                 self.type_resolver.hint_is_phys(type_label2)?;
-                (
-                    IRExpression::FieldAccess {
-                        expression: Box::new(expression),
-                        field_label,
-                    },
-                    ValuePhysicality::Physical,
-                )
+                IRExpression::FieldAccess {
+                    expression: Box::new(expression),
+                    field_label,
+                }
             }
 
             ASTExpressionKind::AutoRef(expression) => {
-                let (expression, type_label1, _is_phys) = self.normalize_expression(*expression, false)?;
+                let (expression, type_label1) = self.normalize_expression(*expression)?;
                 let autoref_label = self.type_resolver.new_autoref_label(type_label, type_label1);
 
                 self.type_resolver.hint_autoref(type_label, type_label1)?;
-                if want_phys {
-                    // TODO
-                }
 
-                (
-                    IRExpression::AutoRef {
-                        autoref_label,
-                        expression: Box::new(expression),
-                    },
-                    if want_phys {
-                        ValuePhysicality::Physical
-                    } else {
-                        ValuePhysicality::Temporary
-                    }
-                )
+                IRExpression::AutoRef {
+                    autoref_label,
+                    expression: Box::new(expression),
+                }
             }
 
             ASTExpressionKind::TypeHint { expression, type_hint } => {
                 let type_hint = self.normalize_type(type_hint)?;
                 self.type_resolver.hint_equal(type_label, type_hint)?;
 
-                let (expr, type_label2, is_phys) = self.normalize_expression(*expression, false)?;
+                let (expr, type_label2) = self.normalize_expression(*expression)?;
                 self.type_resolver.hint_equal(type_label, type_label2)?;
 
-                (expr, is_phys)
+                expr
             }
 
             ASTExpressionKind::TupleInitialization { .. } => unreachable!("ASTExpression::TupleInitialization should be eliminated by lowerer"),
@@ -583,7 +554,7 @@ impl Normalizer {
             ASTExpressionKind::Index { .. } => unreachable!("ASTExpression::Index should be eliminated by lowerer"),
         };
 
-        Ok((expr, type_label, is_phys))
+        Ok((expr, type_label))
     }
 
     const fn primitive_type_to_ir_type(typ: ASTPrimitiveType) -> IRPrimitiveType {
@@ -664,18 +635,11 @@ impl Normalizer {
                         self.relevant_types.push(type_label);
                     }
 
-                    let (assign_to, type_label1, is_phys) = self.normalize_expression(assign_to, true)?;
-                    let (value, type_label2, _is_phys) = self.normalize_expression(value, false)?;
+                    let (assign_to, type_label1) = self.normalize_expression(assign_to)?;
+                    let (value, type_label2) = self.normalize_expression(value)?;
                     self.type_resolver.hint_equal(type_label1, type_label2)?;
 
-                    if is_phys == ValuePhysicality::Temporary {
-                        return Err(CompilerError {
-                            message: "Left hand side is non-assignable".to_string(),
-                            position: Some(pos),
-                        });
-                    }
-
-                    res.statements.push(IRStatement::Assignment { assign_to, value });
+                    res.statements.push(IRStatement::Assignment { assign_to, value, pos });
                 }
 
                 ASTStatement::SemiBlock { .. } => unreachable!("ASTStatement::SemiBlock should be eliminated by lowerer"),
@@ -689,14 +653,14 @@ impl Normalizer {
                 }
                 ASTStatement::Expression { expression } => {
                     res.statements.push(IRStatement::Expression {
-                        expr: self.normalize_expression(expression, false)?.0,
+                        expr: self.normalize_expression(expression)?.0,
                     });
                 }
                 ASTStatement::Print { values } => {
                     let mut vals = values;
                     vals.push(ASTExpression::new(ASTExpressionKind::String("\n".to_string()), FilePosition::unknown()));
                     for val in vals {
-                        let (expr, type_label, _is_phys) = self.normalize_expression(val, false)?;
+                        let (expr, type_label) = self.normalize_expression(val)?;
                         self.type_resolver.hint_is_phys(type_label)?;
                         self.relevant_types.push(type_label);
                         res.statements.push(IRStatement::Print { expr, type_label });
@@ -705,7 +669,7 @@ impl Normalizer {
                 ASTStatement::Return { return_value, pos: _ } => {
                     self.has_ret_statement = true;
                     let st = if let Some(expr) = return_value {
-                        let (expr, type_label, _is_phys) = self.normalize_expression(expr, false)?;
+                        let (expr, type_label) = self.normalize_expression(expr)?;
                         self.type_resolver.hint_equal(self.curr_func_ret_type, type_label)?;
                         IRStatement::Return { return_value: Some(expr) }
                     } else {
@@ -715,7 +679,7 @@ impl Normalizer {
                     res.statements.push(st);
                 }
                 ASTStatement::If { condition, block, else_block } => {
-                    let (condition, type_label, _is_phys) = self.normalize_expression(condition, false)?;
+                    let (condition, type_label) = self.normalize_expression(condition)?;
                     self.type_resolver.hint_is(type_label, IRPrimitiveType::Bool)?;
                     let block = self.normalize_block(block)?;
                     let else_block = if let Some(else_block) = else_block {
@@ -726,7 +690,7 @@ impl Normalizer {
                     res.statements.push(IRStatement::If { condition, block, else_block });
                 }
                 ASTStatement::While { condition, block } => {
-                    let (condition, type_label, _is_phys) = self.normalize_expression(condition, false)?;
+                    let (condition, type_label) = self.normalize_expression(condition)?;
                     self.type_resolver.hint_is(type_label, IRPrimitiveType::Bool)?;
                     let block = self.normalize_block(block)?;
                     res.statements.push(IRStatement::While { condition, block });

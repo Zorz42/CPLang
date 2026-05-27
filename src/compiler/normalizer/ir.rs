@@ -1,3 +1,4 @@
+use crate::compiler::error::FilePosition;
 use std::collections::HashMap;
 use std::fmt::Debug;
 // Function is a generic function. When you call it, it is reduced into
@@ -17,7 +18,6 @@ pub struct IR {
     pub types: HashMap<IRTypeLabel, IRType>,
     pub variable_types: Vec<IRTypeLabel>,
     pub global_variables: Vec<IRVariableLabel>,
-    pub autorefs: Vec<i32>,
     pub main_function: IRInstanceLabel,
 }
 
@@ -88,6 +88,7 @@ pub enum IRExpression {
     },
     Reference {
         expression: Box<Self>,
+        pos: FilePosition,
     },
     Variable {
         variable_label: IRVariableLabel,
@@ -130,6 +131,7 @@ pub enum IRStatement {
     Assignment {
         assign_to: IRExpression,
         value: IRExpression,
+        pos: FilePosition,
     },
 }
 

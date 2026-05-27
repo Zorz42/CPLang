@@ -16,7 +16,6 @@ struct GeneratorContext {
     c_structs: HashMap<(IRStructLabel, Vec<IRType>), usize>,
     curr_struct_label: usize,
     struct_declarations: String,
-    autorefs: Vec<i32>,
 }
 
 const OUTPUT_TEMPLATE: &str = r#"
@@ -63,7 +62,6 @@ pub fn generate_code(ir: IR) -> String {
         c_structs: HashMap::new(),
         curr_struct_label: 0,
         struct_declarations: String::new(),
-        autorefs: ir.autorefs,
     };
 
     let mut global_variables = String::new();
@@ -254,24 +252,9 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
             code += "}";
             code
         }
-        IRExpression::Reference { expression } => format!("(&{})", gen_expression(ctx, *expression)),
+        IRExpression::Reference { expression, pos: _ } => format!("(&{})", gen_expression(ctx, *expression)),
         IRExpression::Variable { variable_label } => gen_variable_label(variable_label),
-        IRExpression::AutoRef { autoref_label, expression } => {
-            let mut prefix = String::new();
-
-            let ref_depth = ctx.autorefs[autoref_label];
-            if ref_depth > 0 {
-                for _ in 0..ref_depth {
-                    prefix.push('&');
-                }
-            } else {
-                for _ in 0..-ref_depth {
-                    prefix.push('*');
-                }
-            }
-
-            format!("({}{})", prefix, gen_expression(ctx, *expression))
-        }
+        IRExpression::AutoRef { .. } => unreachable!("IRExpression::AutoRef should be eliminated by normalizer"),
     }
 }
 
@@ -306,7 +289,7 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
                 || "return;".to_string(),
                 |return_value| format!("return {};", gen_expression(ctx, return_value)),
             ),
-            IRStatement::Assignment { assign_to, value } => {
+            IRStatement::Assignment { assign_to, value, pos: _ } => {
                 format!("{} = {};", gen_expression(ctx, assign_to), gen_expression(ctx, value))
             }
         };
