@@ -369,10 +369,10 @@ impl TypeResolver {
                 return Err(CompilerError {
                     message: format!(
                         "This cannot be {}-time reference and {}-time reference at the same time",
-                        self.dsu.get(label2).ref_depth - offset,
-                        self.dsu.get(label1).ref_depth
+                        self.dsu.get(label1).ref_depth + offset,
+                        self.dsu.get(label2).ref_depth
                     ),
-                    position: Some(self.type_positions[label1]),
+                    position: Some(self.type_positions[label2]),
                 });
             }
             return Ok(());
