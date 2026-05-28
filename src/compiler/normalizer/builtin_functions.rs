@@ -500,20 +500,20 @@ impl Normalizer {
 }
 
 impl BuiltinFunctionCall {
-    pub fn get_value_physicality(&self) -> ValuePhysicality {
+    pub const fn get_value_physicality(&self) -> ValuePhysicality {
         match self {
-            BuiltinFunctionCall::Alloc { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::Index { .. } => ValuePhysicality::Physical,
-            BuiltinFunctionCall::Add { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::Sub { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::Mul { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::Div { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::Eq { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::NotEq { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::Lesser { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::Greater { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::LesserEq { .. } => ValuePhysicality::Temporary,
-            BuiltinFunctionCall::GreaterEq { .. } => ValuePhysicality::Temporary,
+            Self::Index { .. } => ValuePhysicality::Physical,
+            Self::Alloc { .. }
+            | Self::Add { .. }
+            | Self::Sub { .. }
+            | Self::Mul { .. }
+            | Self::Div { .. }
+            | Self::Eq { .. }
+            | Self::NotEq { .. }
+            | Self::Lesser { .. }
+            | Self::Greater { .. }
+            | Self::LesserEq { .. }
+            | Self::GreaterEq { .. } => ValuePhysicality::Temporary,
         }
     }
 }

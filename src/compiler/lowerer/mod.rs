@@ -327,18 +327,18 @@ impl Lowerer {
 
                 let name = "operator".to_string()
                     + match operator {
-                    ASTOperator::Plus => "+",
-                    ASTOperator::Mul => "*",
-                    ASTOperator::Div => "/",
-                    ASTOperator::Equals => "==",
-                    ASTOperator::NotEquals => "!=",
-                    ASTOperator::Greater => ">",
-                    ASTOperator::Lesser => "<",
-                    ASTOperator::GreaterEq => ">=",
-                    ASTOperator::LesserEq => "<=",
-                    ASTOperator::Minus => "-",
-                    ASTOperator::Comma => unreachable!(),
-                };
+                        ASTOperator::Plus => "+",
+                        ASTOperator::Mul => "*",
+                        ASTOperator::Div => "/",
+                        ASTOperator::Equals => "==",
+                        ASTOperator::NotEquals => "!=",
+                        ASTOperator::Greater => ">",
+                        ASTOperator::Lesser => "<",
+                        ASTOperator::GreaterEq => ">=",
+                        ASTOperator::LesserEq => "<=",
+                        ASTOperator::Minus => "-",
+                        ASTOperator::Comma => unreachable!(),
+                    };
 
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {
@@ -359,23 +359,20 @@ impl Lowerer {
                 ASTExpression::new(ASTExpressionKind::TypeHint { expression, type_hint }, pos)
             }
 
-            ASTExpressionKind::Index { expression, arguments } => {
-                self.lower_expression(ASTExpression {
-                    kind: ASTExpressionKind::AutoRef(Box::new(
-                        ASTExpression {
-                            kind: ASTExpressionKind::MethodCall {
-                                expression,
-                                call: ASTFunctionCall {
-                                    name: "operator[]".to_owned(),
-                                    arguments,
-                                    template_arguments: Vec::new(),
-                                },
-                            },
-                            pos,
-                        })),
+            ASTExpressionKind::Index { expression, arguments } => self.lower_expression(ASTExpression {
+                kind: ASTExpressionKind::AutoRef(Box::new(ASTExpression {
+                    kind: ASTExpressionKind::MethodCall {
+                        expression,
+                        call: ASTFunctionCall {
+                            name: "operator[]".to_owned(),
+                            arguments,
+                            template_arguments: Vec::new(),
+                        },
+                    },
                     pos,
-                })
-            }
+                })),
+                pos,
+            }),
         }
     }
 

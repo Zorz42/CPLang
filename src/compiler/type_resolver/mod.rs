@@ -556,7 +556,6 @@ impl TypeResolver {
             }
         }
 
-
         for (i, (type1, type2)) in self.auto_ref_pairs.iter().enumerate() {
             autorefs[i] = self.dsu.get(*type1).ref_depth - self.dsu.get(*type2).ref_depth;
         }

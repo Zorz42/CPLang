@@ -271,6 +271,9 @@ mod test_type_resolver {
         resolver.hint_is(typ4, IRPrimitiveType::F32).unwrap();
         resolver.hint_equal(typ4, typ3).unwrap();
 
-        assert_eq!(resolver.fetch_final_ir_type(typ2).unwrap(), IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::F32)]));
+        assert_eq!(
+            resolver.fetch_final_ir_type(typ2).unwrap(),
+            IRType::Struct(0, vec![IRType::Primitive(IRPrimitiveType::F32)])
+        );
     }
 }

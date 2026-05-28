@@ -19,7 +19,7 @@ use crate::compiler::lowerer::lower_ast;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
-use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
+use crate::compiler::tokenizer::{TokenBlock, tokenize_fragments};
 
 pub mod error;
 mod generator;

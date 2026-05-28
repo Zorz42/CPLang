@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
-    IRType, IRTypeLabel, IRVariableLabel, IR,
+    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct,
+    IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
 };
 use std::collections::HashMap;
 
@@ -18,7 +18,7 @@ struct GeneratorContext {
     struct_declarations: String,
 }
 
-const OUTPUT_TEMPLATE: &str = r#"
+const OUTPUT_TEMPLATE: &str = r"
 #include<sys/mman.h>
 #include<stdint.h>
 #include<stddef.h>
@@ -52,7 +52,7 @@ int main(){
     {{main}}();
     return 0;
 }
-"#;
+";
 
 pub fn generate_code(ir: IR) -> String {
     let mut ctx = GeneratorContext {
@@ -99,7 +99,7 @@ fn gen_primitive_type(typ: IRPrimitiveType) -> String {
         IRPrimitiveType::String => "char*",
         IRPrimitiveType::Void => "void",
     }
-        .to_owned()
+    .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
