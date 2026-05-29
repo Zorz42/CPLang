@@ -551,6 +551,7 @@ impl Normalizer {
             ASTExpressionKind::TupleAccess { .. } => unreachable!("ASTExpression::TupleAccess should be eliminated by lowerer"),
             ASTExpressionKind::MethodCall { .. } => unreachable!("ASTExpression::MethodCall should be eliminated by lowerer"),
             ASTExpressionKind::BinaryOperation { .. } => unreachable!("ASTExpression::BinaryOperation should be eliminated by lowerer"),
+            ASTExpressionKind::Minus { .. } => unreachable!("ASTExpression::Minus should be eliminated by lowerer"),
             ASTExpressionKind::Index { .. } => unreachable!("ASTExpression::Index should be eliminated by lowerer"),
         };
 

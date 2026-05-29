@@ -392,12 +392,12 @@ impl Lowerer {
                 )
             }
             ASTExpressionKind::BinaryOperation {
-                mut expression1,
+                expression1,
                 operator,
-                mut expression2,
+                expression2,
             } => {
-                *expression1 = self.lower_expression(*expression1);
-                *expression2 = self.lower_expression(*expression2);
+                let expression1 = self.lower_expression(*expression1);
+                let expression2 = self.lower_expression(*expression2);
 
                 let name = "operator".to_string()
                     + match operator {
@@ -418,7 +418,18 @@ impl Lowerer {
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {
                         name,
-                        arguments: vec![*expression1, *expression2],
+                        arguments: vec![expression1, expression2],
+                        template_arguments: Vec::new(),
+                    }),
+                    pos,
+                )
+            }
+            ASTExpressionKind::Minus(expression) => {
+                let expression = self.lower_expression(*expression);
+                ASTExpression::new(
+                    ASTExpressionKind::FunctionCall(ASTFunctionCall {
+                        name: "operator-".to_string(),
+                        arguments: vec![expression],
                         template_arguments: Vec::new(),
                     }),
                     pos,

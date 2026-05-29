@@ -23,6 +23,18 @@ operator- a: f32 b: f32
 operator- a: f64 b: f64
     ret _builtin_sub[f64](a b)
 
+operator- a: i32
+    ret 0 - a
+
+operator- a: i64
+    ret 0 - a
+
+operator- a: f32
+    ret 0 - a
+
+operator- a: f64
+    ret 0 - a
+
 
 operator* a: i32 b: i32
     ret _builtin_mul[i32](a b)

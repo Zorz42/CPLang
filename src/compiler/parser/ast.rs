@@ -165,6 +165,8 @@ pub enum ASTExpressionKind {
         expression: Box<ASTExpression>,
         type_hint: ASTType,
     },
+    // prefix minus
+    Minus(Box<ASTExpression>),
 }
 
 #[derive(Debug, Clone)]
