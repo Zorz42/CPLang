@@ -219,14 +219,23 @@ impl Lowerer {
         //   }
         // }
         let iter_name = self.new_tmp_name();
+        let element_name = self.new_tmp_name();
         self.lower_statement(
             ASTStatement::Block {
                 block: ASTBlock {
                     children: vec![
                         ASTStatement::Assignment {
+                            assign_to: ASTExpression::new(ASTExpressionKind::Variable(element_name.clone()), pos),
+                            value: element,
+                            pos,
+                        },
+                        ASTStatement::Assignment {
                             assign_to: ASTExpression::new(ASTExpressionKind::Variable(iter_name.clone()), pos),
                             value: ASTExpression::new(ASTExpressionKind::MethodCall {
-                                expression: Box::new(element),
+                                expression: Box::new(ASTExpression::new(
+                                    ASTExpressionKind::Variable(element_name),
+                                    pos,
+                                )),
                                 call: ASTFunctionCall {
                                     name: "iter".to_string(),
                                     arguments: Vec::new(),
