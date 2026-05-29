@@ -1,0 +1,55 @@
+//OUT=200
+
+struct Vec[T]
+    size: i32
+    capacity: i32
+    vec: &T
+
+    fn operator[] i: i32
+        ret &_builtin_index(self.vec i)
+
+    fn expand wanted_size
+        while wanted_size > self.capacity
+            self.capacity = self.capacity * 2
+            old_vec = self.vec
+            self.vec = _builtin_alloc(self.capacity)
+            for i 0..self.size
+                self[i] = _builtin_index(old_vec i)
+
+    fn push x: T
+        self.expand(self.size + 1)
+        self[self.size] = x
+        self.size++
+
+    fn pop
+        self.size--
+
+    fn iter
+        ret VecIter vec self i 0
+
+struct VecIter
+    vec: &Vec
+    i: i32
+
+    fn has_next
+        ret self.i < self.vec.size
+
+    fn next
+        self.i++
+        ret self.vec[self.i - 1]
+
+fn new_vec
+    ret Vec size 0 vec _builtin_alloc(1) capacity 1
+
+fn main
+    vec = new_vec()
+    vec.push(100)
+    for i 0..10
+        vec.push(i+1)
+    for i 0..10
+        vec.push(i+1)
+    vec.pop()
+    sum = 0
+    for i vec
+        sum += i
+    out "{sum}"

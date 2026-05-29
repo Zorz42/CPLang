@@ -1,4 +1,4 @@
-//OUT=36
+//OUT=45
 
 fn main
     sum = 0
