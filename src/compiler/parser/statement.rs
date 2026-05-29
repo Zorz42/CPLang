@@ -63,3 +63,45 @@ pub fn parse_while_statement(structs: &Vec<ASTStructDeclaration>, block: &mut To
 
     Ok(Some(ASTStatement::While { condition, block: res_block }))
 }
+
+pub fn parse_for_statement(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<ASTStatement>> {
+    if block.peek().0 != Token::For {
+        return Ok(None);
+    }
+
+    let mut pos = block.get().1;
+    let iterator = match block.get() {
+        (Token::Identifier(ident), pos2) => {
+            pos += pos2;
+            ident
+        }
+        (_, pos) => {
+            return Err(CompilerError {
+                message: "Expected identifier after for keyword".to_string(),
+                position: Some(pos),
+            });
+        }
+    };
+    let element = parse_expression(structs, block)?;
+    pos += element.pos;
+
+    let res_block = match block.get() {
+        (Token::BraceBlock(token_block), pos2) => {
+            pos += pos2;
+            parse_block(structs, token_block)?
+        }
+        (_, pos) => {
+            return Err(CompilerError {
+                message: "Expected block after for statement".to_string(),
+                position: Some(pos),
+            });
+        }
+    };
+
+    Ok(Some(ASTStatement::For {
+        iterator,
+        element,
+        block: res_block,
+        pos,
+    }))
+}

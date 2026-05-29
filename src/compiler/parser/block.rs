@@ -4,7 +4,7 @@ use crate::compiler::parser::ast::{ASTBlock, ASTStatement, ASTStructDeclaration}
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::function::parse_return_statement;
 use crate::compiler::parser::out::parse_out_statement;
-use crate::compiler::parser::statement::{parse_if_statement, parse_while_statement};
+use crate::compiler::parser::statement::{parse_for_statement, parse_if_statement, parse_while_statement};
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
 pub fn parse_block(structs: &Vec<ASTStructDeclaration>, mut block: TokenBlock) -> CompilerResult<ASTBlock> {
@@ -18,7 +18,13 @@ pub fn parse_block(structs: &Vec<ASTStructDeclaration>, mut block: TokenBlock) -
                 block: parse_block(structs, sub_block)?,
             }
         } else {
-            let parsers = [parse_return_statement, parse_out_statement, parse_if_statement, parse_while_statement];
+            let parsers = [
+                parse_return_statement,
+                parse_out_statement,
+                parse_if_statement,
+                parse_while_statement,
+                parse_for_statement,
+            ];
 
             let mut parser_res = None;
 

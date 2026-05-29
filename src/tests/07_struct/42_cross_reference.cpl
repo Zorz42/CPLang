@@ -1,0 +1,19 @@
+//OUT=ok
+
+struct A
+    x: i32
+
+    fn to_B
+        ret B x self.x
+
+struct B
+    x: i32
+
+    fn to_A
+        ret A x self.x
+
+fn main
+    a = A x 10
+    b = a.to_B()
+    a2 = b.to_A()
+    out "ok"

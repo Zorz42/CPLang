@@ -1,0 +1,21 @@
+struct Range
+    start: i32
+    end: i32
+
+    fn iter
+        if self.start <= self.end
+            ret RangeIter current self.start end self.end step 1
+        else
+            ret RangeIter current self.start end self.end step -1
+
+struct RangeIter
+    current: i32
+    end: i32
+    step: i32
+
+    fn has_next
+        ret self.current != self.end
+
+    fn next
+        self.current += self.step
+        ret self.current - self.step

@@ -1,15 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
+use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IRBlock, IRExpression, IRInstance, IRStatement, IR};
 use crate::compiler::normalizer::ValuePhysicality;
-use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IR, IRBlock, IRExpression, IRInstance, IRStatement};
 // this file implements the pass of IR that happens in normalizer and checks
 // that all lhs in assignments are physical and resolves all autorefs
-
-/*
-
-
-
-
-*/
 
 pub fn check_refs(mut ir: IR, autorefs: &[i32]) -> CompilerResult<IR> {
     let out: CompilerResult<Vec<_>> = ir.instances.into_iter().map(|instance| check_refs_instance(instance, autorefs)).collect();

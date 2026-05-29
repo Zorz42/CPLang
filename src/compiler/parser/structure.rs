@@ -1,6 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTStructDeclaration};
-use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::function::parse_function_declaration;
 use crate::compiler::parser::template::{parse_declaration_template, parse_template_instantiation};
@@ -38,14 +37,13 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
         }
     };
 
-    // parse struct body
+    // parse struct body (skip method blocks for now)
 
     let mut fields = Vec::new();
     let mut methods = Vec::new();
 
     while block.has_tokens() {
         if let Some((signature, block)) = parse_function_declaration(&mut block)? {
-            let block = parse_block(&Vec::new(), block)?;
             methods.push((signature, block));
             continue;
         }
@@ -68,7 +66,8 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
     Ok(Some(ASTStructDeclaration {
         name,
         fields,
-        methods,
+        methods: Vec::new(),
+        pre_methods: methods,
         template,
     }))
 }

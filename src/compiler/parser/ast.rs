@@ -1,4 +1,5 @@
 use crate::compiler::error::FilePosition;
+use crate::compiler::tokenizer::TokenBlock;
 use std::fmt::{Debug, Formatter};
 
 #[derive(Debug)]
@@ -64,6 +65,12 @@ pub enum ASTStatement {
         condition: ASTExpression,
         block: ASTBlock,
     },
+    For {
+        iterator: String,
+        element: ASTExpression,
+        block: ASTBlock,
+        pos: FilePosition,
+    },
 }
 
 #[derive(Clone)]
@@ -96,6 +103,7 @@ pub enum ASTOperator {
     LesserEq,
     Minus,
     Comma, // for tuples
+    DotDot, // .. for ranges
 }
 
 #[derive(Debug, Clone)]
@@ -173,6 +181,9 @@ pub struct ASTFunctionSignature {
 pub struct ASTStructDeclaration {
     pub name: String,
     pub fields: Vec<(String, ASTType)>,
+    // the compiler first collects all method signatures and raw blocks and later parses them,
+    // because parsing stage already needs to know all declared structs
+    pub pre_methods: Vec<(ASTFunctionSignature, TokenBlock)>,
     pub methods: Vec<(ASTFunctionSignature, ASTBlock)>,
     pub template: Vec<(String, FilePosition)>,
 }

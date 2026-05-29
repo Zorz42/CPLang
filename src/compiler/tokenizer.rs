@@ -60,6 +60,7 @@ pub enum Token {
     Colon,              // :
     QuestionMark,       // ?
     Pipe,               // |
+    DotDot,             // ..
 }
 
 fn str_to_keyword(s: &str) -> Option<Token> {
@@ -113,6 +114,7 @@ const fn symbol_from_two_chars(c1: char, c2: char) -> Option<Token> {
         ('-', '=') => Some(Token::Decrease),
         ('+', '+') => Some(Token::Increment),
         ('-', '-') => Some(Token::Decrement),
+        ('.', '.') => Some(Token::DotDot),
         _ => None,
     }
 }
@@ -216,7 +218,10 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
                     _ => '\0',
                 });
 
-                if c == '.' && curr_token.parse::<i32>().is_ok() {
+                // in case we have range syntax: 0..10 we do not mistake it for a float
+                let is_next_dot = matches!(iter.peek(), Some(Fragment::Char(c)) if c.c == '.');
+
+                if c == '.' && curr_token.parse::<i32>().is_ok() && !is_next_dot {
                     // decimal point in a float
                     add_to_token(&mut curr_token, &mut token_pos, c, *pos);
                 } else if let Some(symbol) = symbol_from_two_chars(c, next_char) {

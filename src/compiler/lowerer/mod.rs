@@ -80,6 +80,7 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
         ast.structs.push(ASTStructDeclaration {
             name: gen_tuple_name(tuple_size),
             fields,
+            pre_methods: Vec::new(),
             methods: Vec::new(),
             template,
         });
@@ -208,6 +209,65 @@ impl Lowerer {
         }
     }
 
+    fn gen_for_statement(&mut self, iterator: String, element: ASTExpression, block: ASTBlock, pos: FilePosition) -> ASTStatement {
+        // lower for i x { block } into
+        // {
+        //   $iter = x.iter()
+        //   while $iter.has_next() {
+        //     i = $iter.next()
+        //     block
+        //   }
+        // }
+        let iter_name = self.new_tmp_name();
+        self.lower_statement(
+            ASTStatement::Block {
+                block: ASTBlock {
+                    children: vec![
+                        ASTStatement::Assignment {
+                            assign_to: ASTExpression::new(ASTExpressionKind::Variable(iter_name.clone()), pos),
+                            value: ASTExpression::new(ASTExpressionKind::MethodCall {
+                                expression: Box::new(element),
+                                call: ASTFunctionCall {
+                                    name: "iter".to_string(),
+                                    arguments: Vec::new(),
+                                    template_arguments: Vec::new(),
+                                },
+                            }, pos),
+                            pos,
+                        },
+                        ASTStatement::While {
+                            condition: ASTExpression::new(ASTExpressionKind::MethodCall {
+                                expression: Box::new(ASTExpression::new(ASTExpressionKind::Variable(iter_name.clone()), pos)),
+                                call: ASTFunctionCall {
+                                    name: "has_next".to_string(),
+                                    arguments: Vec::new(),
+                                    template_arguments: Vec::new(),
+                                },
+                            }, pos),
+                            block: ASTBlock {
+                                children: vec![
+                                    ASTStatement::Assignment {
+                                        assign_to: ASTExpression::new(ASTExpressionKind::Variable(iterator), pos),
+                                        value: ASTExpression::new(ASTExpressionKind::MethodCall {
+                                            expression: Box::new(ASTExpression::new(ASTExpressionKind::Variable(iter_name), pos)),
+                                            call: ASTFunctionCall {
+                                                name: "next".to_string(),
+                                                arguments: Vec::new(),
+                                                template_arguments: Vec::new(),
+                                            },
+                                        }, pos),
+                                        pos,
+                                    },
+                                    ASTStatement::Block { block },
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        )
+    }
+
     fn lower_expressions(&mut self, expressions: Vec<ASTExpression>) -> Vec<ASTExpression> {
         let mut res = Vec::new();
         for expr in expressions {
@@ -318,6 +378,20 @@ impl Lowerer {
                 self.lower_expression(ASTExpression::new(ASTExpressionKind::TupleInitialization(vec), pos))
             }
             ASTExpressionKind::BinaryOperation {
+                expression1,
+                operator: ASTOperator::DotDot,
+                expression2,
+            } => {
+                // turn a..b into Range from a to b
+                self.lower_expression(
+                    ASTExpression::new(ASTExpressionKind::StructInitialization {
+                        name: "Range".to_string(),
+                        fields: vec![*expression1, *expression2],
+                        template_arguments: Vec::new(),
+                    }, pos)
+                )
+            }
+            ASTExpressionKind::BinaryOperation {
                 mut expression1,
                 operator,
                 mut expression2,
@@ -327,18 +401,19 @@ impl Lowerer {
 
                 let name = "operator".to_string()
                     + match operator {
-                        ASTOperator::Plus => "+",
-                        ASTOperator::Mul => "*",
-                        ASTOperator::Div => "/",
-                        ASTOperator::Equals => "==",
-                        ASTOperator::NotEquals => "!=",
-                        ASTOperator::Greater => ">",
-                        ASTOperator::Lesser => "<",
-                        ASTOperator::GreaterEq => ">=",
-                        ASTOperator::LesserEq => "<=",
-                        ASTOperator::Minus => "-",
-                        ASTOperator::Comma => unreachable!(),
-                    };
+                    ASTOperator::Plus => "+",
+                    ASTOperator::Mul => "*",
+                    ASTOperator::Div => "/",
+                    ASTOperator::Equals => "==",
+                    ASTOperator::NotEquals => "!=",
+                    ASTOperator::Greater => ">",
+                    ASTOperator::Lesser => "<",
+                    ASTOperator::GreaterEq => ">=",
+                    ASTOperator::LesserEq => "<=",
+                    ASTOperator::Minus => "-",
+                    ASTOperator::Comma
+                    | ASTOperator::DotDot => unreachable!(),
+                };
 
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {
@@ -460,6 +535,9 @@ impl Lowerer {
             ASTStatement::Expression { expression } => ASTStatement::Expression {
                 expression: self.lower_expression(expression),
             },
+            ASTStatement::For { iterator, element, block, pos } => {
+                self.gen_for_statement(iterator, element, block, pos)
+            }
         }
     }
 

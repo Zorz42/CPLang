@@ -1,8 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel,
+    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
+    IRVariableLabel, IR,
 };
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
@@ -642,11 +642,6 @@ impl Normalizer {
                     res.statements.push(IRStatement::Assignment { assign_to, value, pos });
                 }
 
-                ASTStatement::SemiBlock { .. } => unreachable!("ASTStatement::SemiBlock should be eliminated by lowerer"),
-                ASTStatement::AssignmentOperator { .. } => unreachable!("ASTStatement::AssignmentOperator should be eliminated by lowerer"),
-                ASTStatement::AssignmentIncrement { .. } => unreachable!("ASTStatement::AssignmentIncrement should be eliminated by lowerer"),
-                ASTStatement::AssignmentDecrement { .. } => unreachable!("ASTStatement::AssignmentDecrement should be eliminated by lowerer"),
-
                 ASTStatement::Block { block } => {
                     let block = self.normalize_block(block)?;
                     res.statements.push(IRStatement::Block { block });
@@ -695,6 +690,12 @@ impl Normalizer {
                     let block = self.normalize_block(block)?;
                     res.statements.push(IRStatement::While { condition, block });
                 }
+
+                ASTStatement::SemiBlock { .. } => unreachable!("ASTStatement::SemiBlock should be eliminated by lowerer"),
+                ASTStatement::AssignmentOperator { .. } => unreachable!("ASTStatement::AssignmentOperator should be eliminated by lowerer"),
+                ASTStatement::AssignmentIncrement { .. } => unreachable!("ASTStatement::AssignmentIncrement should be eliminated by lowerer"),
+                ASTStatement::AssignmentDecrement { .. } => unreachable!("ASTStatement::AssignmentDecrement should be eliminated by lowerer"),
+                ASTStatement::For { .. } => unreachable!("ASTStatement::For should be eliminated by lowerer"),
             }
         }
 

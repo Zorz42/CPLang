@@ -5,6 +5,7 @@ use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::function::parse_function_declaration;
 use crate::compiler::parser::structure::parse_struct_declaration;
 use crate::compiler::tokenizer::TokenBlock;
+use std::mem::swap;
 
 pub mod assignment;
 pub mod ast;
@@ -41,6 +42,17 @@ pub fn parse_tokens(mut program_block: TokenBlock) -> CompilerResult<Ast> {
             res.global_variables.push(global_declaration);
         }
     }
+
+
+    let mut temp_structs = res.structs.clone();
+    for structure in &mut temp_structs {
+        while let Some((sign, block)) = structure.pre_methods.pop() {
+            let block = parse_block(&res.structs, block)?;
+            structure.methods.push((sign, block));
+        }
+    }
+    swap(&mut res.structs, &mut temp_structs);
+
     for (signature, function_block) in function_declarations {
         let parsed_block = parse_block(&res.structs, function_block)?;
 

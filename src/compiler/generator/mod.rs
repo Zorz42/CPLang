@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct,
-    IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
+    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
+    IRType, IRTypeLabel, IRVariableLabel, IR,
 };
 use std::collections::HashMap;
 
@@ -99,7 +99,7 @@ fn gen_primitive_type(typ: IRPrimitiveType) -> String {
         IRPrimitiveType::String => "char*",
         IRPrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -254,7 +254,7 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
         }
         IRExpression::Reference { expression, pos: _ } => format!("(&{})", gen_expression(ctx, *expression)),
         IRExpression::Variable { variable_label } => gen_variable_label(variable_label),
-        IRExpression::AutoRef { .. } => unreachable!("IRExpression::AutoRef should be eliminated by normalizer"),
+        IRExpression::AutoRef { .. } => unreachable!("IRExpression::AutoRef should not be emitted by normalizer"),
     }
 }
 
