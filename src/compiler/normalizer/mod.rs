@@ -653,8 +653,7 @@ impl Normalizer {
                     });
                 }
                 ASTStatement::Print { values } => {
-                    let mut vals = values;
-                    vals.push(ASTExpression::new(ASTExpressionKind::String("\n".to_string()), FilePosition::unknown()));
+                    let vals = values;
                     for val in vals {
                         let (expr, type_label) = self.normalize_expression(val)?;
                         self.type_resolver.hint_is_phys(type_label)?;

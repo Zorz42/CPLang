@@ -185,6 +185,15 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                 }
             }
             Location::String => {
+                fn map_escape_char(c: char) -> Option<char> {
+                    match c {
+                        '"' => Some('"'),
+                        'n' => Some('\n'),
+                        '\\' => Some('\\'),
+                        _ => None,
+                    }
+                }
+
                 if pos_char.c == '"' {
                     let pos = string_quote_position.unwrap() + pos_char.pos;
                     res.push(Fragment::String(current_string.clone(), pos));
@@ -193,10 +202,13 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                 // check for \
                 else if pos_char.c == '\\'
                     && let Some(next_char) = chars.peek()
-                    && next_char.c == '"'
+                    && let Some(escape_char) = map_escape_char(next_char.c)
                 {
                     // remove the \
-                    current_string.push(**next_char);
+                    current_string.push(PosChar {
+                        c: escape_char,
+                        pos: next_char.pos,
+                    });
                     chars.next();
                 } else {
                     current_string.push(*pos_char);

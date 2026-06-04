@@ -2,7 +2,7 @@
 #[allow(clippy::module_inception)]
 mod tests {
     use crate::compiler::compile;
-    use crate::compiler::error::{FilePosition, display_error};
+    use crate::compiler::error::{display_error, FilePosition};
     use std::hash::Hasher;
     use std::thread::sleep;
     use std::time::Duration;
@@ -77,7 +77,6 @@ mod tests {
             }
         } else if let Some(stripped) = first_line.strip_prefix("//OUT=") {
             let mut expected_output = stripped.to_string();
-            expected_output.push('\n');
 
             if let Err(e) = compile(test_file, &c_file) {
                 display_error(&e, test_file, &binding);
