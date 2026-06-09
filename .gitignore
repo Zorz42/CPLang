@@ -3,3 +3,4 @@ target
 main.cpl
 main.c
 **/.test_cache
+cses-tests/tests
