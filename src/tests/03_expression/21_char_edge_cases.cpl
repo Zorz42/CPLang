@@ -1,0 +1,10 @@
+//OUT="{)x
+
+fn main
+    a = '"'
+    b = '{'
+    c = ')'
+    d = '\n'
+    if d == '\n'
+        d = 'x'
+    out "{a}{b}{c}{d}"

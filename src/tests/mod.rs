@@ -76,7 +76,7 @@ mod tests {
                 panic!("Expected error, but got compilation success");
             }
         } else if let Some(stripped) = first_line.strip_prefix("//OUT=") {
-            let mut expected_output = stripped.to_string();
+            let expected_output = stripped.to_string();
 
             if let Err(e) = compile(test_file, &c_file) {
                 display_error(&e, test_file, &binding);

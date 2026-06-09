@@ -15,6 +15,7 @@ pub enum Token {
     ConstFloat(f32),
     ConstString(Vec<PosChar>),
     ConstBoolean(bool),
+    ConstChar(char),
 
     ParenthesisBlock(TokenBlock), // ()
     BracketBlock(TokenBlock),     // []
@@ -238,6 +239,10 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
                 } else {
                     add_to_token(&mut curr_token, &mut token_pos, c, *pos);
                 }
+            }
+            Fragment::ConstChar(c) => {
+                new_token(&mut tokens, &mut curr_token, &mut token_pos);
+                tokens.push((Token::ConstChar(c.c), c.pos));
             }
             Fragment::BraceBlock(block) => {
                 new_token(&mut tokens, &mut curr_token, &mut token_pos);

@@ -22,7 +22,8 @@ It processes raw string into a FragmentBlock which is effectively and array of F
 #[derive(Clone, Debug)]
 pub enum Fragment {
     String(Vec<PosChar>, FilePosition),
-    Char(PosChar),
+    ConstChar(PosChar), // this is a character 'x' with value
+    Char(PosChar), // this is a raw character
     BraceBlock(FragmentBlock),       // {}
     BracketBlock(FragmentBlock),     // []
     ParenthesisBlock(FragmentBlock), // ()
@@ -51,7 +52,7 @@ impl Fragment {
     pub const fn get_position(&self) -> FilePosition {
         match self {
             Self::String(_s, pos) => *pos,
-            Self::Char(pc) => pc.pos,
+            Self::Char(pc) | Self::ConstChar(pc) => pc.pos,
             Self::BraceBlock(b) | Self::BracketBlock(b) | Self::ParenthesisBlock(b) => b.position,
         }
     }
@@ -135,6 +136,15 @@ fn newlines_to_spaces(mut input: FragmentBlock) -> FragmentBlock {
     input
 }
 
+const fn map_escape_char(c: char) -> Option<char> {
+    match c {
+        'n' => Some('\n'),
+        '"' | '\\' | '\'' => Some(c),
+        _ => None,
+    }
+}
+
+
 pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fragment>> {
     #[derive(PartialEq, Clone)]
     enum Location {
@@ -180,20 +190,46 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                     } else {
                         res.push(Fragment::Char(*pos_char));
                     }
+                } else if pos_char.c == '\'' {
+                    let (mut c, pos) = match chars.next() {
+                        None =>
+                            return Err(CompilerError {
+                                message: "Expected character after quote, not EOF".to_string(),
+                                position: Some(pos_char.pos),
+                            }),
+                        Some(PosChar { c: '\n', pos: _ }) =>
+                            return Err(CompilerError {
+                                message: "Expected character after quote, not newline".to_string(),
+                                position: Some(pos_char.pos),
+                            }),
+                        Some(c) => (c.c, c.pos)
+                    };
+                    if c == '\\' {
+                        match chars.next().map(|c| map_escape_char(c.c)).flatten() {
+                            Some(ch) => c = ch,
+                            None =>
+                                return Err(CompilerError {
+                                    message: "Unrecognized escape character".to_string(),
+                                    position: Some(pos),
+                                }),
+                        };
+                    }
+                    let nxt = chars.next();
+                    if !matches!(nxt, Some(PosChar { pos: _, c: '\'' })) {
+                        return Err(CompilerError {
+                            message: "Expected quote".to_string(),
+                            position: Some(pos),
+                        });
+                    }
+                    res.push(Fragment::ConstChar(PosChar {
+                        c,
+                        pos: nxt.unwrap().pos + pos_char.pos,
+                    }));
                 } else {
                     res.push(Fragment::Char(*pos_char));
                 }
             }
             Location::String => {
-                fn map_escape_char(c: char) -> Option<char> {
-                    match c {
-                        '"' => Some('"'),
-                        'n' => Some('\n'),
-                        '\\' => Some('\\'),
-                        _ => None,
-                    }
-                }
-
                 if pos_char.c == '"' {
                     let pos = string_quote_position.unwrap() + pos_char.pos;
                     res.push(Fragment::String(current_string.clone(), pos));
