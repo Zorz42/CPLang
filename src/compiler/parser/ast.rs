@@ -190,21 +190,22 @@ pub struct ASTStructDeclaration {
     pub template: Vec<(String, FilePosition)>,
 }
 
-#[derive(Debug, Clone)]
-pub enum ASTPrimitiveType {
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub enum PrimitiveType {
     I32,
     I64,
     F32,
     F64,
     Bool,
     String,
+    Char,
     Void,
 }
 
 #[derive(Debug, Clone)]
 pub enum ASTType {
     Any(FilePosition),
-    Primitive(ASTPrimitiveType, FilePosition),
+    Primitive(PrimitiveType, FilePosition),
     Reference(Box<Self>, FilePosition),
     Identifier(String, FilePosition, Vec<Self>),
     Tuple(Vec<Self>, FilePosition),

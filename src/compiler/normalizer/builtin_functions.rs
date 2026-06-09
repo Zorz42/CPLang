@@ -1,6 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IRExpression, IRPrimitiveType, IRType, IRTypeLabel};
+use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IRExpression, IRType, IRTypeLabel};
 use crate::compiler::normalizer::{Normalizer, ValuePhysicality};
+use crate::compiler::parser::ast::PrimitiveType;
 
 pub fn is_builtin_identifier(name: &str) -> bool {
     name.starts_with("_builtin")
@@ -97,7 +98,7 @@ impl Normalizer {
         match function_name {
             label if label == alloc_label => {
                 // size should be an integer
-                self.type_resolver.hint_is(expr_types[0], IRPrimitiveType::I32)?;
+                self.type_resolver.hint_is(expr_types[0], PrimitiveType::I32)?;
 
                 let typ = self.type_resolver.new_type_label(call_pos);
                 let ref_typ = self.type_resolver.new_type_label(call_pos);
@@ -124,7 +125,7 @@ impl Normalizer {
                 let arr_type = self.type_resolver.new_type_label(FilePosition::unknown());
 
                 // index should be an integer
-                self.type_resolver.hint_is(expr_types[1], IRPrimitiveType::I32)?;
+                self.type_resolver.hint_is(expr_types[1], PrimitiveType::I32)?;
                 self.type_resolver.hint_is_ref(arr_type, expr_types[0])?;
 
                 Ok((
@@ -149,7 +150,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -183,7 +184,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -217,7 +218,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -251,7 +252,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -285,7 +286,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -298,7 +299,7 @@ impl Normalizer {
                 self.type_resolver.hint_equal(expr_types[1], template_types[0])?;
 
                 let ret_type = self.type_resolver.new_type_label(FilePosition::unknown());
-                self.type_resolver.hint_is(ret_type, IRPrimitiveType::Bool)?;
+                self.type_resolver.hint_is(ret_type, PrimitiveType::Bool)?;
 
                 Ok((
                     BuiltinFunctionCall::Greater {
@@ -322,7 +323,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -335,7 +336,7 @@ impl Normalizer {
                 self.type_resolver.hint_equal(expr_types[1], template_types[0])?;
 
                 let ret_type = self.type_resolver.new_type_label(FilePosition::unknown());
-                self.type_resolver.hint_is(ret_type, IRPrimitiveType::Bool)?;
+                self.type_resolver.hint_is(ret_type, PrimitiveType::Bool)?;
 
                 Ok((
                     BuiltinFunctionCall::Lesser {
@@ -359,7 +360,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -372,7 +373,7 @@ impl Normalizer {
                 self.type_resolver.hint_equal(expr_types[1], template_types[0])?;
 
                 let ret_type = self.type_resolver.new_type_label(FilePosition::unknown());
-                self.type_resolver.hint_is(ret_type, IRPrimitiveType::Bool)?;
+                self.type_resolver.hint_is(ret_type, PrimitiveType::Bool)?;
 
                 Ok((
                     BuiltinFunctionCall::GreaterEq {
@@ -396,7 +397,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -409,7 +410,7 @@ impl Normalizer {
                 self.type_resolver.hint_equal(expr_types[1], template_types[0])?;
 
                 let ret_type = self.type_resolver.new_type_label(FilePosition::unknown());
-                self.type_resolver.hint_is(ret_type, IRPrimitiveType::Bool)?;
+                self.type_resolver.hint_is(ret_type, PrimitiveType::Bool)?;
 
                 Ok((
                     BuiltinFunctionCall::LesserEq {
@@ -433,7 +434,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -446,7 +447,7 @@ impl Normalizer {
                 self.type_resolver.hint_equal(expr_types[1], template_types[0])?;
 
                 let ret_type = self.type_resolver.new_type_label(FilePosition::unknown());
-                self.type_resolver.hint_is(ret_type, IRPrimitiveType::Bool)?;
+                self.type_resolver.hint_is(ret_type, PrimitiveType::Bool)?;
 
                 Ok((
                     BuiltinFunctionCall::Eq {
@@ -470,7 +471,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(IRPrimitiveType::I32 | IRPrimitiveType::I64 | IRPrimitiveType::F32 | IRPrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -483,7 +484,7 @@ impl Normalizer {
                 self.type_resolver.hint_equal(expr_types[1], template_types[0])?;
 
                 let ret_type = self.type_resolver.new_type_label(FilePosition::unknown());
-                self.type_resolver.hint_is(ret_type, IRPrimitiveType::Bool)?;
+                self.type_resolver.hint_is(ret_type, PrimitiveType::Bool)?;
 
                 Ok((
                     BuiltinFunctionCall::NotEq {

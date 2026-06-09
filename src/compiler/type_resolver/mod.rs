@@ -1,5 +1,6 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IRPrimitiveType, IRStructLabel, IRType, IRTypeLabel};
+use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IRStructLabel, IRType, IRTypeLabel};
+use crate::compiler::parser::ast::PrimitiveType;
 use crate::compiler::type_resolver::dsu::Dsu;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem::swap;
@@ -109,7 +110,7 @@ impl TypeResolver {
         };
         let fixed = res.new_type_label(FilePosition::unknown());
         res.fixed_ref_component = fixed;
-        res.type_dsu.get(res.fixed_ref_component).typ = Some(IRType::Primitive(IRPrimitiveType::Void));
+        res.type_dsu.get(res.fixed_ref_component).typ = Some(IRType::Primitive(PrimitiveType::Void));
         res
     }
 
@@ -428,7 +429,7 @@ impl TypeResolver {
         Ok(())
     }
 
-    pub fn hint_is(&mut self, label: IRTypeLabel, typ: IRPrimitiveType) -> CompilerResult<()> {
+    pub fn hint_is(&mut self, label: IRTypeLabel, typ: PrimitiveType) -> CompilerResult<()> {
         #[cfg(feature = "trace")]
         println!("hint_is({label}, {typ:?})");
 

@@ -1,9 +1,9 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel,
-    IRType, IRTypeLabel, IRVariableLabel, IR,
+    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType,
+    IRTypeLabel, IRVariableLabel, IR,
 };
+use crate::compiler::parser::ast::PrimitiveType;
 use std::collections::HashMap;
-
 /*
 Generator converts IR into raw C code. Could be easily replaced with any other language.
  */
@@ -90,14 +90,15 @@ pub fn generate_code(ir: IR) -> String {
         .replace("{{functions}}", &functions)
 }
 
-fn gen_primitive_type(typ: IRPrimitiveType) -> String {
+fn gen_primitive_type(typ: PrimitiveType) -> String {
     match typ {
-        IRPrimitiveType::I32 | IRPrimitiveType::Bool => "int",
-        IRPrimitiveType::I64 => "long",
-        IRPrimitiveType::F32 => "float",
-        IRPrimitiveType::F64 => "double",
-        IRPrimitiveType::String => "char*",
-        IRPrimitiveType::Void => "void",
+        PrimitiveType::I32 | PrimitiveType::Bool => "int",
+        PrimitiveType::I64 => "long",
+        PrimitiveType::F32 => "float",
+        PrimitiveType::F64 => "double",
+        PrimitiveType::String => "char*",
+        PrimitiveType::Char => "char",
+        PrimitiveType::Void => "void",
     }
         .to_owned()
 }
@@ -160,12 +161,13 @@ fn gen_variable_label(func: IRVariableLabel) -> String {
 fn type_to_printf_format(typ: &IRType) -> &'static str {
     match typ {
         IRType::Primitive(typ) => match typ {
-            IRPrimitiveType::I32 | IRPrimitiveType::Bool => "d",
-            IRPrimitiveType::I64 => "ld",
-            IRPrimitiveType::F32 => "f",
-            IRPrimitiveType::F64 => "lf",
-            IRPrimitiveType::String => "s",
-            IRPrimitiveType::Void => unreachable!(),
+            PrimitiveType::I32 | PrimitiveType::Bool => "d",
+            PrimitiveType::I64 => "ld",
+            PrimitiveType::F32 => "f",
+            PrimitiveType::F64 => "lf",
+            PrimitiveType::String => "s",
+            PrimitiveType::Char => "c",
+            PrimitiveType::Void => unreachable!(),
         },
         IRType::Reference(typ) => type_to_printf_format(typ),
         IRType::Struct(_, _) => todo!(),
@@ -279,7 +281,7 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
             IRStatement::Expression { expr } => format!("{};", gen_expression(ctx, expr)),
             IRStatement::Print { expr, type_label } => {
                 let typ = ctx.types[&type_label].clone();
-                if typ == IRType::Primitive(IRPrimitiveType::Void) {
+                if typ == IRType::Primitive(PrimitiveType::Void) {
                     String::new()
                 } else {
                     format!("printf(\"%{}\",{});", type_to_printf_format(&typ), gen_expression(ctx, expr))

@@ -1,9 +1,9 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::parser::ast::{ASTPrimitiveType, ASTType};
+use crate::compiler::parser::ast::{ASTType, PrimitiveType};
 use crate::compiler::parser::template::parse_template_instantiation;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 
-const ERR_MESSAGE: &str = "Unexpected token, expected one of: (, ?, &, i32, i64, f32, f64, bool, string, void, identifier";
+const ERR_MESSAGE: &str = "Unexpected token, expected one of: (, ?, &, i32, i64, f32, f64, bool, string, void, char, identifier";
 
 pub fn parse_type(block: &mut TokenBlock) -> CompilerResult<ASTType> {
     let mut res = Vec::new();
@@ -18,13 +18,14 @@ pub fn parse_type(block: &mut TokenBlock) -> CompilerResult<ASTType> {
                 let pos = pos + typ.get_pos();
                 ASTType::Reference(Box::new(typ), pos)
             }
-            (Token::I32, pos) => ASTType::Primitive(ASTPrimitiveType::I32, pos),
-            (Token::I64, pos) => ASTType::Primitive(ASTPrimitiveType::I64, pos),
-            (Token::F32, pos) => ASTType::Primitive(ASTPrimitiveType::F32, pos),
-            (Token::F64, pos) => ASTType::Primitive(ASTPrimitiveType::F64, pos),
-            (Token::Bool, pos) => ASTType::Primitive(ASTPrimitiveType::Bool, pos),
-            (Token::String, pos) => ASTType::Primitive(ASTPrimitiveType::String, pos),
-            (Token::Void, pos) => ASTType::Primitive(ASTPrimitiveType::Void, pos),
+            (Token::I32, pos) => ASTType::Primitive(PrimitiveType::I32, pos),
+            (Token::I64, pos) => ASTType::Primitive(PrimitiveType::I64, pos),
+            (Token::F32, pos) => ASTType::Primitive(PrimitiveType::F32, pos),
+            (Token::F64, pos) => ASTType::Primitive(PrimitiveType::F64, pos),
+            (Token::Bool, pos) => ASTType::Primitive(PrimitiveType::Bool, pos),
+            (Token::String, pos) => ASTType::Primitive(PrimitiveType::String, pos),
+            (Token::Char, pos) => ASTType::Primitive(PrimitiveType::Char, pos),
+            (Token::Void, pos) => ASTType::Primitive(PrimitiveType::Void, pos),
             (Token::Identifier(name), pos) => {
                 let (template_args, template_pos) = parse_template_instantiation(block)?;
                 ASTType::Identifier(name, pos + template_pos, template_args)

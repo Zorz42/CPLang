@@ -1,11 +1,11 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRPrimitiveType, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
+    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
     IRVariableLabel, IR,
 };
 use crate::compiler::parser::ast::{
-    ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTPrimitiveType, ASTStatement, ASTStructDeclaration, ASTType, Ast,
+    ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType, Ast, PrimitiveType,
 };
 use crate::compiler::type_resolver::TypeResolver;
 use std::collections::{HashMap, HashSet};
@@ -207,7 +207,7 @@ impl Normalizer {
         // check that main has no return value
         let main_ret = self.ir.instances[self.ir.main_function].ret_type;
         let main_ret = self.ir.types[&main_ret].clone();
-        if main_ret != IRType::Primitive(IRPrimitiveType::Void) {
+        if main_ret != IRType::Primitive(PrimitiveType::Void) {
             return Err(CompilerError {
                 message: "Main function should not return any value".to_string(),
                 position: None,
@@ -378,7 +378,7 @@ impl Normalizer {
 
         let expr = match expression.kind {
             ASTExpressionKind::Integer(x) => {
-                self.type_resolver.hint_is(type_label, IRPrimitiveType::I32)?;
+                self.type_resolver.hint_is(type_label, PrimitiveType::I32)?;
 
                 IRExpression::Constant {
                     constant: IRConstant::Int(i64::from(x)),
@@ -386,7 +386,7 @@ impl Normalizer {
             }
 
             ASTExpressionKind::Float(x) => {
-                self.type_resolver.hint_is(type_label, IRPrimitiveType::F32)?;
+                self.type_resolver.hint_is(type_label, PrimitiveType::F32)?;
 
                 IRExpression::Constant {
                     constant: IRConstant::Float(f64::from(x)),
@@ -394,14 +394,14 @@ impl Normalizer {
             }
 
             ASTExpressionKind::String(x) => {
-                self.type_resolver.hint_is(type_label, IRPrimitiveType::String)?;
+                self.type_resolver.hint_is(type_label, PrimitiveType::String)?;
                 IRExpression::Constant {
                     constant: IRConstant::String(x),
                 }
             }
 
             ASTExpressionKind::Boolean(x) => {
-                self.type_resolver.hint_is(type_label, IRPrimitiveType::Bool)?;
+                self.type_resolver.hint_is(type_label, PrimitiveType::Bool)?;
                 IRExpression::Constant { constant: IRConstant::Bool(x) }
             }
 
@@ -558,24 +558,11 @@ impl Normalizer {
         Ok((expr, type_label))
     }
 
-    const fn primitive_type_to_ir_type(typ: ASTPrimitiveType) -> IRPrimitiveType {
-        match typ {
-            ASTPrimitiveType::I32 => IRPrimitiveType::I32,
-            ASTPrimitiveType::I64 => IRPrimitiveType::I64,
-            ASTPrimitiveType::F32 => IRPrimitiveType::F32,
-            ASTPrimitiveType::F64 => IRPrimitiveType::F64,
-            ASTPrimitiveType::Bool => IRPrimitiveType::Bool,
-            ASTPrimitiveType::String => IRPrimitiveType::String,
-            ASTPrimitiveType::Void => IRPrimitiveType::Void,
-        }
-    }
-
     fn normalize_type(&mut self, typ: ASTType) -> CompilerResult<IRTypeLabel> {
         let type_label = self.type_resolver.new_type_label(typ.get_pos());
         match typ {
             ASTType::Any(_) => {}
             ASTType::Primitive(typ, _) => {
-                let typ = Self::primitive_type_to_ir_type(typ);
                 self.type_resolver.hint_is(type_label, typ)?;
             }
             ASTType::Identifier(name, pos, template_args) => {
@@ -668,14 +655,14 @@ impl Normalizer {
                         self.type_resolver.hint_equal(self.curr_func_ret_type, type_label)?;
                         IRStatement::Return { return_value: Some(expr) }
                     } else {
-                        self.type_resolver.hint_is(self.curr_func_ret_type, IRPrimitiveType::Void)?;
+                        self.type_resolver.hint_is(self.curr_func_ret_type, PrimitiveType::Void)?;
                         IRStatement::Return { return_value: None }
                     };
                     res.statements.push(st);
                 }
                 ASTStatement::If { condition, block, else_block } => {
                     let (condition, type_label) = self.normalize_expression(condition)?;
-                    self.type_resolver.hint_is(type_label, IRPrimitiveType::Bool)?;
+                    self.type_resolver.hint_is(type_label, PrimitiveType::Bool)?;
                     let block = self.normalize_block(block)?;
                     let else_block = if let Some(else_block) = else_block {
                         Some(self.normalize_block(else_block)?)
@@ -686,7 +673,7 @@ impl Normalizer {
                 }
                 ASTStatement::While { condition, block } => {
                     let (condition, type_label) = self.normalize_expression(condition)?;
-                    self.type_resolver.hint_is(type_label, IRPrimitiveType::Bool)?;
+                    self.type_resolver.hint_is(type_label, PrimitiveType::Bool)?;
                     let block = self.normalize_block(block)?;
                     res.statements.push(IRStatement::While { condition, block });
                 }
@@ -854,7 +841,7 @@ impl Normalizer {
         self.ir.instances[instance_label].variables = self.curr_func_vars.clone();
 
         if !self.has_ret_statement {
-            self.type_resolver.hint_is(self.curr_func_ret_type, IRPrimitiveType::Void)?;
+            self.type_resolver.hint_is(self.curr_func_ret_type, PrimitiveType::Void)?;
         }
 
         self.flush_instance_cache();

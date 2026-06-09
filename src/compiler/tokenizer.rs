@@ -35,6 +35,7 @@ pub enum Token {
     F64,
     Void,
     String,
+    Char,
     Bool,
     Operator,
 
@@ -79,6 +80,7 @@ fn str_to_keyword(s: &str) -> Option<Token> {
         "f64" => Some(Token::F64),
         "void" => Some(Token::Void),
         "string" => Some(Token::String),
+        "char" => Some(Token::Char),
         "bool" => Some(Token::Bool),
         "operator" => Some(Token::Operator),
         _ => None,

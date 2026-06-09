@@ -1,4 +1,5 @@
 use crate::compiler::error::FilePosition;
+use crate::compiler::parser::ast::PrimitiveType;
 use std::collections::HashMap;
 use std::fmt::Debug;
 // Function is a generic function. When you call it, it is reduced into
@@ -37,20 +38,9 @@ pub enum BuiltinFunctionCall {
     GreaterEq { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
 }
 
-#[derive(Clone, Eq, Hash, PartialEq, Debug)]
-pub enum IRPrimitiveType {
-    I32,
-    I64,
-    F32,
-    F64,
-    Bool,
-    String,
-    Void,
-}
-
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum IRType {
-    Primitive(IRPrimitiveType),
+    Primitive(PrimitiveType),
     Reference(Box<Self>),
     Struct(IRStructLabel, Vec<Self>),
 }

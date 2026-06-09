@@ -1,4 +1,5 @@
-use crate::compiler::normalizer::ir::{IR, IRBlock, IRInstance, IRPrimitiveType, IRType};
+use crate::compiler::normalizer::ir::{IRBlock, IRInstance, IRType, IR};
+use crate::compiler::parser::ast::PrimitiveType;
 use std::fmt::Write;
 use std::fmt::{Debug, Formatter};
 
@@ -47,13 +48,14 @@ impl Debug for IRType {
         match self {
             Self::Primitive(prim) => {
                 let string = match prim {
-                    IRPrimitiveType::I32 => "i32",
-                    IRPrimitiveType::I64 => "i64",
-                    IRPrimitiveType::F32 => "f32",
-                    IRPrimitiveType::F64 => "f64",
-                    IRPrimitiveType::Bool => "bool",
-                    IRPrimitiveType::String => "string",
-                    IRPrimitiveType::Void => "()",
+                    PrimitiveType::I32 => "i32",
+                    PrimitiveType::I64 => "i64",
+                    PrimitiveType::F32 => "f32",
+                    PrimitiveType::F64 => "f64",
+                    PrimitiveType::Bool => "bool",
+                    PrimitiveType::Char => "char",
+                    PrimitiveType::String => "string",
+                    PrimitiveType::Void => "()",
                 };
                 write!(f, "{string}")?;
             }
