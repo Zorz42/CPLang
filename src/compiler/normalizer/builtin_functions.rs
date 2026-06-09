@@ -434,7 +434,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64 | PrimitiveType::Char) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),
@@ -471,7 +471,7 @@ impl Normalizer {
                 };
 
                 match typ {
-                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64) => {} // ok
+                    IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::F32 | PrimitiveType::F64 | PrimitiveType::Char) => {} // ok
                     _ => {
                         return Err(CompilerError {
                             message: format!("Builtin operator does not support {typ:?}"),

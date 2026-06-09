@@ -51,6 +51,7 @@ pub enum IRConstant {
     Int(i64),
     Float(f64),
     Bool(bool),
+    Char(char),
 }
 
 #[rustfmt::skip]

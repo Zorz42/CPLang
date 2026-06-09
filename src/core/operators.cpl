@@ -74,6 +74,9 @@ operator== a: f32 b: f32
 operator== a: f64 b: f64
     ret _builtin_eq[f64](a b)
 
+operator== a: char b: char
+    ret _builtin_eq[char](a b)
+
 
 operator!= a: i32 b: i32
     ret _builtin_noteq[i32](a b)
@@ -86,6 +89,9 @@ operator!= a: f32 b: f32
 
 operator!= a: f64 b: f64
     ret _builtin_noteq[f64](a b)
+
+operator!= a: char b: char
+    ret _builtin_noteq[char](a b)
 
 
 operator< a: i32 b: i32

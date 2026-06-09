@@ -17,6 +17,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
         (Token::ConstFloat(float), pos) => ASTExpression::new(ASTExpressionKind::Float(float), pos),
         (Token::ConstString(string), pos) => ASTExpression::new(ASTExpressionKind::String(string.iter().map(|x| x.c).collect()), pos),
         (Token::ConstBoolean(boolean), pos) => ASTExpression::new(ASTExpressionKind::Boolean(boolean), pos),
+        (Token::ConstChar(character), pos) => ASTExpression::new(ASTExpressionKind::Char(character), pos),
 
         (Token::Identifier(identifier), pos) => {
             // we need to know if this is a struct instantiation or a variable

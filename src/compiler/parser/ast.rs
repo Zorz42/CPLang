@@ -125,6 +125,7 @@ pub enum ASTExpressionKind {
     Float(f32),
     String(String),
     Boolean(bool),
+    Char(char),
     Variable(String),
     Reference(Box<ASTExpression>),
     FunctionCall(ASTFunctionCall),

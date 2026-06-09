@@ -302,7 +302,8 @@ impl Lowerer {
             | ASTExpressionKind::Float(_)
             | ASTExpressionKind::String(_)
             | ASTExpressionKind::Boolean(_)
-            | ASTExpressionKind::Variable(_) => expression,
+            | ASTExpressionKind::Variable(_)
+            | ASTExpressionKind::Char(_) => expression,
 
             ASTExpressionKind::TupleInitialization(expressions) => {
                 self.touch_tuple(expressions.len());

@@ -405,6 +405,11 @@ impl Normalizer {
                 IRExpression::Constant { constant: IRConstant::Bool(x) }
             }
 
+            ASTExpressionKind::Char(x) => {
+                self.type_resolver.hint_is(type_label, PrimitiveType::Char)?;
+                IRExpression::Constant { constant: IRConstant::Char(x) }
+            }
+
             ASTExpressionKind::Variable(name) => {
                 let label = *if let Some(label) = self.variables_name_map.get(&name) {
                     label

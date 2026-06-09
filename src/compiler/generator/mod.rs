@@ -214,6 +214,7 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
             IRConstant::Int(x) => format!("{x}"),
             IRConstant::Float(x) => format!("{x}"),
             IRConstant::Bool(x) => (if x { "1" } else { "0" }).to_string(),
+            IRConstant::Char(x) => (x as i32).to_string(),
         },
         IRExpression::InstanceCall {
             instance_label: function_label,
