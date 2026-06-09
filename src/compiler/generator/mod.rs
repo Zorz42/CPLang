@@ -181,6 +181,7 @@ fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> St
             format!("bump_malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
         }
         BuiltinFunctionCall::Index { arr, idx } => format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
+        BuiltinFunctionCall::Getchar {} => "getchar()".to_string(),
         BuiltinFunctionCall::Add { arg1, arg2 } => format!("({} + {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
         BuiltinFunctionCall::Sub { arg1, arg2 } => format!("({} - {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),
         BuiltinFunctionCall::Mul { arg1, arg2 } => format!("({} * {})", gen_expression(ctx, *arg1), gen_expression(ctx, *arg2)),

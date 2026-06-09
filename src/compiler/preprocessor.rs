@@ -205,14 +205,14 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                         Some(c) => (c.c, c.pos)
                     };
                     if c == '\\' {
-                        match chars.next().map(|c| map_escape_char(c.c)).flatten() {
+                        match chars.next().and_then(|c| map_escape_char(c.c)) {
                             Some(ch) => c = ch,
                             None =>
                                 return Err(CompilerError {
                                     message: "Unrecognized escape character".to_string(),
                                     position: Some(pos),
                                 }),
-                        };
+                        }
                     }
                     let nxt = chars.next();
                     if !matches!(nxt, Some(PosChar { pos: _, c: '\'' })) {

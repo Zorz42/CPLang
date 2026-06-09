@@ -177,6 +177,7 @@ fn check_refs_builtin(call: BuiltinFunctionCall, autorefs: &[i32]) -> CompilerRe
             arr: Box::new(check_refs_expression(*arr, autorefs)?.0),
             idx: Box::new(check_refs_expression(*idx, autorefs)?.0),
         },
+        BuiltinFunctionCall::Getchar {} => call,
         BuiltinFunctionCall::Add { arg1, arg2 } => BuiltinFunctionCall::Add {
             arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
             arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
