@@ -27,13 +27,13 @@ operator- a: i32
     ret 0 - a
 
 operator- a: i64
-    ret 0 - a
+    ret 0L - a
 
 operator- a: f32
-    ret 0 - a
+    ret 0.0 - a
 
 operator- a: f64
-    ret 0 - a
+    ret 0.0 - a
 
 
 operator* a: i32 b: i32

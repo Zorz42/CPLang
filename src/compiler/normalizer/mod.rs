@@ -1,8 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
-    IRVariableLabel,
+    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
+    IR,
 };
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType, Ast, PrimitiveType,
@@ -377,8 +377,16 @@ impl Normalizer {
         let type_label = self.type_resolver.new_type_label(pos);
 
         let expr = match expression.kind {
-            ASTExpressionKind::Integer(x) => {
+            ASTExpressionKind::Integer32(x) => {
                 self.type_resolver.hint_is(type_label, PrimitiveType::I32)?;
+
+                IRExpression::Constant {
+                    constant: IRConstant::Int(i64::from(x)),
+                }
+            }
+
+            ASTExpressionKind::Integer64(x) => {
+                self.type_resolver.hint_is(type_label, PrimitiveType::I64)?;
 
                 IRExpression::Constant {
                     constant: IRConstant::Int(i64::from(x)),

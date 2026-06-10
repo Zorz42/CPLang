@@ -1,4 +1,4 @@
-fn read_i32
+fn read_int
     c = _builtin_getchar()
     while c == ' ' || c == '\n'
         c = _builtin_getchar()
@@ -6,29 +6,29 @@ fn read_i32
     if c == '-'
         neg = true
         c = _builtin_getchar()
-    res = 0
+    res = 0L
     while c >= '0' && c <= '9'
-        res = res * 10
+        res = res * 10L
         if c == '0'
-            res += 0
+            res += 0L
         if c == '1'
-            res += 1
+            res += 1L
         if c == '2'
-            res += 2
+            res += 2L
         if c == '3'
-            res += 3
+            res += 3L
         if c == '4'
-            res += 4
+            res += 4L
         if c == '5'
-            res += 5
+            res += 5L
         if c == '6'
-            res += 6
+            res += 6L
         if c == '7'
-            res += 7
+            res += 7L
         if c == '8'
-            res += 8
+            res += 8L
         if c == '9'
-            res += 9
+            res += 9L
         c = _builtin_getchar()
     if neg
         res = -res

@@ -123,7 +123,8 @@ impl ASTExpression {
 #[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub enum ASTExpressionKind {
-    Integer(i32),
+    Integer32(i32),
+    Integer64(i64),
     Float(f32),
     String(String),
     Boolean(bool),

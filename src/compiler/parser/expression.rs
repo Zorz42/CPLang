@@ -13,7 +13,8 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
     }
 
     let mut res = match block.get() {
-        (Token::ConstInteger(int), pos) => ASTExpression::new(ASTExpressionKind::Integer(int), pos),
+        (Token::ConstInteger32(int), pos) => ASTExpression::new(ASTExpressionKind::Integer32(int), pos),
+        (Token::ConstInteger64(int), pos) => ASTExpression::new(ASTExpressionKind::Integer64(int), pos),
         (Token::ConstFloat(float), pos) => ASTExpression::new(ASTExpressionKind::Float(float), pos),
         (Token::ConstString(string), pos) => ASTExpression::new(ASTExpressionKind::String(string.iter().map(|x| x.c).collect()), pos),
         (Token::ConstBoolean(boolean), pos) => ASTExpression::new(ASTExpressionKind::Boolean(boolean), pos),
@@ -78,7 +79,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                             },
                             pos,
                         ),
-                        (Token::ConstInteger(index), pos) if index >= 0 => ASTExpression::new(
+                        (Token::ConstInteger32(index), pos) if index >= 0 => ASTExpression::new(
                             ASTExpressionKind::TupleAccess {
                                 expression: Box::new(res),
                                 field_index: index as usize,

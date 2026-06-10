@@ -302,7 +302,8 @@ impl Lowerer {
     fn lower_expression(&mut self, expression: ASTExpression) -> ASTExpression {
         let pos = expression.pos;
         match expression.kind {
-            ASTExpressionKind::Integer(_)
+            ASTExpressionKind::Integer32(_)
+            | ASTExpressionKind::Integer64(_)
             | ASTExpressionKind::Float(_)
             | ASTExpressionKind::String(_)
             | ASTExpressionKind::Boolean(_)
@@ -416,20 +417,20 @@ impl Lowerer {
 
                 let name = "operator".to_string()
                     + match operator {
-                        ASTOperator::Plus => "+",
-                        ASTOperator::Minus => "-",
-                        ASTOperator::Mul => "*",
-                        ASTOperator::Div => "/",
-                        ASTOperator::Equals => "==",
-                        ASTOperator::NotEquals => "!=",
-                        ASTOperator::Greater => ">",
-                        ASTOperator::Lesser => "<",
-                        ASTOperator::GreaterEq => ">=",
-                        ASTOperator::LesserEq => "<=",
-                        ASTOperator::And => "&&",
-                        ASTOperator::Or => "||",
-                        ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
-                    };
+                    ASTOperator::Plus => "+",
+                    ASTOperator::Minus => "-",
+                    ASTOperator::Mul => "*",
+                    ASTOperator::Div => "/",
+                    ASTOperator::Equals => "==",
+                    ASTOperator::NotEquals => "!=",
+                    ASTOperator::Greater => ">",
+                    ASTOperator::Lesser => "<",
+                    ASTOperator::GreaterEq => ">=",
+                    ASTOperator::LesserEq => "<=",
+                    ASTOperator::And => "&&",
+                    ASTOperator::Or => "||",
+                    ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
+                };
 
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {
@@ -525,12 +526,12 @@ impl Lowerer {
             }
             ASTStatement::AssignmentIncrement { assign_to, pos } => self.lower_statement(ASTStatement::AssignmentOperator {
                 assign_to,
-                value: ASTExpression::new(ASTExpressionKind::Integer(1), pos),
+                value: ASTExpression::new(ASTExpressionKind::Integer32(1), pos),
                 operator: ASTOperator::Plus,
             }),
             ASTStatement::AssignmentDecrement { assign_to, pos } => self.lower_statement(ASTStatement::AssignmentOperator {
                 assign_to,
-                value: ASTExpression::new(ASTExpressionKind::Integer(1), pos),
+                value: ASTExpression::new(ASTExpressionKind::Integer32(1), pos),
                 operator: ASTOperator::Minus,
             }),
             ASTStatement::Block { block } => ASTStatement::Block {

@@ -1,2 +1,9 @@
 fn main
-    out "10\n"
+    n = read_int()
+    while n != 1
+        out "{n} "
+        if n % 2 == 0
+            n /= 2
+        else
+            n = 3 * n = 1
+    out "1\n"

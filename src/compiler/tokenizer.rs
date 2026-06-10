@@ -11,7 +11,8 @@ are identifiers which are later resolved by normalizer as well since they requir
 pub enum Token {
     End,
     Identifier(String),
-    ConstInteger(i32),
+    ConstInteger32(i32),
+    ConstInteger64(i64),
     ConstFloat(f32),
     ConstString(Vec<PosChar>),
     ConstBoolean(bool),
@@ -169,13 +170,22 @@ impl TokenBlock {
     }
 }
 
-fn string_to_token(string: &str) -> Token {
+fn string_to_token(string: &String) -> Token {
     if let Some(keyword) = str_to_keyword(string) {
         return keyword;
     }
 
     if let Ok(integer) = string.parse::<i32>() {
-        return Token::ConstInteger(integer);
+        return Token::ConstInteger32(integer);
+    }
+
+    // parse i64 notation: 1000L
+    if string.ends_with("L") {
+        let mut string = string.clone();
+        string.pop();
+        if let Ok(integer) = string.parse::<i64>() {
+            return Token::ConstInteger64(integer);
+        }
     }
 
     if let Ok(float) = string.parse::<f32>() {
