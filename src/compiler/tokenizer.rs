@@ -56,8 +56,11 @@ pub enum Token {
     Reference,          // &
     Dot,                // .
     Comma,              // ,
-    Increase,           // +=
-    Decrease,           // -=
+    PlusEquals,         // +=
+    MinusEquals,        // -=
+    MulEquals,          // *=
+    DivEquals,          // /=
+    ModEquals,          // %=
     Increment,          // ++
     Decrement,          // --
     Colon,              // :
@@ -66,6 +69,7 @@ pub enum Token {
     DotDot,             // ..
     And,                // &&
     Or,                 // ||
+    Mod,                // %
 }
 
 fn str_to_keyword(s: &str) -> Option<Token> {
@@ -106,6 +110,7 @@ const fn symbol_from_char(c: char) -> Option<Token> {
         '?' => Some(Token::QuestionMark),
         '|' => Some(Token::Pipe),
         ',' => Some(Token::Comma),
+        '%' => Some(Token::Mod),
         _ => None,
     }
 }
@@ -116,8 +121,11 @@ const fn symbol_from_two_chars(c1: char, c2: char) -> Option<Token> {
         ('!', '=') => Some(Token::NotEquals),
         ('<', '=') => Some(Token::LessThanOrEqual),
         ('>', '=') => Some(Token::GreaterThanOrEqual),
-        ('+', '=') => Some(Token::Increase),
-        ('-', '=') => Some(Token::Decrease),
+        ('+', '=') => Some(Token::PlusEquals),
+        ('-', '=') => Some(Token::MinusEquals),
+        ('*', '=') => Some(Token::MulEquals),
+        ('/', '=') => Some(Token::DivEquals),
+        ('%', '=') => Some(Token::ModEquals),
         ('+', '+') => Some(Token::Increment),
         ('-', '-') => Some(Token::Decrement),
         ('.', '.') => Some(Token::DotDot),

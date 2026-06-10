@@ -8,7 +8,16 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
     let (symbol, symbol_pos) = {
         let token = block.peek();
         match token {
-            (Token::Assign | Token::Increase | Token::Decrease | Token::Increment | Token::Decrement, _) => block.get(),
+            (
+                Token::Assign
+                | Token::PlusEquals
+                | Token::MinusEquals
+                | Token::MulEquals
+                | Token::DivEquals
+                | Token::ModEquals
+                | Token::Increment
+                | Token::Decrement,
+                _) => block.get(),
             _ => return Ok(None),
         }
     };
@@ -16,20 +25,40 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
     let assign_to_pos = assign_to.pos;
 
     let res = match &symbol {
-        Token::Assign | Token::Increase | Token::Decrease => {
+        Token::Assign
+        | Token::PlusEquals
+        | Token::MinusEquals
+        | Token::MulEquals
+        | Token::DivEquals
+        | Token::ModEquals => {
             let value = parse_expression(structs, block)?;
             let pos = assign_to_pos + value.pos;
             match symbol {
                 Token::Assign => ASTStatement::Assignment { assign_to, value, pos },
-                Token::Increase => ASTStatement::AssignmentOperator {
+                Token::PlusEquals => ASTStatement::AssignmentOperator {
                     assign_to,
                     value,
                     operator: ASTOperator::Plus,
                 },
-                Token::Decrease => ASTStatement::AssignmentOperator {
+                Token::MinusEquals => ASTStatement::AssignmentOperator {
                     assign_to,
                     value,
                     operator: ASTOperator::Minus,
+                },
+                Token::MulEquals => ASTStatement::AssignmentOperator {
+                    assign_to,
+                    value,
+                    operator: ASTOperator::Mul,
+                },
+                Token::DivEquals => ASTStatement::AssignmentOperator {
+                    assign_to,
+                    value,
+                    operator: ASTOperator::Div,
+                },
+                Token::ModEquals => ASTStatement::AssignmentOperator {
+                    assign_to,
+                    value,
+                    operator: ASTOperator::Mod,
                 },
                 _ => unreachable!(),
             }

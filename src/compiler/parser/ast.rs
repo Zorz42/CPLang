@@ -96,6 +96,7 @@ pub enum ASTOperator {
     Minus,     // -
     Mul,       // *
     Div,       // /
+    Mod,       // %
     Equals,    // ==
     NotEquals, // !=
     Greater,   // >

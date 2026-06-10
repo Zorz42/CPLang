@@ -14,6 +14,7 @@ const ADD_LABEL: &str = "_builtin_add";
 const SUB_LABEL: &str = "_builtin_sub";
 const MUL_LABEL: &str = "_builtin_mul";
 const DIV_LABEL: &str = "_builtin_div";
+const MOD_LABEL: &str = "_builtin_mod";
 const EQ_LABEL: &str = "_builtin_eq";
 const NOTEQ_LABEL: &str = "_builtin_noteq";
 const LESSER_LABEL: &str = "_builtin_lesser";
@@ -79,6 +80,7 @@ impl Normalizer {
             SUB_LABEL,
             MUL_LABEL,
             DIV_LABEL,
+            MOD_LABEL,
             EQ_LABEL,
             NOTEQ_LABEL,
             LESSER_LABEL,
@@ -88,7 +90,7 @@ impl Normalizer {
             AND_LABEL,
             OR_LABEL,
         ]
-        .contains(&function_name)
+            .contains(&function_name)
     }
 
     pub fn get_builtin_call(
@@ -107,6 +109,7 @@ impl Normalizer {
             label if label == SUB_LABEL => 2,
             label if label == MUL_LABEL => 2,
             label if label == DIV_LABEL => 2,
+            label if label == MOD_LABEL => 2,
             label if label == LESSER_LABEL => 2,
             label if label == GREATER_LABEL => 2,
             label if label == LESSEREQ_LABEL => 2,
@@ -133,6 +136,7 @@ impl Normalizer {
             label if label == SUB_LABEL => (1, 1),
             label if label == MUL_LABEL => (1, 1),
             label if label == DIV_LABEL => (1, 1),
+            label if label == MOD_LABEL => (1, 1),
             label if label == LESSER_LABEL => (1, 1),
             label if label == GREATER_LABEL => (1, 1),
             label if label == LESSEREQ_LABEL => (1, 1),
@@ -210,6 +214,7 @@ impl Normalizer {
                 SUB_LABEL       => Sub(false, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
                 MUL_LABEL       => Mul(false, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
                 DIV_LABEL       => Div(false, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
+                MOD_LABEL       => Mod(false, [PrimitiveType::I32, PrimitiveType::I64]),
                 GREATER_LABEL   => Greater(true, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64, PrimitiveType::Char]),
                 LESSER_LABEL    => Lesser(true, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64, PrimitiveType::Char]),
                 GREATEREQ_LABEL => GreaterEq(true, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64, PrimitiveType::Char]),
@@ -235,6 +240,7 @@ impl BuiltinFunctionCall {
             | Self::Sub { .. }
             | Self::Mul { .. }
             | Self::Div { .. }
+            | Self::Mod { .. }
             | Self::Eq { .. }
             | Self::NotEq { .. }
             | Self::Lesser { .. }

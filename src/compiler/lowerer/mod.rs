@@ -421,6 +421,7 @@ impl Lowerer {
                     ASTOperator::Minus => "-",
                     ASTOperator::Mul => "*",
                     ASTOperator::Div => "/",
+                    ASTOperator::Mod => "%",
                     ASTOperator::Equals => "==",
                     ASTOperator::NotEquals => "!=",
                     ASTOperator::Greater => ">",

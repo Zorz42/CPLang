@@ -33,34 +33,35 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<Opti
             let (op, op_pos) = block.get();
             res_signature.name = "operator".to_string()
                 + match op {
-                    Token::Plus => "+",
-                    Token::Minus => "-",
-                    Token::Star => "*",
-                    Token::Slash => "/",
-                    Token::Equals => "==",
-                    Token::NotEquals => "!=",
-                    Token::LessThan => "<",
-                    Token::LessThanOrEqual => "<=",
-                    Token::GreaterThan => ">",
-                    Token::GreaterThanOrEqual => ">=",
-                    Token::And => "&&",
-                    Token::Or => "||",
-                    Token::BracketBlock(block) => {
-                        if block.has_tokens() {
-                            return Err(CompilerError {
-                                message: "There should be nothing between []".to_string(),
-                                position: Some(op_pos),
-                            });
-                        }
-                        "[]"
-                    }
-                    _ => {
+                Token::Plus => "+",
+                Token::Minus => "-",
+                Token::Star => "*",
+                Token::Slash => "/",
+                Token::Mod => "%",
+                Token::Equals => "==",
+                Token::NotEquals => "!=",
+                Token::LessThan => "<",
+                Token::LessThanOrEqual => "<=",
+                Token::GreaterThan => ">",
+                Token::GreaterThanOrEqual => ">=",
+                Token::And => "&&",
+                Token::Or => "||",
+                Token::BracketBlock(block) => {
+                    if block.has_tokens() {
                         return Err(CompilerError {
-                            message: "Unexpected token".to_string(),
+                            message: "There should be nothing between []".to_string(),
                             position: Some(op_pos),
                         });
                     }
-                };
+                    "[]"
+                }
+                _ => {
+                    return Err(CompilerError {
+                        message: "Unexpected token".to_string(),
+                        position: Some(op_pos),
+                    });
+                }
+            };
             res_signature.pos = pos + op_pos;
         }
         (_, pos) => {

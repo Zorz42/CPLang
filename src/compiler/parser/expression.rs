@@ -135,14 +135,15 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
 const fn token_to_operator(symbol: &Token) -> Option<ASTOperator> {
     match symbol {
         Token::Plus => Some(ASTOperator::Plus),
+        Token::Minus => Some(ASTOperator::Minus),
         Token::Star => Some(ASTOperator::Mul),
         Token::Slash => Some(ASTOperator::Div),
+        Token::Mod => Some(ASTOperator::Mod),
         Token::Equals => Some(ASTOperator::Equals),
         Token::GreaterThan => Some(ASTOperator::Greater),
         Token::LessThan => Some(ASTOperator::Lesser),
         Token::GreaterThanOrEqual => Some(ASTOperator::GreaterEq),
         Token::LessThanOrEqual => Some(ASTOperator::LesserEq),
-        Token::Minus => Some(ASTOperator::Minus),
         Token::NotEquals => Some(ASTOperator::NotEquals),
         Token::And => Some(ASTOperator::And),
         Token::Or => Some(ASTOperator::Or),
@@ -165,7 +166,7 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
     }
 
     let operator_precedence = [
-        vec![ASTOperator::Mul, ASTOperator::Div],
+        vec![ASTOperator::Mul, ASTOperator::Div, ASTOperator::Mod],
         vec![ASTOperator::Plus, ASTOperator::Minus],
         vec![
             ASTOperator::Equals,

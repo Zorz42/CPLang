@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel,
+    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
+    IRVariableLabel, IR,
 };
 use crate::compiler::parser::ast::PrimitiveType;
 use std::collections::HashMap;
@@ -100,7 +100,7 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -189,6 +189,7 @@ fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> St
         BuiltinFunctionCall::Sub { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "-"),
         BuiltinFunctionCall::Mul { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "*"),
         BuiltinFunctionCall::Div { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "/"),
+        BuiltinFunctionCall::Mod { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "%"),
         BuiltinFunctionCall::Eq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "=="),
         BuiltinFunctionCall::NotEq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "!="),
         BuiltinFunctionCall::Lesser { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "<"),

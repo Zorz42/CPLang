@@ -31,6 +31,7 @@ pub enum BuiltinFunctionCall {
     Sub { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     Mul { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     Div { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
+    Mod { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     Eq { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     NotEq { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     Lesser { arg1: Box<IRExpression>, arg2: Box<IRExpression> },

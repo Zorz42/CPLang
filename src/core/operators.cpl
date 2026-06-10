@@ -62,6 +62,13 @@ operator/ a: f64 b: f64
     ret _builtin_div[f64](a b)
 
 
+operator% a: i32 b: i32
+    ret _builtin_mod[i32](a b)
+
+operator% a: i64 b: i64
+    ret _builtin_mod[i64](a b)
+
+
 operator== a: i32 b: i32
     ret _builtin_eq[i32](a b)
 
