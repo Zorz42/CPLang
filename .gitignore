@@ -4,3 +4,5 @@ main.cpl
 main.c
 **/.test_cache
 cses-tests/tests
+cses-tests/build
+cses-tests/run.log
