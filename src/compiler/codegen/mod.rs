@@ -5,11 +5,11 @@ use crate::compiler::normalizer::ir::{
 use crate::compiler::parser::ast::PrimitiveType;
 use std::collections::HashMap;
 /*
-Generator converts IR into raw C code. Could be easily replaced with any other language.
+Codegen converts IR into raw C code. Could be easily replaced with any other language.
  */
 
 #[allow(clippy::type_complexity)]
-struct GeneratorContext {
+struct CodegenContext {
     types: HashMap<IRTypeLabel, IRType>,
     var_types: Vec<IRTypeLabel>,
     structs: Vec<IRStruct>,
@@ -55,7 +55,7 @@ int main(){
 ";
 
 pub fn generate_code(ir: IR) -> String {
-    let mut ctx = GeneratorContext {
+    let mut ctx = CodegenContext {
         types: ir.types,
         var_types: ir.variable_types,
         structs: ir.structs,
@@ -111,7 +111,7 @@ fn gen_field_name(label: IRFieldLabel) -> String {
     format!("F{label}")
 }
 
-fn gen_struct_declaration(ctx: &mut GeneratorContext, fields: Vec<(IRType, IRFieldLabel)>, c_label: usize) -> String {
+fn gen_struct_declaration(ctx: &mut CodegenContext, fields: Vec<(IRType, IRFieldLabel)>, c_label: usize) -> String {
     let mut code = String::new();
 
     let c_name = gen_struct_name(c_label);
@@ -125,7 +125,7 @@ fn gen_struct_declaration(ctx: &mut GeneratorContext, fields: Vec<(IRType, IRFie
     code
 }
 
-fn gen_type(ctx: &mut GeneratorContext, typ: IRType) -> String {
+fn gen_type(ctx: &mut CodegenContext, typ: IRType) -> String {
     match typ {
         IRType::Primitive(typ) => gen_primitive_type(typ),
         IRType::Reference(typ) => format!("{}*", gen_type(ctx, *typ)),
@@ -174,8 +174,8 @@ fn type_to_printf_format(typ: &IRType) -> &'static str {
     }
 }
 
-fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> String {
-    fn gen_op(ctx: &mut GeneratorContext, arg1: IRExpression, arg2: IRExpression, op: &str) -> String {
+fn gen_builtin_call(ctx: &mut CodegenContext, call: BuiltinFunctionCall) -> String {
+    fn gen_op(ctx: &mut CodegenContext, arg1: IRExpression, arg2: IRExpression, op: &str) -> String {
         format!("({} {} {})", gen_expression(ctx, arg1), op, gen_expression(ctx, arg2))
     }
     match call {
@@ -201,7 +201,7 @@ fn gen_builtin_call(ctx: &mut GeneratorContext, call: BuiltinFunctionCall) -> St
     }
 }
 
-fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> String {
+fn gen_expression(ctx: &mut CodegenContext, expression: IRExpression) -> String {
     match expression {
         IRExpression::Constant { constant } => match constant {
             IRConstant::String(x) => {
@@ -268,7 +268,7 @@ fn gen_expression(ctx: &mut GeneratorContext, expression: IRExpression) -> Strin
     }
 }
 
-fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) -> String {
+fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String) -> String {
     let mut code = String::new();
     code += "{\n";
     code += &code_prefix;
@@ -315,7 +315,7 @@ fn gen_block(ctx: &mut GeneratorContext, block: IRBlock, code_prefix: String) ->
     code
 }
 
-fn gen_function_signature(ctx: &mut GeneratorContext, func: &IRInstance) -> String {
+fn gen_function_signature(ctx: &mut CodegenContext, func: &IRInstance) -> String {
     let mut args = String::new();
     for arg in &func.arguments {
         let typ = ctx.types[&ctx.var_types[*arg]].clone();
@@ -332,7 +332,7 @@ fn gen_function_signature(ctx: &mut GeneratorContext, func: &IRInstance) -> Stri
     )
 }
 
-fn gen_function(ctx: &mut GeneratorContext, func: IRInstance) -> String {
+fn gen_function(ctx: &mut CodegenContext, func: IRInstance) -> String {
     let mut code = gen_function_signature(ctx, &func);
 
     let mut vars_code = String::new();

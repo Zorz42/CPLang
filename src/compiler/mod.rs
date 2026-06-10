@@ -13,8 +13,8 @@
 #![allow(clippy::format_push_string)]
 #![allow(clippy::cast_sign_loss)]
 
+use crate::compiler::codegen::generate_code;
 use crate::compiler::error::CompilerResult;
-use crate::compiler::generator::generate_code;
 use crate::compiler::lowerer::lower_ast;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
@@ -22,7 +22,7 @@ use crate::compiler::preprocessor::preprocess;
 use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
 
 pub mod error;
-mod generator;
+mod codegen;
 mod lowerer;
 mod normalizer;
 mod parser;

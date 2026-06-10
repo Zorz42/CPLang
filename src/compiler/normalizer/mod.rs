@@ -389,7 +389,7 @@ impl Normalizer {
                 self.type_resolver.hint_is(type_label, PrimitiveType::I64)?;
 
                 IRExpression::Constant {
-                    constant: IRConstant::Int(i64::from(x)),
+                    constant: IRConstant::Int(x),
                 }
             }
 

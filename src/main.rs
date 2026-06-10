@@ -10,7 +10,7 @@ fn print_usage(program_name: &str) {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let program_name = args.get(0).map(|s| s.as_str()).unwrap_or("cplang");
+    let program_name = args.first().map(|s| s.as_str()).unwrap_or("cplang");
 
     let mut input_file: Option<&str> = None;
     let mut output_file: Option<&str> = None;

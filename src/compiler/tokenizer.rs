@@ -188,7 +188,7 @@ fn string_to_token(string: &String) -> Token {
     }
 
     // parse i64 notation: 1000L
-    if string.ends_with("L") {
+    if string.ends_with('L') {
         let mut string = string.clone();
         string.pop();
         if let Ok(integer) = string.parse::<i64>() {
@@ -204,7 +204,7 @@ fn string_to_token(string: &String) -> Token {
         return Token::ConstBoolean(string == "true");
     }
 
-    Token::Identifier(string.to_string())
+    Token::Identifier(string.clone())
 }
 
 pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
