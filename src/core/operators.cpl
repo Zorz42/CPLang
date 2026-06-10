@@ -106,6 +106,9 @@ operator< a: f32 b: f32
 operator< a: f64 b: f64
     ret _builtin_lesser[f64](a b)
 
+operator< a: char b: char
+    ret _builtin_lesser[char](a b)
+
 
 operator> a: i32 b: i32
     ret _builtin_greater[i32](a b)
@@ -118,6 +121,9 @@ operator> a: f32 b: f32
 
 operator> a: f64 b: f64
     ret _builtin_greater[f64](a b)
+
+operator> a: char b: char
+    ret _builtin_greater[char](a b)
 
 
 operator<= a: i32 b: i32
@@ -132,6 +138,9 @@ operator<= a: f32 b: f32
 operator<= a: f64 b: f64
     ret _builtin_lessereq[f64](a b)
 
+operator<= a: char b: char
+    ret _builtin_lessereq[char](a b)
+
 
 operator>= a: i32 b: i32
     ret _builtin_greatereq[i32](a b)
@@ -144,6 +153,9 @@ operator>= a: f32 b: f32
 
 operator>= a: f64 b: f64
     ret _builtin_greatereq[f64](a b)
+
+operator>= a: char b: char
+    ret _builtin_greatereq[char](a b)
 
 
 operator&& a: bool b: bool

@@ -1,0 +1,36 @@
+fn read_i32
+    c = _builtin_getchar()
+    while c == ' ' || c == '\n'
+        c = _builtin_getchar()
+    neg = false
+    if c == '-'
+        neg = true
+        c = _builtin_getchar()
+    res = 0
+    while c >= '0' && c <= '9'
+        res = res * 10
+        if c == '0'
+            res += 0
+        if c == '1'
+            res += 1
+        if c == '2'
+            res += 2
+        if c == '3'
+            res += 3
+        if c == '4'
+            res += 4
+        if c == '5'
+            res += 5
+        if c == '6'
+            res += 6
+        if c == '7'
+            res += 7
+        if c == '8'
+            res += 8
+        if c == '9'
+            res += 9
+        c = _builtin_getchar()
+    if neg
+        res = -res
+    ret res
+
