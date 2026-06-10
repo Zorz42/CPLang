@@ -22,8 +22,8 @@ It processes raw string into a FragmentBlock which is effectively and array of F
 #[derive(Clone, Debug)]
 pub enum Fragment {
     String(Vec<PosChar>, FilePosition),
-    ConstChar(PosChar), // this is a character 'x' with value
-    Char(PosChar), // this is a raw character
+    ConstChar(PosChar),              // this is a character 'x' with value
+    Char(PosChar),                   // this is a raw character
     BraceBlock(FragmentBlock),       // {}
     BracketBlock(FragmentBlock),     // []
     ParenthesisBlock(FragmentBlock), // ()
@@ -144,7 +144,6 @@ const fn map_escape_char(c: char) -> Option<char> {
     }
 }
 
-
 pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fragment>> {
     #[derive(PartialEq, Clone)]
     enum Location {
@@ -192,26 +191,29 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                     }
                 } else if pos_char.c == '\'' {
                     let (mut c, pos) = match chars.next() {
-                        None =>
+                        None => {
                             return Err(CompilerError {
                                 message: "Expected character after quote, not EOF".to_string(),
                                 position: Some(pos_char.pos),
-                            }),
-                        Some(PosChar { c: '\n', pos: _ }) =>
+                            });
+                        }
+                        Some(PosChar { c: '\n', pos: _ }) => {
                             return Err(CompilerError {
                                 message: "Expected character after quote, not newline".to_string(),
                                 position: Some(pos_char.pos),
-                            }),
-                        Some(c) => (c.c, c.pos)
+                            });
+                        }
+                        Some(c) => (c.c, c.pos),
                     };
                     if c == '\\' {
                         match chars.next().and_then(|c| map_escape_char(c.c)) {
                             Some(ch) => c = ch,
-                            None =>
+                            None => {
                                 return Err(CompilerError {
                                     message: "Unrecognized escape character".to_string(),
                                     position: Some(pos),
-                                }),
+                                });
+                            }
                         }
                     }
                     let nxt = chars.next();

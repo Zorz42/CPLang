@@ -19,7 +19,7 @@ use crate::compiler::lowerer::lower_ast;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
-use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
+use crate::compiler::tokenizer::{TokenBlock, tokenize_fragments};
 
 pub mod error;
 mod generator;
@@ -43,7 +43,11 @@ less different types of nodes and explicit types and indexes instead of string/n
 pub const INPUT_NAMES: [&str; 3] = ["", "src/core/operators.cpl", "src/core/range.cpl"];
 
 pub fn gain_input_sources(input_content: String) -> [String; 3] {
-    [input_content, include_str!("../core/operators.cpl").to_string(), include_str!("../core/range.cpl").to_string()]
+    [
+        input_content,
+        include_str!("../core/operators.cpl").to_string(),
+        include_str!("../core/range.cpl").to_string(),
+    ]
 }
 
 fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {

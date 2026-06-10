@@ -220,61 +220,65 @@ impl Lowerer {
         // }
         let iter_name = self.new_tmp_name();
         let element_name = self.new_tmp_name();
-        self.lower_statement(
-            ASTStatement::Block {
-                block: ASTBlock {
-                    children: vec![
-                        ASTStatement::Assignment {
-                            assign_to: ASTExpression::new(ASTExpressionKind::Variable(element_name.clone()), pos),
-                            value: element,
-                            pos,
-                        },
-                        ASTStatement::Assignment {
-                            assign_to: ASTExpression::new(ASTExpressionKind::Variable(iter_name.clone()), pos),
-                            value: ASTExpression::new(ASTExpressionKind::MethodCall {
-                                expression: Box::new(ASTExpression::new(
-                                    ASTExpressionKind::Variable(element_name),
-                                    pos,
-                                )),
+        self.lower_statement(ASTStatement::Block {
+            block: ASTBlock {
+                children: vec![
+                    ASTStatement::Assignment {
+                        assign_to: ASTExpression::new(ASTExpressionKind::Variable(element_name.clone()), pos),
+                        value: element,
+                        pos,
+                    },
+                    ASTStatement::Assignment {
+                        assign_to: ASTExpression::new(ASTExpressionKind::Variable(iter_name.clone()), pos),
+                        value: ASTExpression::new(
+                            ASTExpressionKind::MethodCall {
+                                expression: Box::new(ASTExpression::new(ASTExpressionKind::Variable(element_name), pos)),
                                 call: ASTFunctionCall {
                                     name: "iter".to_string(),
                                     arguments: Vec::new(),
                                     template_arguments: Vec::new(),
                                 },
-                            }, pos),
+                            },
                             pos,
-                        },
-                        ASTStatement::While {
-                            condition: ASTExpression::new(ASTExpressionKind::MethodCall {
+                        ),
+                        pos,
+                    },
+                    ASTStatement::While {
+                        condition: ASTExpression::new(
+                            ASTExpressionKind::MethodCall {
                                 expression: Box::new(ASTExpression::new(ASTExpressionKind::Variable(iter_name.clone()), pos)),
                                 call: ASTFunctionCall {
                                     name: "has_next".to_string(),
                                     arguments: Vec::new(),
                                     template_arguments: Vec::new(),
                                 },
-                            }, pos),
-                            block: ASTBlock {
-                                children: vec![
-                                    ASTStatement::Assignment {
-                                        assign_to: ASTExpression::new(ASTExpressionKind::Variable(iterator), pos),
-                                        value: ASTExpression::new(ASTExpressionKind::MethodCall {
+                            },
+                            pos,
+                        ),
+                        block: ASTBlock {
+                            children: vec![
+                                ASTStatement::Assignment {
+                                    assign_to: ASTExpression::new(ASTExpressionKind::Variable(iterator), pos),
+                                    value: ASTExpression::new(
+                                        ASTExpressionKind::MethodCall {
                                             expression: Box::new(ASTExpression::new(ASTExpressionKind::Variable(iter_name), pos)),
                                             call: ASTFunctionCall {
                                                 name: "next".to_string(),
                                                 arguments: Vec::new(),
                                                 template_arguments: Vec::new(),
                                             },
-                                        }, pos),
+                                        },
                                         pos,
-                                    },
-                                    ASTStatement::Block { block },
-                                ]
-                            }
-                        }
-                    ]
-                }
-            }
-        )
+                                    ),
+                                    pos,
+                                },
+                                ASTStatement::Block { block },
+                            ],
+                        },
+                    },
+                ],
+            },
+        })
     }
 
     fn lower_expressions(&mut self, expressions: Vec<ASTExpression>) -> Vec<ASTExpression> {
@@ -393,13 +397,14 @@ impl Lowerer {
                 expression2,
             } => {
                 // turn a..b into Range from a to b
-                self.lower_expression(
-                    ASTExpression::new(ASTExpressionKind::StructInitialization {
+                self.lower_expression(ASTExpression::new(
+                    ASTExpressionKind::StructInitialization {
                         name: "Range".to_string(),
                         fields: vec![*expression1, *expression2],
                         template_arguments: Vec::new(),
-                    }, pos)
-                )
+                    },
+                    pos,
+                ))
             }
             ASTExpressionKind::BinaryOperation {
                 expression1,
@@ -411,19 +416,20 @@ impl Lowerer {
 
                 let name = "operator".to_string()
                     + match operator {
-                    ASTOperator::Plus => "+",
-                    ASTOperator::Mul => "*",
-                    ASTOperator::Div => "/",
-                    ASTOperator::Equals => "==",
-                    ASTOperator::NotEquals => "!=",
-                    ASTOperator::Greater => ">",
-                    ASTOperator::Lesser => "<",
-                    ASTOperator::GreaterEq => ">=",
-                    ASTOperator::LesserEq => "<=",
-                    ASTOperator::Minus => "-",
-                    ASTOperator::Comma
-                    | ASTOperator::DotDot => unreachable!(),
-                };
+                        ASTOperator::Plus => "+",
+                        ASTOperator::Minus => "-",
+                        ASTOperator::Mul => "*",
+                        ASTOperator::Div => "/",
+                        ASTOperator::Equals => "==",
+                        ASTOperator::NotEquals => "!=",
+                        ASTOperator::Greater => ">",
+                        ASTOperator::Lesser => "<",
+                        ASTOperator::GreaterEq => ">=",
+                        ASTOperator::LesserEq => "<=",
+                        ASTOperator::And => "&&",
+                        ASTOperator::Or => "||",
+                        ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
+                    };
 
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {
@@ -556,9 +562,7 @@ impl Lowerer {
             ASTStatement::Expression { expression } => ASTStatement::Expression {
                 expression: self.lower_expression(expression),
             },
-            ASTStatement::For { iterator, element, block, pos } => {
-                self.gen_for_statement(iterator, element, block, pos)
-            }
+            ASTStatement::For { iterator, element, block, pos } => self.gen_for_statement(iterator, element, block, pos),
         }
     }
 

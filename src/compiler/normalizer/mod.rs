@@ -1,8 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
-    IRVariableLabel, IR,
+    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
+    IRVariableLabel,
 };
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType, Ast, PrimitiveType,
@@ -460,7 +460,7 @@ impl Normalizer {
                 }
 
                 if Self::is_builtin_function(&call.name) {
-                    let (call, return_type) = self.get_builtin_call(call.name, expr_types, function_arguments, template_types, pos)?;
+                    let (call, return_type) = self.get_builtin_call(&call.name, expr_types, function_arguments, template_types, pos)?;
                     self.type_resolver.hint_equal(return_type, type_label)?;
                     IRExpression::BuiltinFunctionCall(call)
                 } else {

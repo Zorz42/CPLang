@@ -143,6 +143,8 @@ const fn token_to_operator(symbol: &Token) -> Option<ASTOperator> {
         Token::LessThanOrEqual => Some(ASTOperator::LesserEq),
         Token::Minus => Some(ASTOperator::Minus),
         Token::NotEquals => Some(ASTOperator::NotEquals),
+        Token::And => Some(ASTOperator::And),
+        Token::Or => Some(ASTOperator::Or),
         Token::Comma => Some(ASTOperator::Comma),
         Token::DotDot => Some(ASTOperator::DotDot),
         _ => None,
@@ -172,6 +174,7 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
             ASTOperator::LesserEq,
             ASTOperator::NotEquals,
         ],
+        vec![ASTOperator::And, ASTOperator::Or],
         vec![ASTOperator::Comma],
         vec![ASTOperator::DotDot],
     ];

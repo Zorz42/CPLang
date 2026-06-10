@@ -63,6 +63,8 @@ pub enum Token {
     QuestionMark,       // ?
     Pipe,               // |
     DotDot,             // ..
+    And,                // &&
+    Or,                 // ||
 }
 
 fn str_to_keyword(s: &str) -> Option<Token> {
@@ -118,6 +120,8 @@ const fn symbol_from_two_chars(c1: char, c2: char) -> Option<Token> {
         ('+', '+') => Some(Token::Increment),
         ('-', '-') => Some(Token::Decrement),
         ('.', '.') => Some(Token::DotDot),
+        ('&', '&') => Some(Token::And),
+        ('|', '|') => Some(Token::Or),
         _ => None,
     }
 }
@@ -216,10 +220,10 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
             Fragment::Char(pos_char) => {
                 let c = pos_char.c;
                 let pos = &pos_char.pos;
-                let next_char = iter.peek().map_or('\0', |x| match x {
-                    Fragment::Char(pc) => pc.c,
-                    _ => '\0',
-                });
+                let (next_char, next_char_pos) = match iter.peek() {
+                    Some(Fragment::Char(pc)) => (pc.c, pc.pos),
+                    _ => ('\0', FilePosition::unknown()),
+                };
 
                 // in case we have range syntax: 0..10 we do not mistake it for a float
                 let is_next_dot = matches!(iter.peek(), Some(Fragment::Char(c)) if c.c == '.');
@@ -229,7 +233,7 @@ pub fn tokenize_fragments(string: &[Fragment]) -> CompilerResult<TokenBlock> {
                     add_to_token(&mut curr_token, &mut token_pos, c, *pos);
                 } else if let Some(symbol) = symbol_from_two_chars(c, next_char) {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);
-                    tokens.push((symbol, *pos));
+                    tokens.push((symbol, *pos + next_char_pos));
                     iter.next();
                 } else if let Some(symbol) = symbol_from_char(c) {
                     new_token(&mut tokens, &mut curr_token, &mut token_pos);

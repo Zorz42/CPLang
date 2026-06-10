@@ -1,6 +1,6 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IRBlock, IRExpression, IRInstance, IRStatement, IR};
 use crate::compiler::normalizer::ValuePhysicality;
+use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IR, IRBlock, IRExpression, IRInstance, IRStatement};
 // this file implements the pass of IR that happens in normalizer and checks
 // that all lhs in assignments are physical and resolves all autorefs
 
@@ -215,6 +215,14 @@ fn check_refs_builtin(call: BuiltinFunctionCall, autorefs: &[i32]) -> CompilerRe
             arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
         },
         BuiltinFunctionCall::GreaterEq { arg1, arg2 } => BuiltinFunctionCall::GreaterEq {
+            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
+            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
+        },
+        BuiltinFunctionCall::And { arg1, arg2 } => BuiltinFunctionCall::And {
+            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
+            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
+        },
+        BuiltinFunctionCall::Or { arg1, arg2 } => BuiltinFunctionCall::Or {
             arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
             arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
         },

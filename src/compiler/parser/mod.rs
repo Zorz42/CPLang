@@ -43,7 +43,6 @@ pub fn parse_tokens(mut program_block: TokenBlock) -> CompilerResult<Ast> {
         }
     }
 
-
     let mut temp_structs = res.structs.clone();
     for structure in &mut temp_structs {
         while let Some((sign, block)) = structure.pre_methods.pop() {

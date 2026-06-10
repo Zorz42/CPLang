@@ -144,3 +144,10 @@ operator>= a: f32 b: f32
 
 operator>= a: f64 b: f64
     ret _builtin_greatereq[f64](a b)
+
+
+operator&& a: bool b: bool
+    ret _builtin_and[bool](a b)
+
+operator|| a: bool b: bool
+    ret _builtin_or[bool](a b)

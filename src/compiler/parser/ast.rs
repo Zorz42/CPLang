@@ -92,18 +92,20 @@ impl Debug for ASTBlock {
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ASTOperator {
-    Plus,
-    Mul,
-    Div,
-    Equals,
-    NotEquals,
-    Greater,
-    Lesser,
-    GreaterEq,
-    LesserEq,
-    Minus,
-    Comma, // for tuples
-    DotDot, // .. for ranges
+    Plus,      // +
+    Minus,     // -
+    Mul,       // *
+    Div,       // /
+    Equals,    // ==
+    NotEquals, // !=
+    Greater,   // >
+    Lesser,    // <
+    GreaterEq, // >=
+    LesserEq,  // <=
+    And,       // &&
+    Or,        // ||
+    Comma,     // , for tuples
+    DotDot,    // .. for ranges
 }
 
 #[derive(Debug, Clone)]
