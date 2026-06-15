@@ -1,0 +1,18 @@
+// constructors
+fn Str
+    ret _Vec[char] _size 0 _vec _builtin_alloc(1) _capacity 1
+
+fn Str size: i32 c: char
+    str = Str()
+    for i 0..size
+        str.push(c)
+    ret str
+
+fn Str str: string
+    str = Str()
+    i = 0
+    while _builtin_index(str i) != char 0
+        str.push(_builtin_index(str i))
+        i++
+    ret str
+

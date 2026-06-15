@@ -46,7 +46,7 @@ struct _VecIter
     i: i32
 
     fn has_next
-        ret self.i < self.vec.size
+        ret self.i < self.vec._size
 
     fn next
         self.i++
