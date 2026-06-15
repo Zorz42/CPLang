@@ -40,18 +40,20 @@ less different types of nodes and explicit types and indexes instead of string/n
 6. Code generation: IR is converted to C code.
  */
 
-pub const INPUT_NAMES: [&str; 4] = ["",
+pub const INPUT_NAMES: [&str; 5] = ["",
     "src/core/operators.cpl",
     "src/core/range.cpl",
-    "src/core/io.cpl"
+    "src/core/io.cpl",
+    "src/core/vector.cpl",
 ];
 
-pub fn gain_input_sources(input_content: String) -> [String; 4] {
+pub fn gain_input_sources(input_content: String) -> [String; 5] {
     [
         input_content,
         include_str!("../core/operators.cpl").to_string(),
         include_str!("../core/range.cpl").to_string(),
         include_str!("../core/io.cpl").to_string(),
+        include_str!("../core/vector.cpl").to_string(),
     ]
 }
 

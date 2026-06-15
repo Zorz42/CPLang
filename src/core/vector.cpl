@@ -1,6 +1,4 @@
-//OUT=200
-
-struct Vec2[T]
+struct _Vec[T]
     size: i32
     capacity: i32
     vec: &T
@@ -25,10 +23,20 @@ struct Vec2[T]
         self.size--
 
     fn iter
-        ret VecIter2 vec self i 0
+        ret _VecIter vec self i 0
 
-struct VecIter2
-    vec: &Vec2
+// constructors
+fn Vec
+    ret _Vec size 0 vec _builtin_alloc(1) capacity 1
+
+fn Vec[T] size: i32 default: T
+    vec = Vec()
+    for i 0..size
+        vec.push(default)
+    ret vec
+
+struct _VecIter
+    vec: &_Vec
     i: i32
 
     fn has_next
@@ -38,18 +46,4 @@ struct VecIter2
         self.i++
         ret self.vec[self.i - 1]
 
-fn new_vec
-    ret Vec2 size 0 vec _builtin_alloc(1) capacity 1
 
-fn main
-    vec = new_vec()
-    vec.push(100)
-    for i 0..10
-        vec.push(i+1)
-    for i 0..10
-        vec.push(i+1)
-    vec.pop()
-    sum = 0
-    for i vec
-        sum += i
-    out "{sum}"
