@@ -1,0 +1,11 @@
+fn main
+    n = read_i32()
+    prv = 0
+    res = 0L
+    for i 0..n
+        x = read_i32()
+        if x < prv
+            res += i64(prv - x)
+        else
+            prv = x
+    out "{res}"
