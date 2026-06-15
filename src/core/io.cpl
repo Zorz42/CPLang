@@ -1,4 +1,4 @@
-fn read_int
+fn read_i64
     c = _builtin_getchar()
     while c == ' ' || c == '\n'
         c = _builtin_getchar()
@@ -15,6 +15,8 @@ fn read_int
         res = -res
     ret res
 
+fn read_i32
+    ret i32 read_i64()
 
 
 fn read_str

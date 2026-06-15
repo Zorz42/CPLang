@@ -1,8 +1,8 @@
 fn main
-    n = i32 read_int()
+    n = read_i32()
     vec = Vec(n 0)
     for i 0..n-1
-        a = i32 read_int()
+        a = read_i32()
         vec[a - 1] = 1
     for i 0..n
         if vec[i] == 0

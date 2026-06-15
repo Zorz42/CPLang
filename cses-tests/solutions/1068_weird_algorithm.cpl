@@ -1,5 +1,5 @@
 fn main
-    n = read_int()
+    n = read_i64()
     while n != 1L
         out "{n} "
         if n % 2L == 0L
