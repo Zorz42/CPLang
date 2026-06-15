@@ -185,6 +185,7 @@ fn gen_builtin_call(ctx: &mut CodegenContext, call: BuiltinFunctionCall) -> Stri
         }
         BuiltinFunctionCall::Index { arr, idx } => format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
         BuiltinFunctionCall::Getchar {} => "getchar()".to_string(),
+        BuiltinFunctionCall::Cast { arg, to_type } => format!("({})({})", gen_primitive_type(to_type), gen_expression(ctx, *arg)),
         BuiltinFunctionCall::Add { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "+"),
         BuiltinFunctionCall::Sub { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "-"),
         BuiltinFunctionCall::Mul { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "*"),

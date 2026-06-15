@@ -6,6 +6,9 @@ struct _Vec[T]
     fn operator[] i: i32
         ret &_builtin_index(self._vec i)
 
+    fn operator[] i: i64
+        ret self[i32 i]
+
     fn expand wanted_size
         while wanted_size > self._capacity
             self._capacity = self._capacity * 2

@@ -10,6 +10,7 @@ pub fn is_builtin_identifier(name: &str) -> bool {
 const ALLOC_LABEL: &str = "_builtin_alloc";
 const INDEX_LABEL: &str = "_builtin_index";
 const GETCHAR_LABEL: &str = "_builtin_getchar";
+const CAST_LABEL: &str = "_builtin_cast";
 const ADD_LABEL: &str = "_builtin_add";
 const SUB_LABEL: &str = "_builtin_sub";
 const MUL_LABEL: &str = "_builtin_mul";
@@ -77,6 +78,7 @@ impl Normalizer {
             ALLOC_LABEL,
             INDEX_LABEL,
             GETCHAR_LABEL,
+            CAST_LABEL,
             ADD_LABEL,
             SUB_LABEL,
             MUL_LABEL,
@@ -107,6 +109,7 @@ impl Normalizer {
             label if label == ALLOC_LABEL => 1,
             label if label == INDEX_LABEL => 2,
             label if label == GETCHAR_LABEL => 0,
+            label if label == CAST_LABEL => 1,
             label if label == ADD_LABEL => 2,
             label if label == SUB_LABEL => 2,
             label if label == MUL_LABEL => 2,
@@ -135,6 +138,7 @@ impl Normalizer {
             label if label == ALLOC_LABEL => (0, 1),
             label if label == INDEX_LABEL => (0, 0),
             label if label == GETCHAR_LABEL => (0, 0),
+            label if label == CAST_LABEL => (1, 1),
             label if label == ADD_LABEL => (1, 1),
             label if label == SUB_LABEL => (1, 1),
             label if label == MUL_LABEL => (1, 1),
@@ -222,6 +226,78 @@ impl Normalizer {
                 Ok((BuiltinFunctionCall::Not { arg: Box::new(expr) }, res_type))
             }
 
+            CAST_LABEL => {
+                let expr = function_arguments.pop().unwrap();
+                let Some(expr_type) = self.type_resolver.fetch_final_ir_type(expr_types[0]) else {
+                    return Err(CompilerError {
+                        message: "This type must be known at this point".to_owned(),
+                        position: Some(call_pos),
+                    });
+                };
+
+                let cast_to = template_types[0];
+                let Some(cast_to) = self.type_resolver.fetch_final_ir_type(cast_to) else {
+                    return Err(CompilerError {
+                        message: "This type must be known at this point".to_owned(),
+                        position: Some(call_pos),
+                    });
+                };
+
+                match (&expr_type, &cast_to) {
+                    // cast i32 to *
+                    (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::I32))
+                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::I64))
+                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::F32))
+                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::F64))
+                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::Bool))
+                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::Char))
+
+                    // cast i64 to *
+                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::I32))
+                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::I64))
+                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::F32))
+                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::F64))
+                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::Bool))
+                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::Char))
+
+                    // cast f32 to *
+                    | (IRType::Primitive(PrimitiveType::F32), IRType::Primitive(PrimitiveType::I32))
+                    | (IRType::Primitive(PrimitiveType::F32), IRType::Primitive(PrimitiveType::I64))
+                    | (IRType::Primitive(PrimitiveType::F32), IRType::Primitive(PrimitiveType::F32))
+                    | (IRType::Primitive(PrimitiveType::F32), IRType::Primitive(PrimitiveType::F64))
+
+                    // cast f64 to *
+                    | (IRType::Primitive(PrimitiveType::F64), IRType::Primitive(PrimitiveType::I32))
+                    | (IRType::Primitive(PrimitiveType::F64), IRType::Primitive(PrimitiveType::I64))
+                    | (IRType::Primitive(PrimitiveType::F64), IRType::Primitive(PrimitiveType::F32))
+                    | (IRType::Primitive(PrimitiveType::F64), IRType::Primitive(PrimitiveType::F64))
+
+                    // cast bool to *
+                    | (IRType::Primitive(PrimitiveType::Bool), IRType::Primitive(PrimitiveType::Bool))
+                    | (IRType::Primitive(PrimitiveType::Bool), IRType::Primitive(PrimitiveType::I32))
+                    | (IRType::Primitive(PrimitiveType::Bool), IRType::Primitive(PrimitiveType::I64))
+
+                    // cast char to *
+                    | (IRType::Primitive(PrimitiveType::Char), IRType::Primitive(PrimitiveType::Char))
+                    | (IRType::Primitive(PrimitiveType::Char), IRType::Primitive(PrimitiveType::I32))
+                    | (IRType::Primitive(PrimitiveType::Char), IRType::Primitive(PrimitiveType::I64))
+
+                    => {} // OK
+
+                    _ => return Err(CompilerError {
+                        message: format!("Cannot cast {expr_type:?} to {cast_to:?}"),
+                        position: Some(call_pos),
+                    }),
+                };
+
+                let IRType::Primitive(to_type) = cast_to else { unreachable!() };
+
+                let res_type = self.type_resolver.new_type_label(FilePosition::unknown());
+                self.type_resolver.hint_is(res_type, to_type.clone())?;
+
+                Ok((BuiltinFunctionCall::Cast { arg: Box::new(expr), to_type }, res_type))
+            }
+
             _ => define_builtin_ops!(
                 self, function_name, function_arguments, expr_types, template_types, call_pos;
                 ADD_LABEL       => Add(false, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
@@ -248,6 +324,7 @@ impl BuiltinFunctionCall {
             Self::Index { .. } => ValuePhysicality::Physical,
             Self::Alloc { .. }
             | Self::Getchar { .. }
+            | Self::Cast { .. }
             | Self::And { .. }
             | Self::Or { .. }
             | Self::Add { .. }

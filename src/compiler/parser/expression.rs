@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTOperator, ASTStructDeclaration, ASTType};
+use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStructDeclaration, ASTType, PrimitiveType};
 use crate::compiler::parser::function::parse_function_call;
 use crate::compiler::parser::structure::parse_struct_instantiation;
 use crate::compiler::parser::typed::parse_type_hint;
@@ -45,6 +45,29 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
             let pos = res.pos;
 
             ASTExpression::new(ASTExpressionKind::Not(Box::new(res)), pos)
+        }
+        (token @ (Token::I32 | Token::I64 | Token::F32 | Token::F64 | Token::Bool | Token::Char), pos) => {
+            let expr = parse_value(structs, block)?;
+            let expr_pos = expr.pos;
+
+            let cast_to = match token {
+                Token::I32 => ASTType::Primitive(PrimitiveType::I32, pos),
+                Token::I64 => ASTType::Primitive(PrimitiveType::I64, pos),
+                Token::F32 => ASTType::Primitive(PrimitiveType::F32, pos),
+                Token::F64 => ASTType::Primitive(PrimitiveType::F64, pos),
+                Token::Bool => ASTType::Primitive(PrimitiveType::Bool, pos),
+                Token::Char => ASTType::Primitive(PrimitiveType::Char, pos),
+                _ => unreachable!(),
+            };
+
+            ASTExpression::new(
+                ASTExpressionKind::FunctionCall(ASTFunctionCall {
+                    name: "_builtin_cast".to_owned(),
+                    arguments: vec![expr],
+                    template_arguments: vec![cast_to],
+                }),
+                pos + expr_pos,
+            )
         }
         (Token::Pipe, _) => {
             let res = parse_value(structs, block)?;

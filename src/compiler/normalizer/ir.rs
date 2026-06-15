@@ -27,6 +27,7 @@ pub enum BuiltinFunctionCall {
     Alloc { typ: IRTypeLabel, num: Box<IRExpression> },
     Index { arr: Box<IRExpression>, idx: Box<IRExpression> },
     Getchar {},
+    Cast { arg: Box<IRExpression>, to_type: PrimitiveType },
     Add { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     Sub { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     Mul { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
