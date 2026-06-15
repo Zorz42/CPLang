@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel,
+    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
+    IRVariableLabel, IR,
 };
 use crate::compiler::parser::ast::PrimitiveType;
 use std::collections::HashMap;
@@ -28,11 +28,11 @@ const OUTPUT_TEMPLATE: &str = r"
 #define ARENA_SIZE 1024ull*1024*1024
 static uint8_t* arena;
 
-void bump_init(void) {
+static void bump_init(void) {
     arena=mmap(NULL,ARENA_SIZE,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);
 }
 
-void* bump_malloc(size_t size) {
+static void* bump_malloc(size_t size) {
     size=(size+7)&~7ull;
     void*ptr=arena;
     arena+=size;
@@ -68,7 +68,7 @@ pub fn generate_code(ir: IR) -> String {
     for var_label in ir.global_variables {
         let var_type = ctx.types[&ctx.var_types[var_label]].clone();
         let var_type = gen_type(&mut ctx, var_type);
-        global_variables += &format!("{} {};\n", var_type, gen_variable_label(var_label));
+        global_variables += &format!("static {} {};\n", var_type, gen_variable_label(var_label));
     }
 
     let mut function_signatures = String::new();
@@ -100,7 +100,7 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -327,7 +327,7 @@ fn gen_function_signature(ctx: &mut CodegenContext, func: &IRInstance) -> String
     args.pop();
 
     format!(
-        "{} {}({})",
+        "static {} {}({})",
         gen_type(ctx, ctx.types[&func.ret_type].clone()),
         gen_function_label(func.label),
         args

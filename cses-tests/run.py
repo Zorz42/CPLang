@@ -44,11 +44,17 @@ def download_cses_tests(problem_id):
 def main():
     init_logger()
 
-    # Make sure target/debug/cplang is built
-    cplang_path = os.path.abspath("../target/debug/cplang")
+    # Build release version of cplang
+    log("Building cplang compiler in release mode...", to_console=True)
+    build_res = subprocess.run(["cargo", "build", "--release"], cwd="..", capture_output=True, text=True)
+    if build_res.returncode != 0:
+        log("Cargo build failed:", to_console=True)
+        log(build_res.stderr, to_console=True)
+        sys.exit(1)
+
+    cplang_path = os.path.abspath("../target/release/cplang")
     if not os.path.exists(cplang_path):
-        log(f"Error: Compiler binary not found at '{cplang_path}'. Please run 'cargo build' in the workspace root.",
-            to_console=True)
+        log(f"Error: Compiler binary not found at '{cplang_path}'.", to_console=True)
         sys.exit(1)
 
     solutions = glob.glob("solutions/*.cpl")
