@@ -170,3 +170,6 @@ operator&& a: bool b: bool
 
 operator|| a: bool b: bool
     ret _builtin_or[bool](a b)
+
+operator! a: bool
+    ret _builtin_not(a)

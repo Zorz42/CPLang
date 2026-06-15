@@ -23,6 +23,7 @@ const LESSEREQ_LABEL: &str = "_builtin_lessereq";
 const GREATEREQ_LABEL: &str = "_builtin_greatereq";
 const AND_LABEL: &str = "_builtin_and";
 const OR_LABEL: &str = "_builtin_or";
+const NOT_LABEL: &str = "_builtin_not";
 
 macro_rules! define_builtin_ops {
     (
@@ -89,6 +90,7 @@ impl Normalizer {
             GREATEREQ_LABEL,
             AND_LABEL,
             OR_LABEL,
+            NOT_LABEL,
         ]
             .contains(&function_name)
     }
@@ -118,6 +120,7 @@ impl Normalizer {
             label if label == NOTEQ_LABEL => 2,
             label if label == AND_LABEL => 2,
             label if label == OR_LABEL => 2,
+            label if label == NOT_LABEL => 1,
             _ => unreachable!(),
         };
 
@@ -145,6 +148,7 @@ impl Normalizer {
             label if label == NOTEQ_LABEL => (1, 1),
             label if label == AND_LABEL => (1, 1),
             label if label == OR_LABEL => (1, 1),
+            label if label == NOT_LABEL => (0, 0),
             _ => unreachable!(),
         };
 
@@ -208,6 +212,16 @@ impl Normalizer {
                 Ok((BuiltinFunctionCall::Getchar {}, char_type))
             }
 
+            NOT_LABEL => {
+                let res_type = self.type_resolver.new_type_label(FilePosition::unknown());
+                self.type_resolver.hint_is(res_type, PrimitiveType::Bool)?;
+
+                let expr = function_arguments.pop().unwrap();
+                self.type_resolver.hint_is(expr_types[0], PrimitiveType::Bool)?;
+
+                Ok((BuiltinFunctionCall::Not { arg: Box::new(expr) }, res_type))
+            }
+
             _ => define_builtin_ops!(
                 self, function_name, function_arguments, expr_types, template_types, call_pos;
                 ADD_LABEL       => Add(false, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
@@ -246,7 +260,8 @@ impl BuiltinFunctionCall {
             | Self::Lesser { .. }
             | Self::Greater { .. }
             | Self::LesserEq { .. }
-            | Self::GreaterEq { .. } => ValuePhysicality::Temporary,
+            | Self::GreaterEq { .. }
+            | Self::Not { .. } => ValuePhysicality::Temporary,
         }
     }
 }

@@ -565,6 +565,7 @@ impl Normalizer {
             ASTExpressionKind::MethodCall { .. } => unreachable!("ASTExpression::MethodCall should be eliminated by lowerer"),
             ASTExpressionKind::BinaryOperation { .. } => unreachable!("ASTExpression::BinaryOperation should be eliminated by lowerer"),
             ASTExpressionKind::Minus { .. } => unreachable!("ASTExpression::Minus should be eliminated by lowerer"),
+            ASTExpressionKind::Not { .. } => unreachable!("ASTExpression::Not should be eliminated by lowerer"),
             ASTExpressionKind::Index { .. } => unreachable!("ASTExpression::Index should be eliminated by lowerer"),
         };
 

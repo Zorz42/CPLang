@@ -198,6 +198,7 @@ fn gen_builtin_call(ctx: &mut CodegenContext, call: BuiltinFunctionCall) -> Stri
         BuiltinFunctionCall::GreaterEq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, ">="),
         BuiltinFunctionCall::And { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "&&"),
         BuiltinFunctionCall::Or { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "||"),
+        BuiltinFunctionCall::Not { arg } => format!("(!{})", gen_expression(ctx, *arg)),
     }
 }
 

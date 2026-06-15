@@ -453,6 +453,17 @@ impl Lowerer {
                     pos,
                 )
             }
+            ASTExpressionKind::Not(expression) => {
+                let expression = self.lower_expression(*expression);
+                ASTExpression::new(
+                    ASTExpressionKind::FunctionCall(ASTFunctionCall {
+                        name: "operator!".to_string(),
+                        arguments: vec![expression],
+                        template_arguments: Vec::new(),
+                    }),
+                    pos,
+                )
+            }
             ASTExpressionKind::AutoRef(mut expression) => {
                 *expression = self.lower_expression(*expression);
                 ASTExpression::new(ASTExpressionKind::AutoRef(expression), pos)

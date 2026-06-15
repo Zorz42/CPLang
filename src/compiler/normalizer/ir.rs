@@ -40,6 +40,7 @@ pub enum BuiltinFunctionCall {
     GreaterEq { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     And { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     Or { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
+    Not { arg: Box<IRExpression> },
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]

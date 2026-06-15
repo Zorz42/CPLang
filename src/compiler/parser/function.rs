@@ -46,6 +46,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock) -> CompilerResult<Opti
                 Token::GreaterThanOrEqual => ">=",
                 Token::And => "&&",
                 Token::Or => "||",
+                Token::Not => "!",
                 Token::BracketBlock(block) => {
                     if block.has_tokens() {
                         return Err(CompilerError {

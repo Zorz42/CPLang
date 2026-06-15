@@ -70,6 +70,7 @@ pub enum Token {
     And,                // &&
     Or,                 // ||
     Mod,                // %
+    Not,                // !
 }
 
 fn str_to_keyword(s: &str) -> Option<Token> {
@@ -111,6 +112,7 @@ const fn symbol_from_char(c: char) -> Option<Token> {
         '|' => Some(Token::Pipe),
         ',' => Some(Token::Comma),
         '%' => Some(Token::Mod),
+        '!' => Some(Token::Not),
         _ => None,
     }
 }

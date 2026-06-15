@@ -40,6 +40,12 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
 
             ASTExpression::new(ASTExpressionKind::Minus(Box::new(res)), pos)
         }
+        (Token::Not, _) => {
+            let res = parse_value(structs, block)?;
+            let pos = res.pos;
+
+            ASTExpression::new(ASTExpressionKind::Not(Box::new(res)), pos)
+        }
         (Token::Pipe, _) => {
             let res = parse_value(structs, block)?;
             let pos = res.pos;

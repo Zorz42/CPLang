@@ -172,6 +172,9 @@ pub enum ASTExpressionKind {
     },
     // prefix minus
     Minus(Box<ASTExpression>),
+    
+    // prefix not
+    Not(Box<ASTExpression>),
 }
 
 #[derive(Debug, Clone)]
