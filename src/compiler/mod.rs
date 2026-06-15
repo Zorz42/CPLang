@@ -19,10 +19,10 @@ use crate::compiler::lowerer::lower_ast;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
-use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
+use crate::compiler::tokenizer::{TokenBlock, tokenize_fragments};
 
-pub mod error;
 mod codegen;
+pub mod error;
 mod lowerer;
 mod normalizer;
 mod parser;
@@ -40,7 +40,8 @@ less different types of nodes and explicit types and indexes instead of string/n
 6. Code generation: IR is converted to C code.
  */
 
-pub const INPUT_NAMES: [&str; 6] = ["",
+pub const INPUT_NAMES: [&str; 6] = [
+    "",
     "src/core/operators.cpl",
     "src/core/range.cpl",
     "src/core/io.cpl",

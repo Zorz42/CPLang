@@ -1,8 +1,8 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
-    IR,
+    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
+    IRVariableLabel,
 };
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType, Ast, PrimitiveType,
@@ -388,9 +388,7 @@ impl Normalizer {
             ASTExpressionKind::Integer64(x) => {
                 self.type_resolver.hint_is(type_label, PrimitiveType::I64)?;
 
-                IRExpression::Constant {
-                    constant: IRConstant::Int(x),
-                }
+                IRExpression::Constant { constant: IRConstant::Int(x) }
             }
 
             ASTExpressionKind::Float(x) => {

@@ -17,7 +17,8 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
                 | Token::ModEquals
                 | Token::Increment
                 | Token::Decrement,
-                _) => block.get(),
+                _,
+            ) => block.get(),
             _ => return Ok(None),
         }
     };
@@ -25,12 +26,7 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
     let assign_to_pos = assign_to.pos;
 
     let res = match &symbol {
-        Token::Assign
-        | Token::PlusEquals
-        | Token::MinusEquals
-        | Token::MulEquals
-        | Token::DivEquals
-        | Token::ModEquals => {
+        Token::Assign | Token::PlusEquals | Token::MinusEquals | Token::MulEquals | Token::DivEquals | Token::ModEquals => {
             let value = parse_expression(structs, block)?;
             let pos = assign_to_pos + value.pos;
             match symbol {

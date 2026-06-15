@@ -94,7 +94,7 @@ impl Normalizer {
             OR_LABEL,
             NOT_LABEL,
         ]
-            .contains(&function_name)
+        .contains(&function_name)
     }
 
     pub fn get_builtin_call(
@@ -244,43 +244,33 @@ impl Normalizer {
                 };
 
                 match (&expr_type, &cast_to) {
-                    // cast i32 to *
-                    (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::I32))
-                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::I64))
-                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::F32))
-                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::F64))
-                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::Bool))
-                    | (IRType::Primitive(PrimitiveType::I32), IRType::Primitive(PrimitiveType::Char))
+                    // cast i32 and i64 to *
+                    (IRType::Primitive(PrimitiveType::I32 | PrimitiveType::I64), IRType::Primitive(
+                        PrimitiveType::I32
+                        | PrimitiveType::I64
+                        | PrimitiveType::F32
+                        | PrimitiveType::F64
+                        | PrimitiveType::Bool
+                        | PrimitiveType::Char))
 
-                    // cast i64 to *
-                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::I32))
-                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::I64))
-                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::F32))
-                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::F64))
-                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::Bool))
-                    | (IRType::Primitive(PrimitiveType::I64), IRType::Primitive(PrimitiveType::Char))
-
-                    // cast f32 to *
-                    | (IRType::Primitive(PrimitiveType::F32), IRType::Primitive(PrimitiveType::I32))
-                    | (IRType::Primitive(PrimitiveType::F32), IRType::Primitive(PrimitiveType::I64))
-                    | (IRType::Primitive(PrimitiveType::F32), IRType::Primitive(PrimitiveType::F32))
-                    | (IRType::Primitive(PrimitiveType::F32), IRType::Primitive(PrimitiveType::F64))
-
-                    // cast f64 to *
-                    | (IRType::Primitive(PrimitiveType::F64), IRType::Primitive(PrimitiveType::I32))
-                    | (IRType::Primitive(PrimitiveType::F64), IRType::Primitive(PrimitiveType::I64))
-                    | (IRType::Primitive(PrimitiveType::F64), IRType::Primitive(PrimitiveType::F32))
-                    | (IRType::Primitive(PrimitiveType::F64), IRType::Primitive(PrimitiveType::F64))
+                    // cast f32 and f64 to *
+                    | (IRType::Primitive(PrimitiveType::F32 | PrimitiveType::F64), IRType::Primitive(
+                        PrimitiveType::I32
+                        | PrimitiveType::I64
+                        | PrimitiveType::F32
+                        | PrimitiveType::F64))
 
                     // cast bool to *
-                    | (IRType::Primitive(PrimitiveType::Bool), IRType::Primitive(PrimitiveType::Bool))
-                    | (IRType::Primitive(PrimitiveType::Bool), IRType::Primitive(PrimitiveType::I32))
-                    | (IRType::Primitive(PrimitiveType::Bool), IRType::Primitive(PrimitiveType::I64))
+                    | (IRType::Primitive(PrimitiveType::Bool), IRType::Primitive(
+                        PrimitiveType::Bool
+                        | PrimitiveType::I32
+                        | PrimitiveType::I64))
 
                     // cast char to *
-                    | (IRType::Primitive(PrimitiveType::Char), IRType::Primitive(PrimitiveType::Char))
-                    | (IRType::Primitive(PrimitiveType::Char), IRType::Primitive(PrimitiveType::I32))
-                    | (IRType::Primitive(PrimitiveType::Char), IRType::Primitive(PrimitiveType::I64))
+                    | (IRType::Primitive(PrimitiveType::Char), IRType::Primitive(
+                        PrimitiveType::Char
+                        | PrimitiveType::I32
+                        | PrimitiveType::I64))
 
                     => {} // OK
 
@@ -288,7 +278,7 @@ impl Normalizer {
                         message: format!("Cannot cast {expr_type:?} to {cast_to:?}"),
                         position: Some(call_pos),
                     }),
-                };
+                }
 
                 let IRType::Primitive(to_type) = cast_to else { unreachable!() };
 

@@ -417,21 +417,21 @@ impl Lowerer {
 
                 let name = "operator".to_string()
                     + match operator {
-                    ASTOperator::Plus => "+",
-                    ASTOperator::Minus => "-",
-                    ASTOperator::Mul => "*",
-                    ASTOperator::Div => "/",
-                    ASTOperator::Mod => "%",
-                    ASTOperator::Equals => "==",
-                    ASTOperator::NotEquals => "!=",
-                    ASTOperator::Greater => ">",
-                    ASTOperator::Lesser => "<",
-                    ASTOperator::GreaterEq => ">=",
-                    ASTOperator::LesserEq => "<=",
-                    ASTOperator::And => "&&",
-                    ASTOperator::Or => "||",
-                    ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
-                };
+                        ASTOperator::Plus => "+",
+                        ASTOperator::Minus => "-",
+                        ASTOperator::Mul => "*",
+                        ASTOperator::Div => "/",
+                        ASTOperator::Mod => "%",
+                        ASTOperator::Equals => "==",
+                        ASTOperator::NotEquals => "!=",
+                        ASTOperator::Greater => ">",
+                        ASTOperator::Lesser => "<",
+                        ASTOperator::GreaterEq => ">=",
+                        ASTOperator::LesserEq => "<=",
+                        ASTOperator::And => "&&",
+                        ASTOperator::Or => "||",
+                        ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
+                    };
 
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {

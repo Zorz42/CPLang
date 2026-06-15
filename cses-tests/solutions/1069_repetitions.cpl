@@ -1,0 +1,13 @@
+fn main
+    str = read_str()
+    res = 1
+    cres = 1
+    n = str.size()
+    for i 0..n-1
+        if str[i] == str[i+1]
+            cres++
+        else
+            cres = 1
+        if cres > res
+            res = cres
+    out "{res}"
