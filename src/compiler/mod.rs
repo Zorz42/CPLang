@@ -16,10 +16,11 @@
 use crate::compiler::codegen::generate_code;
 use crate::compiler::error::CompilerResult;
 use crate::compiler::lowerer::lower_ast;
+use crate::compiler::macros::insert_macros;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
-use crate::compiler::tokenizer::{TokenBlock, tokenize_fragments};
+use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
 
 mod codegen;
 pub mod error;
@@ -29,6 +30,7 @@ mod parser;
 mod preprocessor;
 mod tokenizer;
 mod type_resolver;
+mod macros;
 /*
 The compiler works in the following steps:
 1. Preprocessing: The input source code is preprocessed to parse strings, comments, indentation and parses bracket/brace/parenthesis structure.
@@ -74,6 +76,8 @@ fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
         let block = tokenize_fragments(&block.fragments)?;
         program_block.append(&mut block.into_iter());
     }
+
+    let program_block = insert_macros(program_block)?;
 
     let ast = parse_tokens(TokenBlock::new(program_block))?;
     let ast = lower_ast(ast);

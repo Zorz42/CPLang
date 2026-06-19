@@ -40,6 +40,7 @@ pub enum Token {
     Char,
     Bool,
     Operator,
+    Macro,
 
     // symbols
     Plus,               // +
@@ -92,6 +93,7 @@ fn str_to_keyword(s: &str) -> Option<Token> {
         "char" => Some(Token::Char),
         "bool" => Some(Token::Bool),
         "operator" => Some(Token::Operator),
+        "macro" => Some(Token::Macro),
         _ => None,
     }
 }
