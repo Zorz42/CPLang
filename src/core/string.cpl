@@ -1,6 +1,6 @@
 // constructors
 fn Str
-    ret _Vec[char] _size 0 _vec _builtin_alloc(1) _capacity 1
+    ret Vec[char] _size 0 _vec _builtin_alloc(1) _capacity 1
 
 fn Str size: i32 c: char
     str = Str()

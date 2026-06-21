@@ -1,4 +1,4 @@
-struct _Vec[T]
+struct Vec[T]
     _size: i32
     _capacity: i32
     _vec: &T
@@ -33,7 +33,7 @@ struct _Vec[T]
 
 // constructors
 fn Vec[T]
-    ret _Vec[T] _size 0 _vec _builtin_alloc(1) _capacity 1
+    ret Vec[T] _size 0 _vec _builtin_alloc(1) _capacity 1
 
 fn Vec[T] size: i32 default: T
     vec = Vec()
@@ -42,7 +42,7 @@ fn Vec[T] size: i32 default: T
     ret vec
 
 struct _VecIter
-    vec: &_Vec
+    vec: &Vec
     i: i32
 
     fn has_next
