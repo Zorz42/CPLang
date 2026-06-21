@@ -1,9 +1,10 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
-    IRVariableLabel,
+    IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
+    IR,
 };
+use crate::compiler::normalizer::symbol_table::SymbolTable;
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType, Ast, PrimitiveType,
 };
@@ -16,6 +17,7 @@ mod check_refs;
 mod function_cmp;
 pub mod ir;
 mod ir_debug;
+mod symbol_table;
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     Normalizer::default().normalize_ast(ast)
@@ -32,6 +34,7 @@ pub enum ValuePhysicality {
 struct Normalizer {
     ir: IR,
     type_resolver: TypeResolver,
+    symbol_table: SymbolTable,
     variables_name_map: HashMap<String, IRVariableLabel>,
     global_variables_name_map: HashMap<String, IRVariableLabel>,
     curr_var_label: IRVariableLabel,
@@ -41,8 +44,6 @@ struct Normalizer {
     // so if tuple (a, b) exists, it means function a is more specific than b
     functions_specific_ordering: HashMap<(String, usize), Vec<(usize, usize)>>,
     curr_instance_label: IRInstanceLabel,
-    fields_name_map: HashMap<String, IRFieldLabel>,
-    curr_field_label: IRFieldLabel,
     curr_func_vars: Vec<IRVariableLabel>,
     curr_func_ret_type: IRTypeLabel,
     has_ret_statement: bool,
@@ -72,17 +73,6 @@ impl Normalizer {
     fn new_var(&mut self, name: &str) -> IRVariableLabel {
         let label = self.new_var_label();
         self.variables_name_map.insert(name.to_string(), label);
-        label
-    }
-
-    const fn new_field_label(&mut self) -> IRFieldLabel {
-        self.curr_field_label += 1;
-        self.curr_field_label - 1
-    }
-
-    fn new_field(&mut self, name: &str) -> IRFieldLabel {
-        let label = self.new_field_label();
-        self.fields_name_map.insert(name.to_string(), label);
         label
     }
 
@@ -224,13 +214,7 @@ impl Normalizer {
         let mut type_hints = Vec::new();
 
         for (field_name, field_type) in structure.fields {
-            let label = if let Some(label) = self.fields_name_map.get(&field_name) {
-                *label
-            } else {
-                let label = self.new_field(&field_name);
-                self.fields_name_map.insert(field_name, label);
-                label
-            };
+            let label = self.symbol_table.create_field(field_name);
             ir_struct.fields.push(label);
             type_hints.push(field_type);
         }
@@ -522,7 +506,7 @@ impl Normalizer {
 
             ASTExpressionKind::FieldAccess { expression, field_name } => {
                 let (expression, type_label2) = self.normalize_expression(*expression)?;
-                let Some(&field_label) = self.fields_name_map.get(&field_name) else {
+                let Some(field_label) = self.symbol_table.get_field(&field_name) else {
                     return Err(CompilerError {
                         message: format!("Unknown field {field_name}"),
                         position: Some(pos),
