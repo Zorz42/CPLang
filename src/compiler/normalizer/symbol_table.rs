@@ -1,4 +1,4 @@
-use crate::compiler::normalizer::ir::{IRFieldLabel, IRStructLabel, IRVariableLabel};
+use crate::compiler::normalizer::ir::{IRFieldLabel, IRInstanceLabel, IRStructLabel, IRVariableLabel};
 use crate::compiler::parser::ast::{ASTBlock, ASTFunctionSignature};
 use std::collections::HashMap;
 
@@ -11,14 +11,14 @@ pub struct SymbolTable {
     // struct fields
     curr_field_label: IRFieldLabel,
     fields_name_map: HashMap<String, IRFieldLabel>,
+
+    curr_struct_label: IRStructLabel,
     structs_name_map: HashMap<String, IRStructLabel>,
+
+    curr_instance_label: IRInstanceLabel,
 }
 
 impl SymbolTable {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn push_scope(&mut self) {
         todo!()
     }
@@ -40,5 +40,21 @@ impl SymbolTable {
 
     pub fn get_field(&mut self, name: &str) -> Option<IRFieldLabel> {
         self.fields_name_map.get(name).map(|x| *x)
+    }
+
+    pub fn new_instance_label(&mut self) -> IRInstanceLabel {
+        self.curr_instance_label += 1;
+        self.curr_instance_label - 1
+    }
+
+    pub fn new_struct(&mut self, name: String) -> IRStructLabel {
+        let label = self.curr_struct_label;
+        self.structs_name_map.insert(name, label);
+        self.curr_struct_label += 1;
+        label
+    }
+
+    pub fn get_struct_label(&mut self, name: &str) -> Option<IRStructLabel> {
+        self.structs_name_map.get(name).map(|x| *x)
     }
 }

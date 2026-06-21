@@ -35,6 +35,7 @@ struct Normalizer {
     ir: IR,
     type_resolver: TypeResolver,
     symbol_table: SymbolTable,
+
     variables_name_map: HashMap<String, IRVariableLabel>,
     global_variables_name_map: HashMap<String, IRVariableLabel>,
     curr_var_label: IRVariableLabel,
@@ -43,12 +44,10 @@ struct Normalizer {
     // lists all connections in the function ordering graph
     // so if tuple (a, b) exists, it means function a is more specific than b
     functions_specific_ordering: HashMap<(String, usize), Vec<(usize, usize)>>,
-    curr_instance_label: IRInstanceLabel,
     curr_func_vars: Vec<IRVariableLabel>,
     curr_func_ret_type: IRTypeLabel,
     has_ret_statement: bool,
     depth: i32,
-    structs_name_map: HashMap<String, IRStructLabel>,
     structs_type_hints: Vec<Vec<ASTType>>,
     structs_templates: Vec<Vec<(String, FilePosition)>>,
     // caches instances to avoid duplicating functions
@@ -88,10 +87,9 @@ impl Normalizer {
         for structure in ast.structs {
             let name = structure.name.clone();
             let (ir_struct, type_hints, template) = self.normalize_struct(structure);
-            let label = self.ir.structs.len() as IRStructLabel;
+            self.symbol_table.new_struct(name);
             self.structs_type_hints.push(type_hints);
             self.structs_templates.push(template);
-            self.structs_name_map.insert(name, label);
             resolver_structs.push(ir_struct.fields.clone());
             self.ir.structs.push(ir_struct);
         }
@@ -482,7 +480,7 @@ impl Normalizer {
                 fields,
                 template_arguments,
             } => {
-                let struct_label = self.structs_name_map[&name];
+                let struct_label = self.symbol_table.get_struct_label(&name).unwrap();
 
                 let field_type_labels = self.gen_struct_field_types(struct_label, template_arguments)?;
 
@@ -571,7 +569,7 @@ impl Normalizer {
                         });
                     }
                     self.type_resolver.hint_equal(label, type_label)?;
-                } else if let Some(struct_label) = self.structs_name_map.get(&name).copied() {
+                } else if let Some(struct_label) = self.symbol_table.get_struct_label(&name) {
                     // identifier is a concrete struct
                     let args = self.gen_struct_field_types(struct_label, template_args)?;
 
@@ -799,8 +797,7 @@ impl Normalizer {
 
         self.depth += 1;
         self.relevant_types.push(self.curr_func_ret_type);
-        let instance_label = self.curr_instance_label as IRInstanceLabel;
-        self.curr_instance_label += 1;
+        let instance_label = self.symbol_table.new_instance_label();
 
         self.active_instances.insert(instance_label);
 
