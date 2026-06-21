@@ -85,15 +85,15 @@ fn gen_block(arguments: &Vec<String>, block: TokenBlock, argument_values: &Vec<T
             }
             Token::BracketBlock(block) => {
                 let block = TokenBlock::new(gen_block(arguments, block, argument_values));
-                res.push((Token::BracketBlock(block), pos))
+                res.push((Token::BracketBlock(block), pos));
             }
             Token::BraceBlock(block) => {
                 let block = TokenBlock::new(gen_block(arguments, block, argument_values));
-                res.push((Token::BraceBlock(block), pos))
+                res.push((Token::BraceBlock(block), pos));
             }
             Token::ParenthesisBlock(block) => {
                 let block = TokenBlock::new(gen_block(arguments, block, argument_values));
-                res.push((Token::ParenthesisBlock(block), pos))
+                res.push((Token::ParenthesisBlock(block), pos));
             }
             _ => res.push((token, pos)),
         }

@@ -20,7 +20,7 @@ use crate::compiler::macros::insert_macros;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
-use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
+use crate::compiler::tokenizer::{TokenBlock, tokenize_fragments};
 
 mod codegen;
 pub mod error;

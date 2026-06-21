@@ -1,8 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
-    IR,
+    IR, IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
 };
 use crate::compiler::normalizer::symbol_table::SymbolTable;
 use crate::compiler::parser::ast::{
@@ -36,9 +35,6 @@ struct Normalizer {
     type_resolver: TypeResolver,
     symbol_table: SymbolTable,
 
-    variables_name_map: HashMap<String, IRVariableLabel>,
-    global_variables_name_map: HashMap<String, IRVariableLabel>,
-    curr_var_label: IRVariableLabel,
     // key is (function name, number of arguments)
     functions_name_map: HashMap<(String, usize), Vec<(ASTFunctionSignature, ASTBlock)>>,
     // lists all connections in the function ordering graph
@@ -64,17 +60,6 @@ struct Normalizer {
 }
 
 impl Normalizer {
-    const fn new_var_label(&mut self) -> IRVariableLabel {
-        self.curr_var_label += 1;
-        self.curr_var_label - 1
-    }
-
-    fn new_var(&mut self, name: &str) -> IRVariableLabel {
-        let label = self.new_var_label();
-        self.variables_name_map.insert(name.to_string(), label);
-        label
-    }
-
     fn normalize_ast(mut self, ast: Ast) -> CompilerResult<IR> {
         // add all functions into the map
         for (sig, block) in ast.functions {
@@ -137,7 +122,7 @@ impl Normalizer {
         // add all global variables
         let mut global_assignments = Vec::new();
         for (variable_name, type_hint, initial_value, ident_pos) in ast.global_variables {
-            let var_label = self.new_var(&variable_name);
+            let var_label = self.symbol_table.new_global_variable(&variable_name);
             self.ir.global_variables.push(var_label);
             let type_label = self.type_resolver.new_type_label(ident_pos);
             self.relevant_types.push(type_label);
@@ -150,9 +135,6 @@ impl Normalizer {
                 global_assignments.push((var_label, initial_value));
             }
         }
-
-        // variables_name_map got populated instead of global one
-        swap(&mut self.variables_name_map, &mut self.global_variables_name_map);
 
         if let Some(mut vec) = self.functions_name_map.get(&("main".to_string(), 0)).cloned() {
             if vec.len() != 1 {
@@ -399,9 +381,7 @@ impl Normalizer {
             }
 
             ASTExpressionKind::Variable(name) => {
-                let label = *if let Some(label) = self.variables_name_map.get(&name) {
-                    label
-                } else {
+                let Some(label) = self.symbol_table.get_variable(&name) else {
                     return Err(CompilerError {
                         message: format!("Variable with name {name} not found."),
                         position: Some(pos),
@@ -592,7 +572,7 @@ impl Normalizer {
 
     fn normalize_block(&mut self, block: ASTBlock) -> CompilerResult<IRBlock> {
         let mut res = IRBlock { statements: Vec::new() };
-        let prev_vars = self.variables_name_map.clone();
+        self.symbol_table.push_scope();
 
         for statement in block.children {
             match statement {
@@ -608,9 +588,9 @@ impl Normalizer {
 
                     // if an unknown variable is assigned, create it
                     if let Some(name) = get_lhs_variable(&assign_to)
-                        && !self.variables_name_map.contains_key(&name)
+                        && self.symbol_table.get_variable(&name).is_none()
                     {
-                        let label = self.new_var(&name);
+                        let label = self.symbol_table.new_variable(&name);
                         self.curr_func_vars.push(label);
                         let type_label = self.type_resolver.new_type_label(assign_to.pos);
                         self.ir.variable_types.push(type_label);
@@ -680,7 +660,7 @@ impl Normalizer {
             }
         }
 
-        self.variables_name_map = prev_vars;
+        self.symbol_table.pop_scope();
 
         Ok(res)
     }
@@ -774,14 +754,14 @@ impl Normalizer {
         let mut prev_func_vars = Vec::default();
         let mut prev_func_ret_type = self.type_resolver.new_type_label(sign.pos);
         let mut prev_has_ret_statement = false;
-        let mut prev_variables_name_map = self.global_variables_name_map.clone();
         let mut prev_template_types = HashMap::default();
 
         swap(&mut prev_func_vars, &mut self.curr_func_vars);
         swap(&mut prev_func_ret_type, &mut self.curr_func_ret_type);
         swap(&mut prev_has_ret_statement, &mut self.has_ret_statement);
-        swap(&mut prev_variables_name_map, &mut self.variables_name_map);
         swap(&mut prev_template_types, &mut self.template_types);
+
+        let scope_data = self.symbol_table.push_function();
 
         if self.depth == RECURSION_LIMIT {
             return Err(CompilerError {
@@ -816,7 +796,7 @@ impl Normalizer {
         let mut arguments = Vec::new();
         for ((arg, type_hint, _pos), arg_type) in sign.args.into_iter().zip(arg_types.clone()) {
             let hint_label = self.normalize_type(type_hint)?;
-            let label = self.new_var(&arg);
+            let label = self.symbol_table.new_variable(&arg);
             arguments.push(label);
             self.ir.variable_types.push(arg_type);
             self.type_resolver.hint_equal(hint_label, arg_type)?;
@@ -844,9 +824,10 @@ impl Normalizer {
         swap(&mut prev_func_vars, &mut self.curr_func_vars);
         swap(&mut prev_func_ret_type, &mut self.curr_func_ret_type);
         swap(&mut prev_has_ret_statement, &mut self.has_ret_statement);
-        swap(&mut prev_variables_name_map, &mut self.variables_name_map);
         swap(&mut prev_template_types, &mut self.template_types);
         self.depth -= 1;
+
+        self.symbol_table.pop_function(scope_data);
 
         Ok(instance_label)
     }
