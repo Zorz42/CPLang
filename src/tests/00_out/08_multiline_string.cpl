@@ -1,4 +1,4 @@
-//OUT=good
+//OUT="good"
 
 fn main
     a="Hello

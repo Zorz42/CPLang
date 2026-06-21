@@ -1,0 +1,13 @@
+//ERR 11 4 11 12
+
+macro my_macro A B C {{
+    A = B
+    D = C
+    a = A
+    out "{a+D} "
+}}
+
+
+fn main
+    my_macro A; 10;
+    out "\n"

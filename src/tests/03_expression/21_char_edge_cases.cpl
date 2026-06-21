@@ -1,4 +1,4 @@
-//OUT="{)x
+//OUT=""{)x"
 
 fn main
     a = '"'

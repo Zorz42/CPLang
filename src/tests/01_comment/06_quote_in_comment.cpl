@@ -1,4 +1,4 @@
-//OUT=it works!
+//OUT="it works!"
 
 fn main
     // "

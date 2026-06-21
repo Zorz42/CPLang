@@ -25,12 +25,12 @@ use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
 mod codegen;
 pub mod error;
 mod lowerer;
+mod macros;
 mod normalizer;
 mod parser;
 mod preprocessor;
 mod tokenizer;
 mod type_resolver;
-mod macros;
 /*
 The compiler works in the following steps:
 1. Preprocessing: The input source code is preprocessed to parse strings, comments, indentation and parses bracket/brace/parenthesis structure.

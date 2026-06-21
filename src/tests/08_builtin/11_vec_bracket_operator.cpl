@@ -1,4 +1,4 @@
-//OUT=10
+//OUT="10"
 
 struct Vec2[T]
     size: i32

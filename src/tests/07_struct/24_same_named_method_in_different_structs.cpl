@@ -1,4 +1,4 @@
-//OUT=method2
+//OUT="method2"
 
 struct S1
     fn get

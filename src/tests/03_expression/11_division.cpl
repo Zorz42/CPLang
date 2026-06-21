@@ -1,4 +1,4 @@
-//OUT=5
+//OUT="5"
 
 fn main
     out "{10/2}"

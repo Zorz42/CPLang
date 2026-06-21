@@ -1,4 +1,4 @@
-//OUT=1 532 12
+//OUT="1 532 12"
 
 fn main
     a = _builtin_alloc(3)

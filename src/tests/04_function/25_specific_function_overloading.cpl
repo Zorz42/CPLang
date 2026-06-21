@@ -1,4 +1,4 @@
-//OUT=hello 10 20
+//OUT="hello 10 20"
 
 fn func a b
     0

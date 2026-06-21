@@ -1,4 +1,4 @@
-//OUT=10 20
+//OUT="10 20"
 
 struct Point[T]
     x: T

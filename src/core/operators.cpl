@@ -1,27 +1,41 @@
-operator+ a: i32 b: i32
-    ret _builtin_add[i32](a b)
+macro _def_operator op builtin_call T1 T2 T {
+    operator op a: T1 b: T2 {
+        ret builtin_call[T](T a T b)
+    }
+}
 
-operator+ a: i64 b: i64
-    ret _builtin_add[i64](a b)
+macro _def_cmp_operator op builtin_call T1 T2 T {
+    operator op a: T1 b: T2 {
+        ret builtin_call[T](T a T b)
+    }
+}
 
-operator+ a: f32 b: f32
-    ret _builtin_add[f32](a b)
+macro _def_full_operator op builtin_call {
+    _def_operator op; builtin_call; i32; i32; i32;
+    _def_operator op; builtin_call; i64; i32; i64;
+    _def_operator op; builtin_call; f32; i32; f32;
+    _def_operator op; builtin_call; f64; i32; f64;
 
-operator+ a: f64 b: f64
-    ret _builtin_add[f64](a b)
+    _def_operator op; builtin_call; i32; i64; i64;
+    _def_operator op; builtin_call; i64; i64; i64;
+    _def_operator op; builtin_call; f32; i64; f32;
+    _def_operator op; builtin_call; f64; i64; f64;
 
+    _def_operator op; builtin_call; i32; f32; f32;
+    _def_operator op; builtin_call; i64; f32; f32;
+    _def_operator op; builtin_call; f32; f32; f32;
+    _def_operator op; builtin_call; f64; f32; f64;
 
-operator- a: i32 b: i32
-    ret _builtin_sub[i32](a b)
+    _def_operator op; builtin_call; i32; f64; f64;
+    _def_operator op; builtin_call; i64; f64; f64;
+    _def_operator op; builtin_call; f32; f64; f64;
+    _def_operator op; builtin_call; f64; f64; f64;
+}
 
-operator- a: i64 b: i64
-    ret _builtin_sub[i64](a b)
-
-operator- a: f32 b: f32
-    ret _builtin_sub[f32](a b)
-
-operator- a: f64 b: f64
-    ret _builtin_sub[f64](a b)
+_def_full_operator +; _builtin_add;
+_def_full_operator -; _builtin_sub;
+_def_full_operator *; _builtin_mul;
+_def_full_operator /; _builtin_div;
 
 operator- a: i32
     ret 0 - a
@@ -36,31 +50,37 @@ operator- a: f64
     ret 0.0 - a
 
 
-operator* a: i32 b: i32
-    ret _builtin_mul[i32](a b)
+macro _def_full_cmp_operator op builtin_call {
+    _def_cmp_operator op; builtin_call; char; char; char;
+    _def_cmp_operator op; builtin_call; i32; char; i32;
+    _def_cmp_operator op; builtin_call; i64; char; i64;
+    _def_cmp_operator op; builtin_call; f32; char; f32;
+    _def_cmp_operator op; builtin_call; f64; char; f64;
 
-operator* a: i64 b: i64
-    ret _builtin_mul[i64](a b)
+    _def_cmp_operator op; builtin_call; char; i32; i32;
+    _def_cmp_operator op; builtin_call; i32; i32; i32;
+    _def_cmp_operator op; builtin_call; i64; i32; i64;
+    _def_cmp_operator op; builtin_call; f32; i32; f32;
+    _def_cmp_operator op; builtin_call; f64; i32; f64;
 
-operator* a: f32 b: f32
-    ret _builtin_mul[f32](a b)
+    _def_cmp_operator op; builtin_call; char; i64; i64;
+    _def_cmp_operator op; builtin_call; i32; i64; i64;
+    _def_cmp_operator op; builtin_call; i64; i64; i64;
+    _def_cmp_operator op; builtin_call; f32; i64; f32;
+    _def_cmp_operator op; builtin_call; f64; i64; f64;
 
-operator* a: f64 b: f64
-    ret _builtin_mul[f64](a b)
+    _def_cmp_operator op; builtin_call; char; f32; f32;
+    _def_cmp_operator op; builtin_call; i32; f32; f32;
+    _def_cmp_operator op; builtin_call; i64; f32; f32;
+    _def_cmp_operator op; builtin_call; f32; f32; f32;
+    _def_cmp_operator op; builtin_call; f64; f32; f64;
 
-
-operator/ a: i32 b: i32
-    ret _builtin_div[i32](a b)
-
-operator/ a: i64 b: i64
-    ret _builtin_div[i64](a b)
-
-operator/ a: f32 b: f32
-    ret _builtin_div[f32](a b)
-
-operator/ a: f64 b: f64
-    ret _builtin_div[f64](a b)
-
+    _def_cmp_operator op; builtin_call; char; f64; f64;
+    _def_cmp_operator op; builtin_call; i32; f64; f64;
+    _def_cmp_operator op; builtin_call; i64; f64; f64;
+    _def_cmp_operator op; builtin_call; f32; f64; f64;
+    _def_cmp_operator op; builtin_call; f64; f64; f64;
+}
 
 operator% a: i32 b: i32
     ret _builtin_mod[i32](a b)
@@ -68,102 +88,12 @@ operator% a: i32 b: i32
 operator% a: i64 b: i64
     ret _builtin_mod[i64](a b)
 
-
-operator== a: i32 b: i32
-    ret _builtin_eq[i32](a b)
-
-operator== a: i64 b: i64
-    ret _builtin_eq[i64](a b)
-
-operator== a: f32 b: f32
-    ret _builtin_eq[f32](a b)
-
-operator== a: f64 b: f64
-    ret _builtin_eq[f64](a b)
-
-operator== a: char b: char
-    ret _builtin_eq[char](a b)
-
-
-operator!= a: i32 b: i32
-    ret _builtin_noteq[i32](a b)
-
-operator!= a: i64 b: i64
-    ret _builtin_noteq[i64](a b)
-
-operator!= a: f32 b: f32
-    ret _builtin_noteq[f32](a b)
-
-operator!= a: f64 b: f64
-    ret _builtin_noteq[f64](a b)
-
-operator!= a: char b: char
-    ret _builtin_noteq[char](a b)
-
-
-operator< a: i32 b: i32
-    ret _builtin_lesser[i32](a b)
-
-operator< a: i64 b: i64
-    ret _builtin_lesser[i64](a b)
-
-operator< a: f32 b: f32
-    ret _builtin_lesser[f32](a b)
-
-operator< a: f64 b: f64
-    ret _builtin_lesser[f64](a b)
-
-operator< a: char b: char
-    ret _builtin_lesser[char](a b)
-
-
-operator> a: i32 b: i32
-    ret _builtin_greater[i32](a b)
-
-operator> a: i64 b: i64
-    ret _builtin_greater[i64](a b)
-
-operator> a: f32 b: f32
-    ret _builtin_greater[f32](a b)
-
-operator> a: f64 b: f64
-    ret _builtin_greater[f64](a b)
-
-operator> a: char b: char
-    ret _builtin_greater[char](a b)
-
-
-operator<= a: i32 b: i32
-    ret _builtin_lessereq[i32](a b)
-
-operator<= a: i64 b: i64
-    ret _builtin_lessereq[i64](a b)
-
-operator<= a: f32 b: f32
-    ret _builtin_lessereq[f32](a b)
-
-operator<= a: f64 b: f64
-    ret _builtin_lessereq[f64](a b)
-
-operator<= a: char b: char
-    ret _builtin_lessereq[char](a b)
-
-
-operator>= a: i32 b: i32
-    ret _builtin_greatereq[i32](a b)
-
-operator>= a: i64 b: i64
-    ret _builtin_greatereq[i64](a b)
-
-operator>= a: f32 b: f32
-    ret _builtin_greatereq[f32](a b)
-
-operator>= a: f64 b: f64
-    ret _builtin_greatereq[f64](a b)
-
-operator>= a: char b: char
-    ret _builtin_greatereq[char](a b)
-
+_def_full_cmp_operator ==; _builtin_eq;
+_def_full_cmp_operator !=; _builtin_noteq;
+_def_full_cmp_operator <; _builtin_lesser;
+_def_full_cmp_operator <=; _builtin_lessereq;
+_def_full_cmp_operator >; _builtin_greater;
+_def_full_cmp_operator >=; _builtin_greatereq;
 
 operator&& a: bool b: bool
     ret _builtin_and[bool](a b)

@@ -1,4 +1,4 @@
-//OUT=22
+//OUT="22"
 
 fn func[] x
     ret x + 10

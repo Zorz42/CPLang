@@ -1,4 +1,4 @@
-//OUT=OK
+//OUT="OK"
 
 fn assert x: bool
     if !x

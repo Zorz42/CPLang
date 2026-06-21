@@ -1,4 +1,4 @@
-//OUT=ok
+//OUT="ok"
 
 struct Box[T]
     x: T

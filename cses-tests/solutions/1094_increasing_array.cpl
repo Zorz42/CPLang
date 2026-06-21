@@ -5,7 +5,7 @@ fn main
     for i 0..n
         x = read_i32()
         if x < prv
-            res += i64(prv - x)
+            res += prv - x
         else
             prv = x
     out "{res}"

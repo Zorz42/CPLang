@@ -1,4 +1,4 @@
-//OUT=10
+//OUT="10"
 
 operator+ a: string b: string
     ret 10

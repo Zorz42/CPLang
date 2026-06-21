@@ -1,4 +1,4 @@
-//OUT=ab c
+//OUT="ab c"
 
 fn main
     a: char = 'a'

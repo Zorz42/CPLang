@@ -1,4 +1,4 @@
-//OUT=10 hello
+//OUT="10 hello"
 
 struct MyStruct
     x: i32, string

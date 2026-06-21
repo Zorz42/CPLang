@@ -1,4 +1,4 @@
-//OUT=compile
+//OUT="compile"
 
 fn func
     if 10 == 10

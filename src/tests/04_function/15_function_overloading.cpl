@@ -1,4 +1,4 @@
-//OUT=22 OK
+//OUT="22 OK"
 
 fn func x: i32
     ret x + 10

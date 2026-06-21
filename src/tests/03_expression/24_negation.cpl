@@ -1,4 +1,4 @@
-//OUT=1
+//OUT="1"
 
 fn main
     out "{!false || !false}"

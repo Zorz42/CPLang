@@ -1,4 +1,4 @@
-//OUT=hello 12
+//OUT="hello 12"
 
 fn main
     a = 10

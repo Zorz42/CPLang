@@ -1,4 +1,4 @@
-//OUT=compile
+//OUT="compile"
 
 struct S
     fn dummy

@@ -1,4 +1,4 @@
-//OUT=60
+//OUT="60"
 
 fn test a: ? b c
     ret a + b + c

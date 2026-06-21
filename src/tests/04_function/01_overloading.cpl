@@ -1,4 +1,4 @@
-//OUT=Hello, 10
+//OUT="Hello, 10"
 
 fn id x
     ret x

@@ -65,6 +65,7 @@ pub enum Token {
     Increment,          // ++
     Decrement,          // --
     Colon,              // :
+    Semicolon,          // :
     QuestionMark,       // ?
     Pipe,               // |
     DotDot,             // ..
@@ -110,6 +111,7 @@ const fn symbol_from_char(c: char) -> Option<Token> {
         '&' => Some(Token::Reference),
         '.' => Some(Token::Dot),
         ':' => Some(Token::Colon),
+        ';' => Some(Token::Semicolon),
         '?' => Some(Token::QuestionMark),
         '|' => Some(Token::Pipe),
         ',' => Some(Token::Comma),

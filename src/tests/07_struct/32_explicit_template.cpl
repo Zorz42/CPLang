@@ -1,4 +1,4 @@
-//OUT=ok
+//OUT="ok"
 
 struct Obj[T]
     x: T

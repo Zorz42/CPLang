@@ -1,4 +1,4 @@
-//OUT=it works! 50
+//OUT="it works! 50"
 
 fn func/*a*/x/*bbb*/y
     ret x + y

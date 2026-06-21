@@ -1,4 +1,4 @@
-//OUT=30
+//OUT="30"
 
 fn main
     a = 0

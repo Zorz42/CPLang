@@ -1,4 +1,4 @@
-//OUT=17 36
+//OUT="17 36"
 
 struct Vec2[T]
     size

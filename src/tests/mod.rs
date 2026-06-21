@@ -2,7 +2,7 @@
 #[allow(clippy::module_inception)]
 mod tests {
     use crate::compiler::compile;
-    use crate::compiler::error::{FilePosition, display_error};
+    use crate::compiler::error::{display_error, FilePosition};
     use std::hash::Hasher;
     use std::thread::sleep;
     use std::time::Duration;
@@ -75,8 +75,9 @@ mod tests {
                 std::fs::remove_file(&c_file).unwrap();
                 panic!("Expected error, but got compilation success");
             }
-        } else if let Some(stripped) = first_line.strip_prefix("//OUT=") {
-            let expected_output = stripped.to_string();
+        } else if let Some(stripped) = first_line.strip_prefix("//OUT=\"") {
+            let expected_output = stripped.to_owned();
+            let expected_output = expected_output.strip_suffix('"').unwrap().to_owned();
 
             if let Err(e) = compile(test_file, &c_file) {
                 display_error(&e, test_file, &binding);
@@ -101,7 +102,7 @@ mod tests {
 
             assert_eq!(String::from_utf8(output.stdout).unwrap(), expected_output);
         } else {
-            panic!("Invalid test file, first line must start with //ERR or //OUT=");
+            panic!("Invalid test file, first line must start with //ERR or //OUT=\"{{expected output}}\"");
         }
     }
 
