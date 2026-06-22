@@ -90,7 +90,7 @@ fn str_to_keyword(s: &str) -> Option<Token> {
         "f32" => Some(Token::F32),
         "f64" => Some(Token::F64),
         "void" => Some(Token::Void),
-        "string" => Some(Token::String),
+        "_string" => Some(Token::String),
         "char" => Some(Token::Char),
         "bool" => Some(Token::Bool),
         "operator" => Some(Token::Operator),

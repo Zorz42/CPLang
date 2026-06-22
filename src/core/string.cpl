@@ -8,7 +8,7 @@ fn Str size: i32 c: char
         str.push(c)
     ret str
 
-fn Str str: string
+fn _Str_from_raw str: _string
     str = Str()
     i = 0
     while _builtin_index(str i) != char 0

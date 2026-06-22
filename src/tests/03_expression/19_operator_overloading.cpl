@@ -1,8 +1,8 @@
 //OUT="10"
 
-operator+ a: string b: string
+operator+ a: bool b: bool
     ret 10
 
 fn main
-    a = "a" + "b"
+    a = true + false
     out "{a}"

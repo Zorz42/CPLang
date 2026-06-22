@@ -1,8 +1,8 @@
 //OUT="ok"
 
 struct TestStruct
-    x: string
+    x: i32
 
 fn main
-    a = TestStruct x "compile"
+    a = TestStruct x 10
     out "ok"

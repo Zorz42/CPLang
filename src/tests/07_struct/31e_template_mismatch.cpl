@@ -3,8 +3,8 @@
 struct Obj[T]
     x: T
     y: T
-    z: string
+    z: f32
 
 fn main
-    a = Obj x 10 y "not ok" z "ok"
+    a = Obj x 10 y "not ok" z 1.0
     out "{a.z}"
