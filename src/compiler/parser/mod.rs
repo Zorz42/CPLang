@@ -1,10 +1,11 @@
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::parser::assignment::parse_global_variable_declaration;
 use crate::compiler::parser::ast::Ast;
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::function::parse_function_declaration;
 use crate::compiler::parser::structure::parse_struct_declaration;
 use crate::compiler::tokenizer::TokenBlock;
+use std::collections::HashSet;
 use std::mem::swap;
 
 pub mod assignment;
@@ -31,10 +32,18 @@ pub fn parse_tokens(mut program_block: TokenBlock) -> CompilerResult<Ast> {
         structs: Vec::new(),
         global_variables: Vec::new(),
     };
+    let mut taken_struct_names = HashSet::new();
     while program_block.has_tokens() {
         if let Some(declaration) = parse_function_declaration(&mut program_block)? {
             function_declarations.push(declaration);
         } else if let Some(struct_declaration) = parse_struct_declaration(&mut program_block)? {
+            if taken_struct_names.contains(&struct_declaration.name) {
+                return Err(CompilerError {
+                    message: format!("Struct {} has been declared multiple times.", struct_declaration.name),
+                    position: None,
+                });
+            }
+            taken_struct_names.insert(struct_declaration.name.clone());
             res.structs.push(struct_declaration);
         } else {
             let global_declaration = parse_global_variable_declaration(&res.structs, &mut program_block)?;
