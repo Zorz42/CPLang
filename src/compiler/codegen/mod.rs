@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel,
+    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
+    IRVariableLabel, IR,
 };
 use crate::compiler::parser::ast::PrimitiveType;
 use std::collections::HashMap;
@@ -21,9 +21,7 @@ struct CodegenContext {
 const OUTPUT_TEMPLATE: &str = r"
 #include<sys/mman.h>
 #include<stdint.h>
-#include<stddef.h>
 #include<stdio.h>
-#include<stdlib.h>
 
 #define ARENA_SIZE 1024ull*1024*1024
 static uint8_t* arena;
@@ -100,7 +98,7 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
