@@ -1,8 +1,9 @@
 use crate::compiler::compile;
-use crate::compiler::error::display_error;
+use crate::display_error::display_error;
 
 mod compiler;
 mod tests;
+mod display_error;
 
 fn print_usage(program_name: &str) {
     eprintln!("Usage: {} <input_file> -o <output_file>", program_name);

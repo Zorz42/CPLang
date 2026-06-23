@@ -20,7 +20,7 @@ use crate::compiler::macros::insert_macros;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
-use crate::compiler::tokenizer::{TokenBlock, tokenize_fragments};
+use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
 
 mod codegen;
 pub mod error;
@@ -41,16 +41,6 @@ The compiler works in the following steps:
 less different types of nodes and explicit types and indexes instead of string/name labels.
 6. Code generation: IR is converted to C code.
  */
-
-pub const INPUT_NAMES: [&str; 7] = [
-    "",
-    "src/core/operators.cpl",
-    "src/core/range.cpl",
-    "src/core/io.cpl",
-    "src/core/vector.cpl",
-    "src/core/string.cpl",
-    "src/core/print.cpl",
-];
 
 pub fn gain_input_sources(input_content: String) -> [String; 7] {
     [
@@ -91,6 +81,12 @@ fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
     Ok(())
 }
 
+/// Compiles `input_file` into `output_file`. Both are paths.
+/// # Panics
+/// Should never panic
+///
+/// # Errors
+/// Returns compilation error
 pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     // Run compilation in a thread with a large stack size to handle deep recursion
     const STACK_SIZE: usize = 256 * 1024 * 1024; // 256MB
