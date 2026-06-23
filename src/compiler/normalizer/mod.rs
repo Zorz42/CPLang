@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR,
+    IR, IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
 };
 use crate::compiler::normalizer::symbol_table::SymbolTable;
 use crate::compiler::parser::ast::{
