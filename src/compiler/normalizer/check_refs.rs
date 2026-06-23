@@ -1,6 +1,6 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
+use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IRBlock, IRExpression, IRInstance, IRStatement, IR};
 use crate::compiler::normalizer::ValuePhysicality;
-use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IR, IRBlock, IRExpression, IRInstance, IRStatement};
 // this file implements the pass of IR that happens in normalizer and checks
 // that all lhs in assignments are physical and resolves all autorefs
 
@@ -41,10 +41,6 @@ fn check_refs_statement(statement: IRStatement, autorefs: &[i32]) -> CompilerRes
         },
         IRStatement::Expression { expr } => IRStatement::Expression {
             expr: check_refs_expression(expr, autorefs)?.0,
-        },
-        IRStatement::Print { expr, type_label } => IRStatement::Print {
-            expr: check_refs_expression(expr, autorefs)?.0,
-            type_label,
         },
         IRStatement::Return { return_value } => IRStatement::Return {
             return_value: return_value
@@ -177,7 +173,14 @@ fn check_refs_builtin(call: BuiltinFunctionCall, autorefs: &[i32]) -> CompilerRe
             arr: Box::new(check_refs_expression(*arr, autorefs)?.0),
             idx: Box::new(check_refs_expression(*idx, autorefs)?.0),
         },
+        BuiltinFunctionCall::IndexStr { string, idx } => BuiltinFunctionCall::IndexStr {
+            string: Box::new(check_refs_expression(*string, autorefs)?.0),
+            idx: Box::new(check_refs_expression(*idx, autorefs)?.0),
+        },
         BuiltinFunctionCall::Getchar {} => call,
+        BuiltinFunctionCall::Putchar { arg } => BuiltinFunctionCall::Putchar {
+            arg: Box::new(check_refs_expression(*arg, autorefs)?.0)
+        },
         BuiltinFunctionCall::Cast { arg, to_type } => BuiltinFunctionCall::Cast {
             arg: Box::new(check_refs_expression(*arg, autorefs)?.0),
             to_type,

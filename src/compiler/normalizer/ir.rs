@@ -26,7 +26,9 @@ pub struct IR {
 pub enum BuiltinFunctionCall {
     Alloc { typ: IRTypeLabel, num: Box<IRExpression> },
     Index { arr: Box<IRExpression>, idx: Box<IRExpression> },
+    IndexStr { string: Box<IRExpression>, idx: Box<IRExpression> },
     Getchar {},
+    Putchar { arg: Box<IRExpression> },
     Cast { arg: Box<IRExpression>, to_type: PrimitiveType },
     Add { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
     Sub { arg1: Box<IRExpression>, arg2: Box<IRExpression> },
@@ -117,10 +119,6 @@ pub enum IRStatement {
     },
     Expression {
         expr: IRExpression,
-    },
-    Print {
-        expr: IRExpression,
-        type_label: IRTypeLabel,
     },
     Return {
         return_value: Option<IRExpression>,

@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType,
-    IRTypeLabel, IRVariableLabel,
+    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
+    IRVariableLabel, IR,
 };
 use crate::compiler::parser::ast::PrimitiveType;
 use std::collections::HashMap;
@@ -100,7 +100,7 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -158,22 +158,6 @@ fn gen_variable_label(func: IRVariableLabel) -> String {
     format!("var{func}")
 }
 
-fn type_to_printf_format(typ: &IRType) -> &'static str {
-    match typ {
-        IRType::Primitive(typ) => match typ {
-            PrimitiveType::I32 | PrimitiveType::Bool => "d",
-            PrimitiveType::I64 => "ld",
-            PrimitiveType::F32 => "f",
-            PrimitiveType::F64 => "lf",
-            PrimitiveType::String => "s",
-            PrimitiveType::Char => "c",
-            PrimitiveType::Void => unreachable!(),
-        },
-        IRType::Reference(typ) => type_to_printf_format(typ),
-        IRType::Struct(_, _) => todo!(),
-    }
-}
-
 fn gen_builtin_call(ctx: &mut CodegenContext, call: BuiltinFunctionCall) -> String {
     fn gen_op(ctx: &mut CodegenContext, arg1: IRExpression, arg2: IRExpression, op: &str) -> String {
         format!("({} {} {})", gen_expression(ctx, arg1), op, gen_expression(ctx, arg2))
@@ -184,7 +168,9 @@ fn gen_builtin_call(ctx: &mut CodegenContext, call: BuiltinFunctionCall) -> Stri
             format!("bump_malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
         }
         BuiltinFunctionCall::Index { arr, idx } => format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
+        BuiltinFunctionCall::IndexStr { string, idx } => format!("({})[{}]", gen_expression(ctx, *string), gen_expression(ctx, *idx)),
         BuiltinFunctionCall::Getchar {} => "getchar()".to_string(),
+        BuiltinFunctionCall::Putchar { arg } => format!("putchar({})", gen_expression(ctx, *arg)),
         BuiltinFunctionCall::Cast { arg, to_type } => format!("({})({})", gen_primitive_type(to_type), gen_expression(ctx, *arg)),
         BuiltinFunctionCall::Add { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "+"),
         BuiltinFunctionCall::Sub { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "-"),
@@ -289,14 +275,6 @@ fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String) -> S
                 format!("while({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new()))
             }
             IRStatement::Expression { expr } => format!("{};", gen_expression(ctx, expr)),
-            IRStatement::Print { expr, type_label } => {
-                let typ = ctx.types[&type_label].clone();
-                if typ == IRType::Primitive(PrimitiveType::Void) {
-                    String::new()
-                } else {
-                    format!("printf(\"%{}\",{});", type_to_printf_format(&typ), gen_expression(ctx, expr))
-                }
-            }
             IRStatement::Return { return_value } => return_value.map_or_else(
                 || "return;".to_string(),
                 |return_value| format!("return {};", gen_expression(ctx, return_value)),

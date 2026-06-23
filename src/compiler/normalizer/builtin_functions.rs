@@ -9,7 +9,9 @@ pub fn is_builtin_identifier(name: &str) -> bool {
 
 const ALLOC_LABEL: &str = "_builtin_alloc";
 const INDEX_LABEL: &str = "_builtin_index";
+const INDEX_STR_LABEL: &str = "_builtin_index_str";
 const GETCHAR_LABEL: &str = "_builtin_getchar";
+const PUTCHAR_LABEL: &str = "_builtin_putchar";
 const CAST_LABEL: &str = "_builtin_cast";
 const ADD_LABEL: &str = "_builtin_add";
 const SUB_LABEL: &str = "_builtin_sub";
@@ -77,7 +79,9 @@ impl Normalizer {
         [
             ALLOC_LABEL,
             INDEX_LABEL,
+            INDEX_STR_LABEL,
             GETCHAR_LABEL,
+            PUTCHAR_LABEL,
             CAST_LABEL,
             ADD_LABEL,
             SUB_LABEL,
@@ -94,7 +98,7 @@ impl Normalizer {
             OR_LABEL,
             NOT_LABEL,
         ]
-        .contains(&function_name)
+            .contains(&function_name)
     }
 
     pub fn get_builtin_call(
@@ -106,24 +110,26 @@ impl Normalizer {
         call_pos: FilePosition,
     ) -> CompilerResult<(BuiltinFunctionCall, IRTypeLabel)> {
         let num_arguments = match function_name {
-            label if label == ALLOC_LABEL => 1,
-            label if label == INDEX_LABEL => 2,
-            label if label == GETCHAR_LABEL => 0,
-            label if label == CAST_LABEL => 1,
-            label if label == ADD_LABEL => 2,
-            label if label == SUB_LABEL => 2,
-            label if label == MUL_LABEL => 2,
-            label if label == DIV_LABEL => 2,
-            label if label == MOD_LABEL => 2,
-            label if label == LESSER_LABEL => 2,
-            label if label == GREATER_LABEL => 2,
-            label if label == LESSEREQ_LABEL => 2,
-            label if label == GREATEREQ_LABEL => 2,
-            label if label == EQ_LABEL => 2,
-            label if label == NOTEQ_LABEL => 2,
-            label if label == AND_LABEL => 2,
-            label if label == OR_LABEL => 2,
-            label if label == NOT_LABEL => 1,
+            ALLOC_LABEL => 1,
+            INDEX_LABEL => 2,
+            INDEX_STR_LABEL => 2,
+            GETCHAR_LABEL => 0,
+            PUTCHAR_LABEL => 1,
+            CAST_LABEL => 1,
+            ADD_LABEL => 2,
+            SUB_LABEL => 2,
+            MUL_LABEL => 2,
+            DIV_LABEL => 2,
+            MOD_LABEL => 2,
+            LESSER_LABEL => 2,
+            GREATER_LABEL => 2,
+            LESSEREQ_LABEL => 2,
+            GREATEREQ_LABEL => 2,
+            EQ_LABEL => 2,
+            NOTEQ_LABEL => 2,
+            AND_LABEL => 2,
+            OR_LABEL => 2,
+            NOT_LABEL => 1,
             _ => unreachable!(),
         };
 
@@ -135,24 +141,26 @@ impl Normalizer {
         }
 
         let template_arguments_limit = match function_name {
-            label if label == ALLOC_LABEL => (0, 1),
-            label if label == INDEX_LABEL => (0, 0),
-            label if label == GETCHAR_LABEL => (0, 0),
-            label if label == CAST_LABEL => (1, 1),
-            label if label == ADD_LABEL => (1, 1),
-            label if label == SUB_LABEL => (1, 1),
-            label if label == MUL_LABEL => (1, 1),
-            label if label == DIV_LABEL => (1, 1),
-            label if label == MOD_LABEL => (1, 1),
-            label if label == LESSER_LABEL => (1, 1),
-            label if label == GREATER_LABEL => (1, 1),
-            label if label == LESSEREQ_LABEL => (1, 1),
-            label if label == GREATEREQ_LABEL => (1, 1),
-            label if label == EQ_LABEL => (1, 1),
-            label if label == NOTEQ_LABEL => (1, 1),
-            label if label == AND_LABEL => (1, 1),
-            label if label == OR_LABEL => (1, 1),
-            label if label == NOT_LABEL => (0, 0),
+            ALLOC_LABEL => (0, 1),
+            INDEX_LABEL => (0, 0),
+            INDEX_STR_LABEL => (0, 0),
+            GETCHAR_LABEL => (0, 0),
+            PUTCHAR_LABEL => (0, 0),
+            CAST_LABEL => (1, 1),
+            ADD_LABEL => (1, 1),
+            SUB_LABEL => (1, 1),
+            MUL_LABEL => (1, 1),
+            DIV_LABEL => (1, 1),
+            MOD_LABEL => (1, 1),
+            LESSER_LABEL => (1, 1),
+            GREATER_LABEL => (1, 1),
+            LESSEREQ_LABEL => (1, 1),
+            GREATEREQ_LABEL => (1, 1),
+            EQ_LABEL => (1, 1),
+            NOTEQ_LABEL => (1, 1),
+            AND_LABEL => (1, 1),
+            OR_LABEL => (1, 1),
+            NOT_LABEL => (0, 0),
             _ => unreachable!(),
         };
 
@@ -210,10 +218,39 @@ impl Normalizer {
                 ))
             }
 
+            INDEX_STR_LABEL => {
+                let index_expr = function_arguments.pop().unwrap();
+                let str_expr = function_arguments.pop().unwrap();
+
+                self.type_resolver.hint_is(expr_types[1], PrimitiveType::I32)?;
+                self.type_resolver.hint_is(expr_types[0], PrimitiveType::String)?;
+
+                let char_type = self.type_resolver.new_type_label(call_pos);
+                self.type_resolver.hint_is(char_type, PrimitiveType::Char)?;
+
+                Ok((
+                    BuiltinFunctionCall::IndexStr {
+                        string: Box::new(str_expr),
+                        idx: Box::new(index_expr),
+                    },
+                    char_type
+                ))
+            }
+
             GETCHAR_LABEL => {
                 let char_type = self.type_resolver.new_type_label(FilePosition::unknown());
                 self.type_resolver.hint_is(char_type, PrimitiveType::Char)?;
                 Ok((BuiltinFunctionCall::Getchar {}, char_type))
+            }
+
+            PUTCHAR_LABEL => {
+                let char_expr = function_arguments.pop().unwrap();
+
+                self.type_resolver.hint_is(expr_types[0], PrimitiveType::Char)?;
+
+                let ret_type = self.type_resolver.new_type_label(FilePosition::unknown());
+                self.type_resolver.hint_is(ret_type, PrimitiveType::Void)?;
+                Ok((BuiltinFunctionCall::Putchar { arg: Box::new(char_expr) }, ret_type))
             }
 
             NOT_LABEL => {
@@ -290,8 +327,8 @@ impl Normalizer {
 
             _ => define_builtin_ops!(
                 self, function_name, function_arguments, expr_types, template_types, call_pos;
-                ADD_LABEL       => Add(false, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
-                SUB_LABEL       => Sub(false, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
+                ADD_LABEL       => Add(false, [PrimitiveType::Char, PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
+                SUB_LABEL       => Sub(false, [PrimitiveType::Char, PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
                 MUL_LABEL       => Mul(false, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
                 DIV_LABEL       => Div(false, [PrimitiveType::I32, PrimitiveType::I64, PrimitiveType::F32, PrimitiveType::F64]),
                 MOD_LABEL       => Mod(false, [PrimitiveType::I32, PrimitiveType::I64]),
@@ -311,9 +348,11 @@ impl Normalizer {
 impl BuiltinFunctionCall {
     pub const fn get_value_physicality(&self) -> ValuePhysicality {
         match self {
-            Self::Index { .. } => ValuePhysicality::Physical,
+            Self::Index { .. }
+            | Self::IndexStr { .. } => ValuePhysicality::Physical,
             Self::Alloc { .. }
             | Self::Getchar { .. }
+            | Self::Putchar { .. }
             | Self::Cast { .. }
             | Self::And { .. }
             | Self::Or { .. }

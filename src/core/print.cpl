@@ -1,0 +1,48 @@
+fn print x: char
+    _builtin_putchar(x)
+
+fn print x: Vec[char]
+    for c x
+        print(c)
+
+fn print x: i32
+    print(i64 x)
+
+fn print x: i64
+    if x == 0
+        print('0')
+        ret
+
+    if x < 0
+        print('-')
+        x = -x
+
+    s = Str()
+    while x != 0
+        s.push(x % 10 + '0')
+        x /= 10
+
+    for i 0..s.size()
+        print(s[s.size() - 1 - i])
+
+fn print x: f32
+    print(f64 x)
+
+fn print x: f64
+    if x < 0
+        print('-')
+        x = -x
+
+    x *= 1000000000
+    s = Str()
+    while x >= 1 || s.size() < 11
+        s.push((i32 x) % 10 + '0')
+        if(s.size() == 9)
+            s.push('.')
+        x /= 10
+
+    for i 0..s.size()
+        print(s[s.size() - 1 - i])
+
+fn print x: bool
+    print('0' + i32 x)

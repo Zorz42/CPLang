@@ -305,10 +305,17 @@ impl Lowerer {
             ASTExpressionKind::Integer32(_)
             | ASTExpressionKind::Integer64(_)
             | ASTExpressionKind::Float(_)
-            | ASTExpressionKind::String(_)
             | ASTExpressionKind::Boolean(_)
             | ASTExpressionKind::Variable(_)
             | ASTExpressionKind::Char(_) => expression,
+
+            ASTExpressionKind::String(_) => {
+                ASTExpression::new(ASTExpressionKind::FunctionCall(ASTFunctionCall {
+                    name: "_Str_from_raw".to_owned(),
+                    arguments: vec![expression],
+                    template_arguments: Vec::new(),
+                }), pos)
+            }
 
             ASTExpressionKind::TupleInitialization(expressions) => {
                 self.touch_tuple(expressions.len());
@@ -417,21 +424,21 @@ impl Lowerer {
 
                 let name = "operator".to_string()
                     + match operator {
-                        ASTOperator::Plus => "+",
-                        ASTOperator::Minus => "-",
-                        ASTOperator::Mul => "*",
-                        ASTOperator::Div => "/",
-                        ASTOperator::Mod => "%",
-                        ASTOperator::Equals => "==",
-                        ASTOperator::NotEquals => "!=",
-                        ASTOperator::Greater => ">",
-                        ASTOperator::Lesser => "<",
-                        ASTOperator::GreaterEq => ">=",
-                        ASTOperator::LesserEq => "<=",
-                        ASTOperator::And => "&&",
-                        ASTOperator::Or => "||",
-                        ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
-                    };
+                    ASTOperator::Plus => "+",
+                    ASTOperator::Minus => "-",
+                    ASTOperator::Mul => "*",
+                    ASTOperator::Div => "/",
+                    ASTOperator::Mod => "%",
+                    ASTOperator::Equals => "==",
+                    ASTOperator::NotEquals => "!=",
+                    ASTOperator::Greater => ">",
+                    ASTOperator::Lesser => "<",
+                    ASTOperator::GreaterEq => ">=",
+                    ASTOperator::LesserEq => "<=",
+                    ASTOperator::And => "&&",
+                    ASTOperator::Or => "||",
+                    ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
+                };
 
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {
@@ -569,9 +576,29 @@ impl Lowerer {
                 return_value: return_value.map(|x| self.lower_expression(x)),
                 pos,
             },
-            ASTStatement::Print { values } => ASTStatement::Print {
-                values: self.lower_expressions(values),
-            },
+            ASTStatement::Print { values } => {
+                let values = self.lower_expressions(values);
+                let mut block = Vec::new();
+
+                for value in values {
+                    let pos = value.pos;
+                    block.push(ASTStatement::Expression {
+                        expression: ASTExpression::new(ASTExpressionKind::FunctionCall(
+                            ASTFunctionCall {
+                                name: "print".to_owned(),
+                                arguments: vec![value],
+                                template_arguments: Vec::new(),
+                            }
+                        ), pos)
+                    })
+                }
+
+                ASTStatement::SemiBlock {
+                    block: ASTBlock {
+                        children: block,
+                    }
+                }
+            }
             ASTStatement::Expression { expression } => ASTStatement::Expression {
                 expression: self.lower_expression(expression),
             },

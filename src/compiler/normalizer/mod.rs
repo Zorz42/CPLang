@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
+    IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR,
 };
 use crate::compiler::normalizer::symbol_table::SymbolTable;
 use crate::compiler::parser::ast::{
@@ -613,15 +613,6 @@ impl Normalizer {
                         expr: self.normalize_expression(expression)?.0,
                     });
                 }
-                ASTStatement::Print { values } => {
-                    let vals = values;
-                    for val in vals {
-                        let (expr, type_label) = self.normalize_expression(val)?;
-                        self.type_resolver.hint_is_phys(type_label)?;
-                        self.relevant_types.push(type_label);
-                        res.statements.push(IRStatement::Print { expr, type_label });
-                    }
-                }
                 ASTStatement::Return { return_value, pos: _ } => {
                     self.has_ret_statement = true;
                     let st = if let Some(expr) = return_value {
@@ -657,6 +648,7 @@ impl Normalizer {
                 ASTStatement::AssignmentIncrement { .. } => unreachable!("ASTStatement::AssignmentIncrement should be eliminated by lowerer"),
                 ASTStatement::AssignmentDecrement { .. } => unreachable!("ASTStatement::AssignmentDecrement should be eliminated by lowerer"),
                 ASTStatement::For { .. } => unreachable!("ASTStatement::For should be eliminated by lowerer"),
+                ASTStatement::Print { .. } => unreachable!("ASTStatement::Print should be eliminated by lowerer"),
             }
         }
 

@@ -20,7 +20,7 @@ use crate::compiler::macros::insert_macros;
 use crate::compiler::normalizer::normalize_ast;
 use crate::compiler::parser::parse_tokens;
 use crate::compiler::preprocessor::preprocess;
-use crate::compiler::tokenizer::{TokenBlock, tokenize_fragments};
+use crate::compiler::tokenizer::{tokenize_fragments, TokenBlock};
 
 mod codegen;
 pub mod error;
@@ -42,16 +42,17 @@ less different types of nodes and explicit types and indexes instead of string/n
 6. Code generation: IR is converted to C code.
  */
 
-pub const INPUT_NAMES: [&str; 6] = [
+pub const INPUT_NAMES: [&str; 7] = [
     "",
     "src/core/operators.cpl",
     "src/core/range.cpl",
     "src/core/io.cpl",
     "src/core/vector.cpl",
     "src/core/string.cpl",
+    "src/core/print.cpl",
 ];
 
-pub fn gain_input_sources(input_content: String) -> [String; 6] {
+pub fn gain_input_sources(input_content: String) -> [String; 7] {
     [
         input_content,
         include_str!("../core/operators.cpl").to_string(),
@@ -59,6 +60,7 @@ pub fn gain_input_sources(input_content: String) -> [String; 6] {
         include_str!("../core/io.cpl").to_string(),
         include_str!("../core/vector.cpl").to_string(),
         include_str!("../core/string.cpl").to_string(),
+        include_str!("../core/print.cpl").to_string(),
     ]
 }
 

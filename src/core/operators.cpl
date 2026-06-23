@@ -32,8 +32,17 @@ macro _def_full_operator op builtin_call {
     _def_operator op; builtin_call; f64; f64; f64;
 }
 
+macro _def_operator_with_char op builtin_call {
+    _def_operator op; builtin_call; char; i32; char;
+    _def_operator op; builtin_call; char; i64; char;
+    _def_operator op; builtin_call; i32; char; char;
+    _def_operator op; builtin_call; i64; char; char;
+}
+
 _def_full_operator +; _builtin_add;
+_def_operator_with_char +; _builtin_add;
 _def_full_operator -; _builtin_sub;
+_def_operator_with_char -; _builtin_sub;
 _def_full_operator *; _builtin_mul;
 _def_full_operator /; _builtin_div;
 
@@ -87,6 +96,12 @@ operator% a: i32 b: i32
 
 operator% a: i64 b: i64
     ret _builtin_mod[i64](a b)
+
+operator% a: i64 b: i32
+    ret _builtin_mod[i64](a i64 b)
+
+operator% a: i32 b: i64
+    ret _builtin_mod[i64](i64 a b)
 
 _def_full_cmp_operator ==; _builtin_eq;
 _def_full_cmp_operator !=; _builtin_noteq;

@@ -1,18 +1,15 @@
 // constructors
 fn Str
-    ret Vec[char] _size 0 _vec _builtin_alloc(1) _capacity 1
+    ret Vec[char]()
 
 fn Str size: i32 c: char
-    str = Str()
-    for i 0..size
-        str.push(c)
-    ret str
+    ret Vec[char](size c)
 
 fn _Str_from_raw str: _string
-    str = Str()
+    res = Str()
     i = 0
-    while _builtin_index(str i) != char 0
-        str.push(_builtin_index(str i))
+    while _builtin_index_str(str i) != char 0
+        res.push(_builtin_index_str(str i))
         i++
-    ret str
+    ret res
 
