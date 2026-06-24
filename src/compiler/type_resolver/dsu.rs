@@ -27,8 +27,8 @@ impl<T: AddAssign + Default> Dsu<T> {
     }
 
     pub fn get_repr(&mut self, mut a: usize) -> usize {
-        while self.parent[a] >= 0 {
-            a = self.parent[a] as usize;
+        while let x = self.parent[a] && x >= 0 {
+            a = x as usize;
         }
         a
     }
