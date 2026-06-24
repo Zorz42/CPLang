@@ -2,6 +2,7 @@ use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IRStructLabel, IRType, IRTypeLabel};
 use crate::compiler::parser::ast::PrimitiveType;
 use crate::compiler::type_resolver::dsu::Dsu;
+use crate::compiler::type_resolver::smallmap::SmallMap;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem::swap;
 use std::ops::Add;
@@ -9,6 +10,7 @@ use std::ops::Add;
 mod compare_sets;
 pub mod dsu;
 mod test;
+mod smallmap;
 
 #[derive(Default, Clone)]
 pub struct Node {
@@ -33,14 +35,14 @@ impl Add for Node {
 #[derive(Default, Clone)]
 pub struct TypeNode {
     typ: Option<IRType>,
-    child_fields: HashMap<IRFieldLabel, IRTypeLabel>,
+    child_fields: SmallMap<IRFieldLabel, IRTypeLabel>,
     known_struct: Option<IRStructLabel>,
     // stores all reference values of nodes
     // (representative, ref_depth) -> node
     // if two nodes have the same representative and ref_depth (within type component),
     // they are the same exact type and should be merged
     // representative is from ref_dsu
-    ref_map: HashMap<(IRTypeLabel, i32), IRTypeLabel>,
+    ref_map: SmallMap<(IRTypeLabel, i32), IRTypeLabel>,
     // a vector of types it is equal to (gets merged in queue phase)
     // it is delayed to avoid recursion
     to_merge: Vec<IRTypeLabel>,
@@ -120,7 +122,7 @@ impl TypeResolver {
 
     fn get_num_known_fields(&mut self, type_label: IRTypeLabel) -> usize {
         let mut num_known_fields = 0;
-        let values = self.type_dsu.get(type_label).child_fields.values().copied().collect::<Vec<_>>();
+        let values = self.type_dsu.get(type_label).child_fields.values().clone();
         for field_type_label in values {
             if self.check_is_type_known(field_type_label) {
                 num_known_fields += 1;
@@ -203,7 +205,7 @@ impl TypeResolver {
         } else {
             self.type_map.insert(typ.clone(), label);
             self.type_dsu.get(label).typ = Some(typ);
-            let labels = self.type_dsu.get(label).ref_map.values().copied().collect::<Vec<_>>();
+            let labels = self.type_dsu.get(label).ref_map.values().clone();
             for label in labels {
                 self.add_to_queue(label);
             }
@@ -285,14 +287,14 @@ impl TypeResolver {
         if self.type_dsu.get(label1).typ != typ1 {
             self.type_dsu.get(label1).typ = typ1;
             // go through all different types in that component
-            let labels = self.type_dsu.get(label1).ref_map.values().copied().collect::<Vec<_>>();
+            let labels = self.type_dsu.get(label1).ref_map.values().clone();
             for label in labels {
                 self.add_to_queue(label);
             }
         }
         if self.type_dsu.get(label2).typ != typ2 {
             self.type_dsu.get(label2).typ = typ2;
-            let labels = self.type_dsu.get(label2).ref_map.values().copied().collect::<Vec<_>>();
+            let labels = self.type_dsu.get(label2).ref_map.values().clone();
             for label in labels {
                 self.add_to_queue(label);
             }
@@ -316,7 +318,7 @@ impl TypeResolver {
         }
 
         // merge child fields
-        for (field_label, field_type) in self.type_dsu.get(label2).child_fields.clone() {
+        for (field_label, field_type) in self.type_dsu.get(label2).child_fields.to_vec() {
             if let Some(field_type2) = self.type_dsu.get(label1).child_fields.get(&field_label).copied() {
                 self.merge(field_type, field_type2)?;
             } else {
@@ -326,9 +328,9 @@ impl TypeResolver {
         self.type_dsu.get(label2).child_fields.clear();
 
         // merge same refs
-        let mut ref_map = HashMap::new();
+        let mut ref_map = SmallMap::default();
         swap(&mut ref_map, &mut self.type_dsu.get(label1).ref_map);
-        for (key, label) in ref_map {
+        for (key, label) in ref_map.to_vec() {
             if let Some(other_label) = self.type_dsu.get(label2).ref_map.get(&key).copied() {
                 if self.dsu.get_repr(label) != self.dsu.get_repr(other_label) {
                     self.add_to_queue(label);
