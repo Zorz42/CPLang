@@ -7,7 +7,7 @@ use crate::compiler::parser::typed::parse_type_hint;
 use crate::compiler::tokenizer::{Token, TokenBlock};
 use std::collections::HashMap;
 
-pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option<ASTStructDeclaration>> {
+pub fn parse_struct_declaration(block: &mut TokenBlock, file_idx: usize) -> CompilerResult<Option<ASTStructDeclaration>> {
     if Token::Struct != block.peek().0 {
         return Ok(None);
     }
@@ -43,7 +43,7 @@ pub fn parse_struct_declaration(block: &mut TokenBlock) -> CompilerResult<Option
     let mut methods = Vec::new();
 
     while block.has_tokens() {
-        if let Some((signature, block)) = parse_function_declaration(&mut block)? {
+        if let Some((signature, block)) = parse_function_declaration(&mut block, file_idx)? {
             methods.push((signature, block));
             continue;
         }

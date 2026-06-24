@@ -1,5 +1,5 @@
-use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::parser::ast::{ASTExpression, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType};
+use crate::compiler::error::{CompilerError, CompilerResult};
+use crate::compiler::parser::ast::{ASTExpression, ASTGlobalVariable, ASTOperator, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::typed::parse_type_hint;
 use crate::compiler::tokenizer::{Token, TokenBlock};
@@ -77,7 +77,8 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
 pub fn parse_global_variable_declaration(
     structs: &Vec<ASTStructDeclaration>,
     block: &mut TokenBlock,
-) -> CompilerResult<(String, ASTType, Option<ASTExpression>, FilePosition)> {
+    file_idx: usize,
+) -> CompilerResult<ASTGlobalVariable> {
     let (ident, ident_pos) = match block.get() {
         (Token::Identifier(ident), ident_pos) => (ident, ident_pos),
         (_, pos) => {
@@ -98,5 +99,11 @@ pub fn parse_global_variable_declaration(
         None
     };
 
-    Ok((ident, hint, value, ident_pos))
+    Ok(ASTGlobalVariable {
+        name: ident,
+        type_hint: hint,
+        initial_value: value,
+        pos: ident_pos,
+        file_idx,
+    })
 }

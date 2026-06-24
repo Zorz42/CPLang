@@ -7,7 +7,16 @@ pub struct Ast {
     pub functions: Vec<(ASTFunctionSignature, ASTBlock)>,
     pub structs: Vec<ASTStructDeclaration>,
     // variables are (name, type_hint, initial_value, ident position)
-    pub global_variables: Vec<(String, ASTType, Option<ASTExpression>, FilePosition)>,
+    pub global_variables: Vec<ASTGlobalVariable>,
+}
+
+#[derive(Debug)]
+pub struct ASTGlobalVariable {
+    pub name: String,
+    pub type_hint: ASTType,
+    pub initial_value: Option<ASTExpression>,
+    pub pos: FilePosition,
+    pub file_idx: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -185,6 +194,7 @@ pub struct ASTFunctionSignature {
     // template can have extra hidden arguments
     pub num_template_args: usize,
     pub pos: FilePosition,
+    pub file_idx: usize,
 }
 
 #[derive(Debug, Clone)]

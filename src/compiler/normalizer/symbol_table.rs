@@ -11,7 +11,8 @@ enum ScopeChange {
 // symbols are of type: variable, function, struct
 #[derive(Default)]
 pub struct SymbolTable {
-    global_variable_name_map: HashMap<String, IRVariableLabel>,
+    // each file has its own global variables and they are inaccessible to other files
+    global_variable_name_map: Vec<HashMap<String, IRVariableLabel>>,
     curr_variable_label: IRVariableLabel,
     scopes: Vec<Vec<ScopeChange>>,
     variable_name_map: HashMap<String, IRVariableLabel>,
@@ -48,11 +49,11 @@ impl SymbolTable {
         }
     }
 
-    pub fn push_function(&mut self) -> FunctionSymbolData {
+    pub fn push_function(&mut self, file_idx: usize) -> FunctionSymbolData {
         let mut data = FunctionSymbolData::default();
         swap(&mut data.scopes, &mut self.scopes);
         swap(&mut data.variable_name_map, &mut self.variable_name_map);
-        self.variable_name_map = self.global_variable_name_map.clone();
+        self.variable_name_map = self.global_variable_name_map.get(file_idx).cloned().unwrap_or_default();
         self.push_scope();
         data
     }
@@ -105,10 +106,14 @@ impl SymbolTable {
         label
     }
 
-    pub fn new_global_variable(&mut self, name: &str) -> IRVariableLabel {
+    pub fn new_global_variable(&mut self, name: &str, file_idx: usize) -> IRVariableLabel {
+        while self.global_variable_name_map.len() <= file_idx {
+            self.global_variable_name_map.push(HashMap::new());
+        }
+
         let label = self.curr_variable_label;
         self.curr_variable_label += 1;
-        self.global_variable_name_map.insert(name.to_string(), label);
+        self.global_variable_name_map[file_idx].insert(name.to_string(), label);
         label
     }
 

@@ -1,7 +1,7 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
-    IR, IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
+    IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel, IR,
 };
 use crate::compiler::normalizer::symbol_table::SymbolTable;
 use crate::compiler::parser::ast::{
@@ -121,15 +121,15 @@ impl Normalizer {
 
         // add all global variables
         let mut global_assignments = Vec::new();
-        for (variable_name, type_hint, initial_value, ident_pos) in ast.global_variables {
-            let var_label = self.symbol_table.new_global_variable(&variable_name);
+        for decl in ast.global_variables {
+            let var_label = self.symbol_table.new_global_variable(&decl.name, decl.file_idx);
             self.ir.global_variables.push(var_label);
-            let type_label = self.type_resolver.new_type_label(ident_pos);
+            let type_label = self.type_resolver.new_type_label(decl.pos);
             self.relevant_types.push(type_label);
             self.ir.variable_types.push(type_label);
-            let type_hint_label = self.normalize_type(type_hint)?;
+            let type_hint_label = self.normalize_type(decl.type_hint)?;
             self.type_resolver.hint_equal(type_label, type_hint_label)?;
-            if let Some(initial_value) = initial_value {
+            if let Some(initial_value) = decl.initial_value {
                 let (initial_value, value_type_label) = self.normalize_expression(initial_value)?;
                 self.type_resolver.hint_equal(type_label, value_type_label)?;
                 global_assignments.push((var_label, initial_value));
@@ -753,7 +753,7 @@ impl Normalizer {
         swap(&mut prev_has_ret_statement, &mut self.has_ret_statement);
         swap(&mut prev_template_types, &mut self.template_types);
 
-        let scope_data = self.symbol_table.push_function();
+        let scope_data = self.symbol_table.push_function(sign.file_idx);
 
         if self.depth == RECURSION_LIMIT {
             return Err(CompilerError {

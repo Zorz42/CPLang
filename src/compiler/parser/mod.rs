@@ -34,9 +34,10 @@ pub fn parse_tokens(mut program_block: TokenBlock) -> CompilerResult<Ast> {
     };
     let mut taken_struct_names = HashSet::new();
     while program_block.has_tokens() {
-        if let Some(declaration) = parse_function_declaration(&mut program_block)? {
+        let curr_file = program_block.peek().1.file_ident;
+        if let Some(declaration) = parse_function_declaration(&mut program_block, curr_file)? {
             function_declarations.push(declaration);
-        } else if let Some(struct_declaration) = parse_struct_declaration(&mut program_block)? {
+        } else if let Some(struct_declaration) = parse_struct_declaration(&mut program_block, curr_file)? {
             if taken_struct_names.contains(&struct_declaration.name) {
                 return Err(CompilerError {
                     message: format!("Struct {} has been declared multiple times.", struct_declaration.name),
@@ -46,7 +47,7 @@ pub fn parse_tokens(mut program_block: TokenBlock) -> CompilerResult<Ast> {
             taken_struct_names.insert(struct_declaration.name.clone());
             res.structs.push(struct_declaration);
         } else {
-            let global_declaration = parse_global_variable_declaration(&res.structs, &mut program_block)?;
+            let global_declaration = parse_global_variable_declaration(&res.structs, &mut program_block, curr_file)?;
 
             res.global_variables.push(global_declaration);
         }
