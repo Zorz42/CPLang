@@ -1,15 +1,15 @@
 use std::mem::swap;
-use std::ops::Add;
+use std::ops::AddAssign;
 
 #[derive(Clone)]
-pub struct Dsu<T: Add<Output=T> + Default> {
+pub struct Dsu<T: AddAssign + Default> {
     // parent = -x: is root with size x
     // parent = x: has parent x
     parent: Vec<i32>,
     value: Vec<T>,
 }
 
-impl<T: Add<Output=T> + Default> Dsu<T> {
+impl<T: AddAssign + Default> Dsu<T> {
     pub const fn new() -> Self {
         Self {
             parent: Vec::new(),
@@ -55,17 +55,15 @@ impl<T: Add<Output=T> + Default> Dsu<T> {
         self.parent[a] -= b_size;
         self.parent[b] = a as i32;
 
-        let mut a_val = T::default();
         let mut b_val = T::default();
-        swap(&mut self.value[a], &mut a_val);
         swap(&mut self.value[b], &mut b_val);
-        self.value[a] = a_val + b_val;
+        self.value[a] += b_val;
 
         true
     }
 }
 
-impl<T: Add<Output=T> + Default> Default for Dsu<T> {
+impl<T: AddAssign + Default> Default for Dsu<T> {
     fn default() -> Self {
         Self::new()
     }

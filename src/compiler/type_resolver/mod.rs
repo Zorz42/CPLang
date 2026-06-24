@@ -5,7 +5,7 @@ use crate::compiler::type_resolver::dsu::Dsu;
 use crate::compiler::type_resolver::smallmap::SmallMap;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem::swap;
-use std::ops::Add;
+use std::ops::AddAssign;
 
 mod compare_sets;
 pub mod dsu;
@@ -19,16 +19,13 @@ pub struct Node {
     in_queue: bool,
 }
 
-impl Add for Node {
-    type Output = Self;
-
-    fn add(mut self, mut rhs: Self) -> Self::Output {
+impl AddAssign for Node {
+    fn add_assign(&mut self, mut rhs: Self) {
         self.in_queue = self.in_queue || rhs.in_queue;
         if self.parent_structs.len() < rhs.parent_structs.len() {
             swap(&mut self.parent_structs, &mut rhs.parent_structs);
         }
         self.parent_structs.append(&mut rhs.parent_structs);
-        self
     }
 }
 
@@ -48,10 +45,8 @@ pub struct TypeNode {
     to_merge: Vec<IRTypeLabel>,
 }
 
-impl Add for TypeNode {
-    type Output = Self;
-
-    fn add(mut self, mut rhs: Self) -> Self::Output {
+impl AddAssign for TypeNode {
+    fn add_assign(&mut self, mut rhs: Self) {
         assert_eq!(self.known_struct, rhs.known_struct);
         if !rhs.child_fields.is_empty() {
             swap(&mut self.child_fields, &mut rhs.child_fields);
@@ -62,7 +57,6 @@ impl Add for TypeNode {
             swap(&mut rhs.ref_map, &mut self.ref_map);
         }
         assert!(rhs.ref_map.is_empty());
-        self
     }
 }
 
@@ -71,15 +65,12 @@ pub struct RefNode {
     nodes: Vec<IRTypeLabel>,
 }
 
-impl Add for RefNode {
-    type Output = Self;
-
-    fn add(mut self, mut rhs: Self) -> Self::Output {
+impl AddAssign for RefNode {
+    fn add_assign(&mut self, mut rhs: Self) {
         if self.nodes.len() < rhs.nodes.len() {
             swap(&mut self.nodes, &mut rhs.nodes);
         }
         self.nodes.append(&mut rhs.nodes);
-        self
     }
 }
 
