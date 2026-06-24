@@ -2,6 +2,7 @@ target
 .idea
 main.cpl
 main.c
+profile.json.gz
 **/.test_cache
 cses-tests/tests
 cses-tests/build
