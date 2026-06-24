@@ -10,7 +10,7 @@ test_derive = { path = "src/test_derive" }
 lto = false
 opt-level = "z"
 panic = "abort"
-strip = "symbols"
+#strip = "symbols"
 
 [features]
 trace = []

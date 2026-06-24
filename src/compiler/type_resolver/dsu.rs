@@ -26,14 +26,11 @@ impl<T: Add<Output=T> + Default> Dsu<T> {
         self.value.push(T::default());
     }
 
-    pub fn get_repr(&mut self, a: usize) -> usize {
-        if self.parent[a] >= 0 {
-            let res = self.get_repr(self.parent[a] as usize);
-            self.parent[a] = res as i32;
-            res
-        } else {
-            a
+    pub fn get_repr(&mut self, mut a: usize) -> usize {
+        while self.parent[a] >= 0 {
+            a = self.parent[a] as usize;
         }
+        a
     }
 
     pub fn get(&mut self, a: usize) -> &mut T {
