@@ -1,20 +1,15 @@
-use crate::compiler::type_resolver::dsu::NodeType::HasParent;
 use std::mem::swap;
 use std::ops::Add;
 
 #[derive(Clone)]
-enum NodeType {
-    HasParent(usize),
-    Root(usize),
-}
-
-#[derive(Clone)]
-pub struct Dsu<T: Add<Output = T> + Default> {
-    parent: Vec<NodeType>,
+pub struct Dsu<T: Add<Output=T> + Default> {
+    // parent = -x: is root with size x
+    // parent = x: has parent x
+    parent: Vec<i32>,
     value: Vec<T>,
 }
 
-impl<T: Add<Output = T> + Default> Dsu<T> {
+impl<T: Add<Output=T> + Default> Dsu<T> {
     pub const fn new() -> Self {
         Self {
             parent: Vec::new(),
@@ -27,18 +22,17 @@ impl<T: Add<Output = T> + Default> Dsu<T> {
     }
 
     pub fn add(&mut self) {
-        self.parent.push(NodeType::Root(1));
+        self.parent.push(-1);
         self.value.push(T::default());
     }
 
     pub fn get_repr(&mut self, a: usize) -> usize {
-        match self.parent[a] {
-            HasParent(par) => {
-                let res = self.get_repr(par);
-                self.parent[a] = HasParent(res);
-                res
-            }
-            NodeType::Root(_) => a,
+        if self.parent[a] >= 0 {
+            let res = self.get_repr(self.parent[a] as usize);
+            self.parent[a] = res as i32;
+            res
+        } else {
+            a
         }
     }
 
@@ -53,27 +47,16 @@ impl<T: Add<Output = T> + Default> Dsu<T> {
         if a == b {
             return false;
         }
-        let mut a_size = match self.parent[a] {
-            HasParent(_) => unreachable!(),
-            NodeType::Root(x) => x,
-        };
-
-        let mut b_size = match self.parent[b] {
-            HasParent(_) => unreachable!(),
-            NodeType::Root(x) => x,
-        };
+        let mut a_size = -self.parent[a];
+        let mut b_size = -self.parent[b];
 
         if a_size < b_size {
             swap(&mut a, &mut b);
             swap(&mut a_size, &mut b_size);
         }
 
-        match &mut self.parent[a] {
-            HasParent(_) => unreachable!(),
-            NodeType::Root(x) => *x += b_size,
-        }
-
-        self.parent[b] = HasParent(a);
+        self.parent[a] -= b_size;
+        self.parent[b] = a as i32;
 
         let mut a_val = T::default();
         let mut b_val = T::default();
@@ -85,7 +68,7 @@ impl<T: Add<Output = T> + Default> Dsu<T> {
     }
 }
 
-impl<T: Add<Output = T> + Default> Default for Dsu<T> {
+impl<T: Add<Output=T> + Default> Default for Dsu<T> {
     fn default() -> Self {
         Self::new()
     }
