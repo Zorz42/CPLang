@@ -7,11 +7,11 @@ pub struct SmallMap<K, V> {
 }
 
 impl<K: PartialEq + Clone, V: Clone> SmallMap<K, V> {
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.keys.is_empty()
     }
 
-    pub fn values(&self) -> &Vec<V> {
+    pub const fn values(&self) -> &Vec<V> {
         &self.values
     }
 
