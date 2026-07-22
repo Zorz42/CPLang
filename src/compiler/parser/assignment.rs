@@ -74,11 +74,7 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
     Ok(Some(res))
 }
 
-pub fn parse_global_variable_declaration(
-    structs: &Vec<ASTStructDeclaration>,
-    block: &mut TokenBlock,
-    file_idx: usize,
-) -> CompilerResult<ASTGlobalVariable> {
+pub fn parse_global_variable_declaration(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock, file_idx: usize) -> CompilerResult<ASTGlobalVariable> {
     let (ident, ident_pos) = match block.get() {
         (Token::Identifier(ident), ident_pos) => (ident, ident_pos),
         (_, pos) => {

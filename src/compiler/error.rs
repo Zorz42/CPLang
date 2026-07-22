@@ -58,4 +58,3 @@ pub struct CompilerError {
 
 // this is a universal result type for the compiler
 pub type CompilerResult<T> = Result<T, CompilerError>;
-

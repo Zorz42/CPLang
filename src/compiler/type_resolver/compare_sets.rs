@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{IRStructLabel, IRTypeLabel};
-use crate::compiler::type_resolver::dsu::Dsu;
 use crate::compiler::type_resolver::TypeResolver;
+use crate::compiler::type_resolver::dsu::Dsu;
 use std::collections::HashMap;
 use std::ops::AddAssign;
 

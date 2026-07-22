@@ -1,6 +1,6 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel,
-    IRVariableLabel, IR,
+    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType,
+    IRTypeLabel, IRVariableLabel,
 };
 use crate::compiler::parser::ast::PrimitiveType;
 use std::collections::HashMap;
@@ -98,7 +98,7 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-        .to_owned()
+    .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {

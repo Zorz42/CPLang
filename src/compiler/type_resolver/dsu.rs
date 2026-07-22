@@ -27,7 +27,9 @@ impl<T: AddAssign + Default> Dsu<T> {
     }
 
     pub fn get_repr(&mut self, mut a: usize) -> usize {
-        while let x = unsafe { *self.parent.get_unchecked(a) } && x >= 0 {
+        while let x = unsafe { *self.parent.get_unchecked(a) }
+            && x >= 0
+        {
             a = x as usize;
         }
         a

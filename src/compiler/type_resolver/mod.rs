@@ -9,8 +9,8 @@ use std::ops::AddAssign;
 
 mod compare_sets;
 pub mod dsu;
-mod test;
 mod smallmap;
+mod test;
 
 #[derive(Default, Clone)]
 pub struct Node {
