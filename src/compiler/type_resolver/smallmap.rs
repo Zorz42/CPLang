@@ -47,3 +47,25 @@ impl<K: PartialEq + Clone, V: Clone> Index<&K> for SmallMap<K, V> {
         self.get(index).unwrap()
     }
 }
+
+#[derive(Default, Clone)]
+pub struct SmallSet<T> {
+    values: Vec<T>,
+}
+
+impl<T: PartialEq> SmallSet<T> {
+    pub fn insert(&mut self, val: T) {
+        self.values.push(val);
+    }
+
+    pub fn contains(&mut self, val: &T) -> bool {
+        self.values.iter().find(|x| *x == val).is_some()
+    }
+
+    pub fn into_vec(self) -> Vec<T> {
+        self.values
+    }
+}
+
+
+

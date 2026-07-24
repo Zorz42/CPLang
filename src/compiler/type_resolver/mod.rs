@@ -2,7 +2,7 @@ use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IRStructLabel, IRType, IRTypeLabel};
 use crate::compiler::parser::ast::PrimitiveType;
 use crate::compiler::type_resolver::dsu::Dsu;
-use crate::compiler::type_resolver::smallmap::SmallMap;
+use crate::compiler::type_resolver::smallmap::{SmallMap, SmallSet};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem::swap;
 use std::ops::AddAssign;
@@ -380,7 +380,7 @@ impl TypeResolver {
             (self.ref_dsu.get(label2).nodes.clone(), offset)
         };
 
-        let mut updated_nodes = HashSet::new();
+        let mut updated_nodes = SmallSet::default();
         for node in to_modify {
             let repr = self.dsu.get_repr(node);
             if updated_nodes.contains(&repr) {
@@ -418,7 +418,7 @@ impl TypeResolver {
         }
 
         // update ref_dsu's ref_maps
-        for node in updated_nodes {
+        for node in updated_nodes.into_vec() {
             let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
             if let Some(label) = self.type_dsu.get(node).ref_map.get(&key).copied() {
                 if self.dsu.get_repr(label) != self.dsu.get_repr(node) {

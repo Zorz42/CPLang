@@ -96,7 +96,14 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
 
     std::thread::Builder::new()
         .stack_size(STACK_SIZE)
-        .spawn(move || compile_internal(&input_file, &output_file))
+        .spawn(move || {
+            // only change this if you are profiling and need more samples
+            const NUM_ITERS: usize = 1;
+            for _ in 0..NUM_ITERS {
+                compile_internal(&input_file, &output_file)?;
+            }
+            Ok(())
+        })
         .unwrap()
         .join()
         .unwrap()
