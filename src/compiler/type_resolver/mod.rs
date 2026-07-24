@@ -114,7 +114,7 @@ impl TypeResolver {
 
     fn get_num_known_fields(&mut self, type_label: IRTypeLabel) -> usize {
         let mut num_known_fields = 0;
-        let values = self.type_dsu.get(type_label).child_fields.values();
+        let values = self.type_dsu.get(type_label).child_fields.values().clone();
         for field_type_label in values {
             if self.check_is_type_known(field_type_label) {
                 num_known_fields += 1;
@@ -168,7 +168,7 @@ impl TypeResolver {
     // push to queue every struct type that depends on label's type (in type_dsu)
     fn push_type_parents(&mut self, label: IRTypeLabel) {
         let mut to_queue = Vec::new();
-        for label2 in self.type_dsu.get(label).ref_map.values() {
+        for label2 in self.type_dsu.get(label).ref_map.values().clone() {
             for (parent_type, _field_label) in &self.dsu.get(label2).parent_structs {
                 to_queue.push(*parent_type);
             }
@@ -197,7 +197,7 @@ impl TypeResolver {
         } else {
             self.type_map.insert(typ.clone(), label);
             self.type_dsu.get(label).typ = Some(typ);
-            let labels = self.type_dsu.get(label).ref_map.values();
+            let labels = self.type_dsu.get(label).ref_map.values().clone();
             for label in labels {
                 self.add_to_queue(label);
             }
@@ -279,14 +279,14 @@ impl TypeResolver {
         if self.type_dsu.get(label1).typ != typ1 {
             self.type_dsu.get(label1).typ = typ1;
             // go through all different types in that component
-            let labels = self.type_dsu.get(label1).ref_map.values();
+            let labels = self.type_dsu.get(label1).ref_map.values().clone();
             for label in labels {
                 self.add_to_queue(label);
             }
         }
         if self.type_dsu.get(label2).typ != typ2 {
             self.type_dsu.get(label2).typ = typ2;
-            let labels = self.type_dsu.get(label2).ref_map.values();
+            let labels = self.type_dsu.get(label2).ref_map.values().clone();
             for label in labels {
                 self.add_to_queue(label);
             }
