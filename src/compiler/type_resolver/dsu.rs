@@ -40,16 +40,20 @@ impl<T: AddAssign + Default> Dsu<T> {
         &mut self.value[a]
     }
 
-    pub fn merge(&mut self, a: usize, b: usize) -> bool {
+    // returns true if a was merged into b and false if b was merged into a
+    // returns None if nothing was merged
+    pub fn merge(&mut self, a: usize, b: usize) -> Option<bool> {
         let mut a = self.get_repr(a);
         let mut b = self.get_repr(b);
         if a == b {
-            return false;
+            return None;
         }
         let mut a_size = -self.parent[a];
         let mut b_size = -self.parent[b];
+        let mut res = false;
 
         if a_size < b_size {
+            res = true;
             swap(&mut a, &mut b);
             swap(&mut a_size, &mut b_size);
         }
@@ -61,7 +65,7 @@ impl<T: AddAssign + Default> Dsu<T> {
         swap(&mut self.value[b], &mut b_val);
         self.value[a] += b_val;
 
-        true
+        Some(res)
     }
 }
 

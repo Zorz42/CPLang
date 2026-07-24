@@ -35,7 +35,7 @@ impl<K: Eq + Clone + Hash, V: Clone> SmallMap<K, V> {
             Self::Small { values, .. } => values.clone(),
         }
     }
-  
+
     pub fn insert(&mut self, key: K, val: V) {
         match self {
             Self::Normal(map) => {

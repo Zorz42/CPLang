@@ -16,8 +16,6 @@ mod test;
 pub struct Node {
     // struct types that have it as a field
     parent_structs: Vec<(IRTypeLabel, IRFieldLabel)>,
-    // lists all TypeNode instances that have it inside. Used for updating ref_map so it always contains representatives for keys
-    parent_type_nodes: Vec<IRTypeLabel>,
     ref_depth: i32,
     in_queue: bool,
 }
@@ -38,7 +36,7 @@ pub struct TypeNode {
     child_fields: SmallMap<IRFieldLabel, IRTypeLabel>,
     known_struct: Option<IRStructLabel>,
     // stores all reference values of nodes
-    // (representative, ref_depth) -> node
+    // (representative in ref dsu, ref_depth) -> node
     // if two nodes have the same representative and ref_depth (within type component),
     // they are the same exact type and should be merged
     // representative is from ref_dsu
@@ -375,14 +373,6 @@ impl TypeResolver {
             return Ok(());
         }
 
-        let mut all_nodes = self.ref_dsu.get(label1).nodes.clone();
-        all_nodes.append(&mut self.ref_dsu.get(label2).nodes.clone());
-
-        for node in all_nodes {
-            let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
-            self.type_dsu.get(node).ref_map.remove(&key);
-        }
-
         let offset = offset + self.dsu.get(label1).ref_depth - self.dsu.get(label2).ref_depth;
         let (to_modify, modify_offset) = if self.ref_is_fixed(label2) {
             (self.ref_dsu.get(label1).nodes.clone(), -offset)
@@ -398,17 +388,37 @@ impl TypeResolver {
             }
             updated_nodes.insert(repr);
 
+            let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
+            self.type_dsu.get(node).ref_map.remove(&key);
+
             self.dsu.get(node).ref_depth += modify_offset;
         }
 
-        if self.ref_dsu.merge(label1, label2) {
+        if let Some(merge_dir) = self.ref_dsu.merge(label1, label2) {
             self.add_to_queue(label1);
             self.add_to_queue(label2);
+
+            let to_update = if merge_dir {
+                // label1 was merged into label2
+                self.ref_dsu.get(label1).nodes.clone()
+            } else {
+                // label2 was merged into label1
+                self.ref_dsu.get(label2).nodes.clone()
+            };
+            for node in to_update {
+                let repr = self.dsu.get_repr(node);
+                if updated_nodes.contains(&repr) {
+                    continue;
+                }
+                updated_nodes.insert(repr);
+
+                let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
+                self.type_dsu.get(node).ref_map.remove(&key);
+            }
         }
 
         // update ref_dsu's ref_maps
-        all_nodes = self.ref_dsu.get(label1).nodes.clone();
-        for node in all_nodes {
+        for node in updated_nodes {
             let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
             if let Some(label) = self.type_dsu.get(node).ref_map.get(&key).copied() {
                 if self.dsu.get_repr(label) != self.dsu.get_repr(node) {
