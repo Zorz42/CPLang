@@ -356,6 +356,16 @@ impl TypeResolver {
         Ok(())
     }
 
+    // remove unnecessary (equivalent) elements inside nodes of ref_dsu
+    // this is just a small performance gain
+    fn truncate_nodes(&mut self, label: IRTypeLabel) {
+        let mut new_nodes = HashSet::new();
+        for node in self.ref_dsu.get(label).nodes.clone() {
+            new_nodes.insert(self.dsu.get_repr(node));
+        }
+        self.ref_dsu.get(label).nodes = new_nodes.into_iter().collect::<Vec<_>>();
+    }
+
     // label2 has exactly offset more references than label1
     fn merge_ref(&mut self, label1: IRTypeLabel, label2: IRTypeLabel, offset: i32) -> CompilerResult<()> {
         if self.ref_dsu.get_repr(label1) == self.ref_dsu.get_repr(label2) {
@@ -375,8 +385,10 @@ impl TypeResolver {
 
         let offset = offset + self.dsu.get(label1).ref_depth - self.dsu.get(label2).ref_depth;
         let (to_modify, modify_offset) = if self.ref_is_fixed(label2) {
+            self.truncate_nodes(label1);
             (self.ref_dsu.get(label1).nodes.clone(), -offset)
         } else {
+            self.truncate_nodes(label2);
             (self.ref_dsu.get(label2).nodes.clone(), offset)
         };
 
@@ -400,9 +412,11 @@ impl TypeResolver {
 
             let to_update = if merge_dir {
                 // label1 was merged into label2
+                self.truncate_nodes(label1);
                 self.ref_dsu.get(label1).nodes.clone()
             } else {
                 // label2 was merged into label1
+                self.truncate_nodes(label2);
                 self.ref_dsu.get(label2).nodes.clone()
             };
             for node in to_update {
