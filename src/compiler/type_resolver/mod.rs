@@ -14,7 +14,10 @@ mod test;
 
 #[derive(Default, Clone)]
 pub struct Node {
+    // struct types that have it as a field
     parent_structs: Vec<(IRTypeLabel, IRFieldLabel)>,
+    // lists all TypeNode instances that have it inside. Used for updating ref_map so it always contains representatives for keys
+    parent_type_nodes: Vec<IRTypeLabel>,
     ref_depth: i32,
     in_queue: bool,
 }
@@ -113,7 +116,7 @@ impl TypeResolver {
 
     fn get_num_known_fields(&mut self, type_label: IRTypeLabel) -> usize {
         let mut num_known_fields = 0;
-        let values = self.type_dsu.get(type_label).child_fields.values().clone();
+        let values = self.type_dsu.get(type_label).child_fields.values();
         for field_type_label in values {
             if self.check_is_type_known(field_type_label) {
                 num_known_fields += 1;
@@ -168,7 +171,7 @@ impl TypeResolver {
     fn push_type_parents(&mut self, label: IRTypeLabel) {
         let mut to_queue = Vec::new();
         for label2 in self.type_dsu.get(label).ref_map.values() {
-            for (parent_type, _field_label) in &self.dsu.get(*label2).parent_structs {
+            for (parent_type, _field_label) in &self.dsu.get(label2).parent_structs {
                 to_queue.push(*parent_type);
             }
         }
@@ -196,7 +199,7 @@ impl TypeResolver {
         } else {
             self.type_map.insert(typ.clone(), label);
             self.type_dsu.get(label).typ = Some(typ);
-            let labels = self.type_dsu.get(label).ref_map.values().clone();
+            let labels = self.type_dsu.get(label).ref_map.values();
             for label in labels {
                 self.add_to_queue(label);
             }
@@ -278,14 +281,14 @@ impl TypeResolver {
         if self.type_dsu.get(label1).typ != typ1 {
             self.type_dsu.get(label1).typ = typ1;
             // go through all different types in that component
-            let labels = self.type_dsu.get(label1).ref_map.values().clone();
+            let labels = self.type_dsu.get(label1).ref_map.values();
             for label in labels {
                 self.add_to_queue(label);
             }
         }
         if self.type_dsu.get(label2).typ != typ2 {
             self.type_dsu.get(label2).typ = typ2;
-            let labels = self.type_dsu.get(label2).ref_map.values().clone();
+            let labels = self.type_dsu.get(label2).ref_map.values();
             for label in labels {
                 self.add_to_queue(label);
             }
