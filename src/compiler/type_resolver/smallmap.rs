@@ -58,8 +58,8 @@ impl<T: PartialEq> SmallSet<T> {
         self.values.push(val);
     }
 
-    pub fn contains(&mut self, val: &T) -> bool {
-        self.values.iter().find(|x| *x == val).is_some()
+    pub fn contains(&self, val: &T) -> bool {
+        self.values.iter().any(|x| x == val)
     }
 
     pub fn into_vec(self) -> Vec<T> {
