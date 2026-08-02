@@ -2,7 +2,9 @@ use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IRStructLabel, IRType, IRTypeLabel};
 use crate::compiler::parser::ast::PrimitiveType;
 use crate::compiler::type_resolver::dsu::Dsu;
+use crate::compiler::type_resolver::rollback::Rollback;
 use crate::compiler::type_resolver::smallmap::{SmallMap, SmallSet};
+use rollback_derive::Rollback;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem::swap;
 use std::ops::AddAssign;
@@ -11,8 +13,9 @@ mod compare_sets;
 pub mod dsu;
 mod smallmap;
 mod test;
+pub mod rollback;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Rollback)]
 pub struct Node {
     // struct types that have it as a field
     parent_structs: Vec<(IRTypeLabel, IRFieldLabel)>,
@@ -30,7 +33,7 @@ impl AddAssign for Node {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Rollback)]
 pub struct TypeNode {
     typ: Option<IRType>,
     child_fields: SmallMap<IRFieldLabel, IRTypeLabel>,
@@ -61,7 +64,7 @@ impl AddAssign for TypeNode {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Rollback)]
 pub struct RefNode {
     nodes: Vec<IRTypeLabel>,
 }
@@ -75,7 +78,7 @@ impl AddAssign for RefNode {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Default, Rollback)]
 pub struct TypeResolver {
     type_positions: Vec<FilePosition>,
     queue: VecDeque<IRTypeLabel>,
@@ -169,7 +172,7 @@ impl TypeResolver {
     fn push_type_parents(&mut self, label: IRTypeLabel) {
         let mut to_queue = Vec::new();
         for label2 in self.type_dsu.get(label).ref_map.values().clone() {
-            for (parent_type, _field_label) in &self.dsu.get(label2).parent_structs {
+            for (parent_type, _field_label) in self.dsu.get(label2).parent_structs.iter() {
                 to_queue.push(*parent_type);
             }
         }

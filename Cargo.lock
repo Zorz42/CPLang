@@ -123,6 +123,7 @@ name = "cplang"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "rollback_derive",
  "test_derive",
 ]
 
@@ -408,6 +409,15 @@ name = "regex-syntax"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
+
+[[package]]
+name = "rollback_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.3",
+]
 
 [[package]]
 name = "rustversion"

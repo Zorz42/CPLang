@@ -8,6 +8,7 @@ use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType, Ast, PrimitiveType,
 };
 use crate::compiler::type_resolver::TypeResolver;
+use crate::compiler::type_resolver::rollback::Rollback;
 use std::collections::{HashMap, HashSet};
 use std::mem::swap;
 
@@ -269,7 +270,7 @@ impl Normalizer {
                 continue;
             }
 
-            let prev_resolver = self.type_resolver.clone();
+            let resolver_state = self.type_resolver.save_state();
             let mut prev_template_types = HashMap::default();
             swap(&mut self.template_types, &mut prev_template_types);
             let mut ok = true;
@@ -291,7 +292,7 @@ impl Normalizer {
                 }
             }
 
-            self.type_resolver = prev_resolver;
+            self.type_resolver.restore_state(resolver_state);
             swap(&mut self.template_types, &mut prev_template_types);
 
             #[cfg(feature = "trace")]

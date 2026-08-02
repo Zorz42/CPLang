@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 test_derive = { path = "src/test_derive" }
+rollback_derive = { path = "src/compiler/type_resolver/rollback_derive" }
 
 [profile.release]
 lto = false

@@ -1,10 +1,11 @@
 use crate::compiler::normalizer::ir::{IRStructLabel, IRTypeLabel};
 use crate::compiler::type_resolver::TypeResolver;
 use crate::compiler::type_resolver::dsu::Dsu;
+use crate::compiler::type_resolver::rollback::Rollback;
 use std::collections::HashMap;
 use std::ops::AddAssign;
 
-fn compactify<T: AddAssign + Default>(set1: &[IRTypeLabel], set2: &[IRTypeLabel], dsu: &mut Dsu<T>) -> Option<(Vec<usize>, Vec<usize>)> {
+fn compactify<T: AddAssign + Default + Rollback>(set1: &[IRTypeLabel], set2: &[IRTypeLabel], dsu: &mut Dsu<T>) -> Option<(Vec<usize>, Vec<usize>)> {
     let mut mp1 = HashMap::new();
     let mut mp2 = HashMap::new();
     let mut comps1 = Vec::new();

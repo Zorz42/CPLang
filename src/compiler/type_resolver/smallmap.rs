@@ -1,6 +1,7 @@
+use crate::compiler::type_resolver::Rollback;
 use std::ops::Index;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Rollback)]
 pub struct SmallMap<K, V> {
     keys: Vec<K>,
     values: Vec<V>,

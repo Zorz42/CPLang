@@ -1,15 +1,17 @@
+use crate::compiler::type_resolver::rollback::Rollback;
+use rollback_derive::Rollback;
 use std::mem::swap;
 use std::ops::AddAssign;
 
-#[derive(Clone)]
-pub struct Dsu<T: AddAssign + Default> {
+#[derive(Rollback)]
+pub struct Dsu<T: AddAssign + Default + Rollback> {
     // parent = -x: is root with size x
     // parent = x: has parent x
     parent: Vec<i32>,
     value: Vec<T>,
 }
 
-impl<T: AddAssign + Default> Dsu<T> {
+impl<T: AddAssign + Default + Rollback> Dsu<T> {
     pub const fn new() -> Self {
         Self {
             parent: Vec::new(),
@@ -69,7 +71,7 @@ impl<T: AddAssign + Default> Dsu<T> {
     }
 }
 
-impl<T: AddAssign + Default> Default for Dsu<T> {
+impl<T: AddAssign + Default + Rollback> Default for Dsu<T> {
     fn default() -> Self {
         Self::new()
     }
