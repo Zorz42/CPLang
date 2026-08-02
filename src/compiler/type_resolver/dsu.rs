@@ -1,4 +1,4 @@
-use crate::compiler::type_resolver::rollback::Rollback;
+use crate::compiler::type_resolver::rollback::{Rollback, RollbackVec};
 use rollback_derive::Rollback;
 use std::mem::swap;
 use std::ops::AddAssign;
@@ -7,19 +7,19 @@ use std::ops::AddAssign;
 pub struct Dsu<T: AddAssign + Default + Rollback> {
     // parent = -x: is root with size x
     // parent = x: has parent x
-    parent: Vec<i32>,
-    value: Vec<T>,
+    parent: RollbackVec<i32>,
+    value: RollbackVec<T>,
 }
 
 impl<T: AddAssign + Default + Rollback> Dsu<T> {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            parent: Vec::new(),
-            value: Vec::new(),
+            parent: RollbackVec::new(),
+            value: RollbackVec::new(),
         }
     }
 
-    pub const fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.parent.len()
     }
 
@@ -39,7 +39,7 @@ impl<T: AddAssign + Default + Rollback> Dsu<T> {
 
     pub fn get(&mut self, a: usize) -> &mut T {
         let a = self.get_repr(a);
-        &mut self.value[a]
+        self.value.get_mut(a)
     }
 
     // returns true if a was merged into b and false if b was merged into a
@@ -50,8 +50,8 @@ impl<T: AddAssign + Default + Rollback> Dsu<T> {
         if a == b {
             return None;
         }
-        let mut a_size = -self.parent[a];
-        let mut b_size = -self.parent[b];
+        let mut a_size = -self.parent.get(a);
+        let mut b_size = -self.parent.get(b);
         let mut res = false;
 
         if a_size < b_size {
@@ -60,12 +60,12 @@ impl<T: AddAssign + Default + Rollback> Dsu<T> {
             swap(&mut a_size, &mut b_size);
         }
 
-        self.parent[a] -= b_size;
-        self.parent[b] = a as i32;
+        *self.parent.get_mut(a) -= b_size;
+        *self.parent.get_mut(b) = a as i32;
 
         let mut b_val = T::default();
-        swap(&mut self.value[b], &mut b_val);
-        self.value[a] += b_val;
+        swap(self.value.get_mut(b), &mut b_val);
+        *self.value.get_mut(a) += b_val;
 
         Some(res)
     }

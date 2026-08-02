@@ -2,6 +2,7 @@
 // you cannot save twice and then revert twice
 
 use std::collections::{HashMap, VecDeque};
+use std::mem::swap;
 
 pub trait Rollback {
     type SaveState;
@@ -9,7 +10,7 @@ pub trait Rollback {
     fn restore_state(&mut self, state: Self::SaveState);
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct RollbackVec<T: Rollback> {
     vec: Vec<T>,
     // when doing the rollback, keep track of with
@@ -20,13 +21,22 @@ pub struct RollbackVec<T: Rollback> {
 }
 
 impl<T: Rollback> RollbackVec<T> {
+    pub fn new() -> Self {
+        Self {
+            vec: Vec::new(),
+            prev_state: Vec::new(),
+            changed_list: Vec::new(),
+            rollback_mode: false,
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.vec.len()
     }
 
-    pub fn iter(&self) -> &Vec<T> {
+    /*pub fn iter(&self) -> &Vec<T> {
         &self.vec
-    }
+    }*/
 
     pub fn push(&mut self, x: T) {
         self.vec.push(x);
@@ -35,9 +45,27 @@ impl<T: Rollback> RollbackVec<T> {
         }
     }
 
-    pub fn reserve(&mut self, n: usize) {
+    /*pub fn reserve(&mut self, n: usize) {
         self.vec.reserve(n);
         self.prev_state.reserve(n);
+    }*/
+
+    pub unsafe fn get_unchecked(&self, idx: usize) -> &T {
+        unsafe {
+            self.vec.get_unchecked(idx)
+        }
+    }
+
+    pub fn get_mut(&mut self, idx: usize) -> &mut T {
+        if self.rollback_mode && idx < self.prev_state.len() && self.prev_state[idx].is_none() {
+            self.prev_state[idx] = Some(self.vec[idx].save_state());
+            self.changed_list.push(idx as u32);
+        }
+        &mut self.vec[idx]
+    }
+
+    pub fn get(&self, idx: usize) -> &T {
+        &self.vec[idx]
     }
 }
 
@@ -45,11 +73,21 @@ impl<T: Rollback> Rollback for RollbackVec<T> {
     type SaveState = ();
 
     fn save_state(&mut self) -> Self::SaveState {
-        todo!()
+        self.rollback_mode = true;
     }
 
-    fn restore_state(&mut self, state: Self::SaveState) {
-        todo!()
+    fn restore_state(&mut self, _state: Self::SaveState) {
+        self.rollback_mode = false;
+        for idx in &self.changed_list {
+            let idx = *idx as usize;
+            let mut prev_state = None;
+            swap(&mut prev_state, &mut self.prev_state[idx]);
+            self.vec[idx].restore_state(prev_state.unwrap());
+        }
+        self.changed_list.clear();
+        while self.vec.len() > self.prev_state.len() {
+            self.vec.pop();
+        }
     }
 }
 
