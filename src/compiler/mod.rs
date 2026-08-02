@@ -97,7 +97,9 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     std::thread::Builder::new()
         .stack_size(STACK_SIZE)
         .spawn(move || {
-            // only change this if you are profiling and need more samples
+            #[cfg(feature = "measure")]
+            const NUM_ITERS: usize = 100;
+            #[cfg(not(feature = "measure"))]
             const NUM_ITERS: usize = 1;
             for _ in 0..NUM_ITERS {
                 compile_internal(&input_file, &output_file)?;
