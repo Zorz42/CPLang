@@ -172,7 +172,7 @@ impl TypeResolver {
     fn push_type_parents(&mut self, label: IRTypeLabel) {
         let mut to_queue = Vec::new();
         for label2 in self.type_dsu.get(label).ref_map.values().clone() {
-            for (parent_type, _field_label) in self.dsu.get(label2).parent_structs.iter() {
+            for (parent_type, _field_label) in &self.dsu.get(label2).parent_structs {
                 to_queue.push(*parent_type);
             }
         }

@@ -28,7 +28,7 @@ impl<T: Rollback> Default for RollbackVec<T> {
 }
 
 impl<T: Rollback> RollbackVec<T> {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             vec: Vec::new(),
             prev_state: Vec::new(),
@@ -37,7 +37,7 @@ impl<T: Rollback> RollbackVec<T> {
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.vec.len()
     }
 
@@ -99,38 +99,38 @@ impl<T: Rollback> Rollback for RollbackVec<T> {
 }
 
 impl<T: Clone> Rollback for Vec<T> {
-    type SaveState = Vec<T>;
+    type SaveState = Self;
 
     fn save_state(&mut self) -> Self::SaveState {
         self.clone()
     }
 
     fn restore_state(&mut self, state: Self::SaveState) {
-        *self = state
+        *self = state;
     }
 }
 
 impl<K: Clone, V: Clone> Rollback for HashMap<K, V> {
-    type SaveState = HashMap<K, V>;
+    type SaveState = Self;
 
     fn save_state(&mut self) -> Self::SaveState {
         self.clone()
     }
 
     fn restore_state(&mut self, state: Self::SaveState) {
-        *self = state
+        *self = state;
     }
 }
 
 impl<T: Clone> Rollback for VecDeque<T> {
-    type SaveState = VecDeque<T>;
+    type SaveState = Self;
 
     fn save_state(&mut self) -> Self::SaveState {
         self.clone()
     }
 
     fn restore_state(&mut self, state: Self::SaveState) {
-        *self = state
+        *self = state;
     }
 }
 
@@ -149,7 +149,7 @@ impl<T1: Rollback, T2: Rollback> Rollback for (T1, T2) {
 }
 
 impl<T: Clone> Rollback for Option<T> {
-    type SaveState = Option<T>;
+    type SaveState = Self;
 
     fn save_state(&mut self) -> Self::SaveState {
         self.clone()

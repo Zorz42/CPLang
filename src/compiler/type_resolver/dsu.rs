@@ -12,14 +12,14 @@ pub struct Dsu<T: AddAssign + Default + Rollback> {
 }
 
 impl<T: AddAssign + Default + Rollback> Dsu<T> {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             parent: RollbackVec::new(),
             value: RollbackVec::new(),
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.parent.len()
     }
 
