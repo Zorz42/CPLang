@@ -2,7 +2,7 @@ use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IRStructLabel, IRType, IRTypeLabel};
 use crate::compiler::parser::ast::PrimitiveType;
 use crate::compiler::type_resolver::dsu::Dsu;
-use crate::compiler::type_resolver::rollback::Rollback;
+use crate::compiler::type_resolver::rollback::{Rollback, RollbackVec};
 use crate::compiler::type_resolver::smallmap::{SmallMap, SmallSet};
 use rollback_derive::Rollback;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -80,7 +80,7 @@ impl AddAssign for RefNode {
 
 #[derive(Default, Rollback)]
 pub struct TypeResolver {
-    type_positions: Vec<FilePosition>,
+    type_positions: RollbackVec<FilePosition>,
     queue: VecDeque<IRTypeLabel>,
     auto_ref_pairs: Vec<(IRTypeLabel, IRTypeLabel)>,
     // two labels are in the same component if they have exactly the same type
@@ -189,7 +189,7 @@ impl TypeResolver {
                     self.type_dsu.get(label).typ.as_ref().unwrap(),
                     typ
                 ),
-                position: Some(self.type_positions[label]),
+                position: Some(*self.type_positions.get(label)),
             });
         }
         if self.type_dsu.get(label).typ.is_some() {
@@ -275,7 +275,7 @@ impl TypeResolver {
             #[allow(clippy::unnecessary_unwrap)]
             return Err(CompilerError {
                 message: format!("This expression cannot be {:?} and {:?} at the same time.", typ1.unwrap(), typ2.unwrap()),
-                position: Some(self.type_positions[label1]),
+                position: Some(*self.type_positions.get(label1)),
             });
         }
 
@@ -302,7 +302,7 @@ impl TypeResolver {
         {
             return Err(CompilerError {
                 message: "This type cannot be two different struct types at the same time.".to_string(),
-                position: Some(self.type_positions[label1]),
+                position: Some(*self.type_positions.get(label1)),
             });
         }
 
@@ -349,7 +349,7 @@ impl TypeResolver {
             if self.type_dsu.get(label1).known_struct != known_struct {
                 return Err(CompilerError {
                     message: "This type cannot be two different struct types at the same time.".to_string(),
-                    position: Some(self.type_positions[label1]),
+                    position: Some(*self.type_positions.get(label1)),
                 });
             }
         }
@@ -380,7 +380,7 @@ impl TypeResolver {
                         self.dsu.get(label1).ref_depth + offset,
                         self.dsu.get(label2).ref_depth
                     ),
-                    position: Some(self.type_positions[label2]),
+                    position: Some(*self.type_positions.get(label2)),
                 });
             }
             return Ok(());
@@ -507,7 +507,7 @@ impl TypeResolver {
             if curr_struct_label != struct_label {
                 return Err(CompilerError {
                     message: "This type cannot be two different struct types at the same time.".to_string(),
-                    position: Some(self.type_positions[struct_type_label]),
+                    position: Some(*self.type_positions.get(struct_type_label)),
                 });
             }
         } else {
@@ -588,7 +588,7 @@ impl TypeResolver {
             let Some(typ) = self.fetch_final_ir_type(type_label) else {
                 return Err(CompilerError {
                     message: "Could not deduce this expression's type".to_string(),
-                    position: Some(self.type_positions[type_label]),
+                    position: Some(*self.type_positions.get(type_label)),
                 });
             };
 

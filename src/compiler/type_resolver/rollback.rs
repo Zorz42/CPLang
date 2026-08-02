@@ -1,6 +1,7 @@
 // Rollback only works for a single save and then single revert
 // you cannot save twice and then revert twice
 
+use crate::compiler::error::FilePosition;
 use std::collections::{HashMap, VecDeque};
 use std::mem::swap;
 
@@ -18,6 +19,12 @@ pub struct RollbackVec<T: Rollback> {
     prev_state: Vec<Option<T::SaveState>>,
     changed_list: Vec<u32>,
     rollback_mode: bool,
+}
+
+impl<T: Rollback> Default for RollbackVec<T> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<T: Rollback> RollbackVec<T> {
@@ -183,3 +190,4 @@ impl_rollback_copy!(u64);
 impl_rollback_copy!(char);
 impl_rollback_copy!(usize);
 impl_rollback_copy!(bool);
+impl_rollback_copy!(FilePosition);
