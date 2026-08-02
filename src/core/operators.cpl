@@ -104,11 +104,19 @@ operator% a: i32 b: i64
     ret _builtin_mod[i64](i64 a b)
 
 _def_full_cmp_operator ==; _builtin_eq;
-_def_full_cmp_operator !=; _builtin_noteq;
 _def_full_cmp_operator <; _builtin_lesser;
-_def_full_cmp_operator <=; _builtin_lessereq;
-_def_full_cmp_operator >; _builtin_greater;
-_def_full_cmp_operator >=; _builtin_greatereq;
+
+operator!= a b
+    ret !(a == b)
+
+operator<= a b
+    ret a < b || a == b
+
+operator> a b
+    ret b < a
+
+operator>= a b
+    ret a > b || a == b
 
 operator&& a: bool b: bool
     ret _builtin_and[bool](a b)
