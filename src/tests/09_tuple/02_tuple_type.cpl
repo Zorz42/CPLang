@@ -1,7 +1,7 @@
 //OUT="10 1.000000000"
 
 struct MyStruct
-    x: i32, f32
+    x: i32, f64
 
 fn main
     a = MyStruct x 10, 1.0

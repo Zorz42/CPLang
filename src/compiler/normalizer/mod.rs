@@ -356,7 +356,7 @@ impl Normalizer {
             }
 
             ASTExpressionKind::Float(x) => {
-                self.type_resolver.hint_is(type_label, PrimitiveType::F32)?;
+                self.type_resolver.hint_is(type_label, PrimitiveType::F64)?;
 
                 IRExpression::Constant {
                     constant: IRConstant::Float(f64::from(x)),
