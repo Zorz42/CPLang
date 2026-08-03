@@ -3,7 +3,7 @@ use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IRStructLabe
 use crate::compiler::parser::ast::PrimitiveType;
 use crate::compiler::type_resolver::dsu::Dsu;
 use crate::compiler::type_resolver::rollback::{Rollback, RollbackVec};
-use crate::compiler::type_resolver::smallmap::{BoundedSet, SmallMap, SmallSet};
+use crate::compiler::type_resolver::smallmap::{BoundedSet, SmallMap};
 use call_counter_derive::{count_call, count_calls};
 use rollback_derive::Rollback;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -100,6 +100,7 @@ pub struct TypeResolver {
 
     // just some optimizations
     truncate_nodes_set: BoundedSet,
+    updated_nodes_set: BoundedSet,
 }
 
 impl TypeResolver {
@@ -369,11 +370,11 @@ impl TypeResolver {
     // remove unnecessary (equivalent) elements inside nodes of ref_dsu
     // this is just a small performance gain
     fn truncate_nodes(&mut self, label: IRTypeLabel) {
+        self.truncate_nodes_set.clear();
         for node in self.ref_dsu.get(label).nodes.clone() {
             self.truncate_nodes_set.insert(self.dsu.get_repr(node));
         }
         self.ref_dsu.get(label).nodes = self.truncate_nodes_set.as_vec().iter().map(|x| *x as IRTypeLabel).collect::<Vec<_>>();
-        self.truncate_nodes_set.clear();
     }
 
     // label2 has exactly offset more references than label1
@@ -403,13 +404,13 @@ impl TypeResolver {
             (self.ref_dsu.get(label2).nodes.clone(), offset)
         };
 
-        let mut updated_nodes = SmallSet::default();
+        self.updated_nodes_set.clear();
         for node in to_modify {
             let repr = self.dsu.get_repr(node);
-            if updated_nodes.contains(&repr) {
+            if self.updated_nodes_set.contains(repr) {
                 continue;
             }
-            updated_nodes.insert(repr);
+            self.updated_nodes_set.insert(repr);
 
             let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
             self.type_dsu.get(node).ref_map.remove(&key);
@@ -432,10 +433,10 @@ impl TypeResolver {
             };
             for node in to_update {
                 let repr = self.dsu.get_repr(node);
-                if updated_nodes.contains(&repr) {
+                if self.truncate_nodes_set.contains(repr) {
                     continue;
                 }
-                updated_nodes.insert(repr);
+                self.truncate_nodes_set.insert(repr);
 
                 let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
                 self.type_dsu.get(node).ref_map.remove(&key);
@@ -443,7 +444,8 @@ impl TypeResolver {
         }
 
         // update ref_dsu's ref_maps
-        for node in updated_nodes.into_vec() {
+        for node in self.updated_nodes_set.as_vec().clone() {
+            let node = node as IRTypeLabel;
             let key = (self.ref_dsu.get_repr(node), self.dsu.get(node).ref_depth);
             if let Some(label) = self.type_dsu.get(node).ref_map.get(&key).copied() {
                 if self.dsu.get_repr(label) != self.dsu.get_repr(node) {
@@ -454,6 +456,7 @@ impl TypeResolver {
                 self.type_dsu.get(node).ref_map.insert(key, node);
             }
         }
+
 
         self.push_type_parents(label1);
 

@@ -77,13 +77,9 @@ pub struct BoundedSet {
 impl Rollback for BoundedSet {
     type SaveState = ();
 
-    fn save_state(&mut self) -> Self::SaveState {
-        assert!(self.vec.is_empty());
-    }
+    fn save_state(&mut self) -> Self::SaveState {}
 
-    fn restore_state(&mut self, _state: Self::SaveState) {
-        assert!(self.vec.is_empty());
-    }
+    fn restore_state(&mut self, _state: Self::SaveState) {}
 }
 
 impl BoundedSet {
@@ -100,14 +96,14 @@ impl BoundedSet {
     pub fn contains(&self, x: usize) -> bool {
         self.present.get(x).is_some_and(|x| *x)
     }
-    
+
     pub fn clear(&mut self) {
         for i in &self.vec {
             self.present[*i as usize] = false;
         }
         self.vec.clear();
     }
-    
+
     pub fn as_vec(&self) -> &Vec<u32> {
         &self.vec
     }
