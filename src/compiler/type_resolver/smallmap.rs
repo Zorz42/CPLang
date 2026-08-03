@@ -49,25 +49,6 @@ impl<K: PartialEq + Clone, V: Clone> Index<&K> for SmallMap<K, V> {
     }
 }
 
-#[derive(Default, Clone)]
-pub struct SmallSet<T> {
-    values: Vec<T>,
-}
-
-impl<T: PartialEq> SmallSet<T> {
-    pub fn insert(&mut self, val: T) {
-        self.values.push(val);
-    }
-
-    pub fn contains(&self, val: &T) -> bool {
-        self.values.iter().any(|x| x == val)
-    }
-
-    pub fn into_vec(self) -> Vec<T> {
-        self.values
-    }
-}
-
 #[derive(Default)]
 pub struct BoundedSet {
     present: Vec<bool>,
@@ -104,7 +85,7 @@ impl BoundedSet {
         self.vec.clear();
     }
 
-    pub fn as_vec(&self) -> &Vec<u32> {
+    pub const fn as_vec(&self) -> &Vec<u32> {
         &self.vec
     }
 }
