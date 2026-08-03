@@ -66,4 +66,7 @@ fn main() {
             }
         }
     }
+
+    #[cfg(feature = "count_calls")]
+    cplang::call_counter::print_counts();
 }

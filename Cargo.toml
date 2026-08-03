@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 test_derive = { path = "src/test_derive" }
 rollback_derive = { path = "src/compiler/type_resolver/rollback_derive" }
+call_counter_derive = { path = "src/call_counter_derive" }
 
 [profile.release]
 lto = false
@@ -20,6 +21,7 @@ strip = false
 [features]
 trace = []
 measure = []
+count_calls = []
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

@@ -1,4 +1,5 @@
 use crate::compiler::type_resolver::rollback::{Rollback, RollbackVec};
+use call_counter_derive::count_calls;
 use rollback_derive::Rollback;
 use std::mem::swap;
 use std::ops::AddAssign;
@@ -28,6 +29,7 @@ impl<T: AddAssign + Default + Rollback> Dsu<T> {
         self.value.push(T::default());
     }
 
+    #[count_calls]
     pub fn get_repr(&mut self, mut a: usize) -> usize {
         while let x = unsafe { *self.parent.get_unchecked(a) }
             && x >= 0

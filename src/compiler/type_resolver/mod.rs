@@ -4,6 +4,7 @@ use crate::compiler::parser::ast::PrimitiveType;
 use crate::compiler::type_resolver::dsu::Dsu;
 use crate::compiler::type_resolver::rollback::{Rollback, RollbackVec};
 use crate::compiler::type_resolver::smallmap::{SmallMap, SmallSet};
+use call_counter_derive::{count_call, count_calls};
 use rollback_derive::Rollback;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem::swap;
@@ -126,6 +127,7 @@ impl TypeResolver {
         num_known_fields
     }
 
+    #[count_calls]
     pub fn new_type_label(&mut self, pos: FilePosition) -> IRTypeLabel {
         let res = self.dsu.len() as IRTypeLabel;
         self.dsu.add();
@@ -217,6 +219,7 @@ impl TypeResolver {
 
     fn run_queue(&mut self) -> CompilerResult<()> {
         while let Some(node) = self.queue.pop_front() {
+            count_call!("type resolver queue runs");
             self.dsu.get(node).in_queue = false;
 
             // when a node is updated it does the following:
