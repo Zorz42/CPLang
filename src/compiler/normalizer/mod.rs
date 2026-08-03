@@ -93,32 +93,7 @@ impl Normalizer {
             }
         }
 
-        // compute function ordering based on how specific they are
-        let keys = self.functions_name_map.keys().collect::<Vec<_>>().into_iter().cloned().collect::<Vec<_>>();
-        for k in keys {
-            let n = self.functions_name_map[&k].len();
-            self.functions_specific_ordering.insert(k.clone(), Vec::new());
-            let mut conns = HashSet::new();
-            for i1 in 0..n {
-                for i2 in 0..n {
-                    if i1 == i2 {
-                        continue;
-                    }
-                    let sign1 = self.functions_name_map[&k][i1].0.clone();
-                    let sign2 = self.functions_name_map[&k][i2].0.clone();
-                    if self.check_is_function_more_specific(&sign1, &sign2) {
-                        self.functions_specific_ordering.get_mut(&k).unwrap().push((i1, i2));
-                        conns.insert((i1, i2));
-                        if conns.contains(&(i2, i1)) {
-                            return Err(CompilerError {
-                                message: format!("Found two equivalent signatures for function {}", k.0),
-                                position: Some(self.functions_name_map[&k][i1].0.pos),
-                            });
-                        }
-                    }
-                }
-            }
-        }
+        self.compute_function_ordering()?;
 
         // add all global variables
         let mut global_assignments = Vec::new();
@@ -188,6 +163,40 @@ impl Normalizer {
         self.ir = check_refs(self.ir, &autorefs)?;
 
         Ok(self.ir)
+    }
+
+    fn compute_function_ordering(&mut self) -> CompilerResult<()> {
+        let keys = self.functions_name_map.keys().collect::<Vec<_>>().into_iter().cloned().collect::<Vec<_>>();
+        for k in keys {
+            let n = self.functions_name_map[&k].len();
+            let mut args1 = Vec::new();
+            let mut args2 = Vec::new();
+            for i in 0..n {
+                let sign = self.functions_name_map[&k][i].0.clone();
+                args1.push(self.add_func_to_resolver(&sign)?);
+                args2.push(self.add_func_to_resolver(&sign)?);
+            }
+            self.functions_specific_ordering.insert(k.clone(), Vec::new());
+            let mut conns = HashSet::new();
+            for i1 in 0..n {
+                for i2 in 0..n {
+                    if i1 == i2 {
+                        continue;
+                    }
+                    if self.check_is_function_more_specific(args1[i1].clone(), args2[i1].clone(), args1[i2].clone()) {
+                        self.functions_specific_ordering.get_mut(&k).unwrap().push((i1, i2));
+                        conns.insert((i1, i2));
+                        if conns.contains(&(i2, i1)) {
+                            return Err(CompilerError {
+                                message: format!("Found two equivalent signatures for function {}", k.0),
+                                position: Some(self.functions_name_map[&k][i1].0.pos),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     fn normalize_struct(&mut self, structure: ASTStructDeclaration) -> (IRStruct, Vec<ASTType>, Vec<(String, FilePosition)>) {

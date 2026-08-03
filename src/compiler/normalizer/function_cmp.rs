@@ -2,7 +2,7 @@ use crate::compiler::error::{CompilerResult, FilePosition};
 use crate::compiler::normalizer::Normalizer;
 use crate::compiler::normalizer::ir::IRTypeLabel;
 use crate::compiler::parser::ast::ASTFunctionSignature;
-use crate::compiler::type_resolver::TypeResolver;
+use crate::compiler::type_resolver::rollback::Rollback;
 use std::collections::HashMap;
 use std::mem::swap;
 
@@ -27,32 +27,30 @@ impl Normalizer {
     }
 
     // is func1 more specific than func2 - so every call that satisfies func1 also satisfies func2
-    pub fn check_is_function_more_specific(&mut self, func1: &ASTFunctionSignature, func2: &ASTFunctionSignature) -> bool {
+    pub fn check_is_function_more_specific(&mut self, func1_args1: Vec<IRTypeLabel>, func1_args2: Vec<IRTypeLabel>, func2_args: Vec<IRTypeLabel>) -> bool {
         #[cfg(feature = "trace")]
         {
             println!("===============");
-            println!("Comparing {func1:?} {func2:?}");
+            println!("Comparing");
         }
 
-        let mut old_resolver = TypeResolver::new(self.type_resolver.get_structs());
-        // this is ugly (might refactor later)
-        swap(&mut old_resolver, &mut self.type_resolver);
+        let state = self.type_resolver.save_state();
 
-        let Ok(args1) = self.add_func_to_resolver(func1) else { return false };
-        let Ok(args2) = self.add_func_to_resolver(func1) else { return false };
-        let Ok(args3) = self.add_func_to_resolver(func2) else { return false };
-
-        for (arg1, arg2) in args2.iter().zip(args3) {
+        for (arg1, arg2) in func1_args2.iter().zip(func2_args) {
             if self.type_resolver.hint_equal(*arg1, arg2).is_err() {
+                self.type_resolver.restore_state(state);
                 #[cfg(feature = "trace")]
-                println!("===============");
+                {
+                    println!("Verdict: false");
+                    println!("===============");
+                }
 
                 return false;
             }
         }
 
-        let res = self.type_resolver.compare_sets(args1, args2);
-        swap(&mut old_resolver, &mut self.type_resolver);
+        let res = self.type_resolver.compare_sets(func1_args1, func1_args2);
+        self.type_resolver.restore_state(state);
         #[cfg(feature = "trace")]
         {
             println!("Verdict: {res}");

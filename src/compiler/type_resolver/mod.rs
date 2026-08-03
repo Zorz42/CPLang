@@ -116,10 +116,6 @@ impl TypeResolver {
         res
     }
 
-    pub fn get_structs(&self) -> Vec<Vec<IRFieldLabel>> {
-        self.structs_ord.clone()
-    }
-
     fn get_num_known_fields(&mut self, type_label: IRTypeLabel) -> usize {
         let mut num_known_fields = 0;
         let values = self.type_dsu.get(type_label).child_fields.values().clone();
