@@ -3,7 +3,7 @@ use crate::compiler::normalizer::ir::{IRAutoRefLabel, IRFieldLabel, IRStructLabe
 use crate::compiler::parser::ast::PrimitiveType;
 use crate::compiler::type_resolver::dsu::Dsu;
 use crate::compiler::type_resolver::rollback::{Rollback, RollbackVec};
-use crate::compiler::type_resolver::smallmap::{SmallMap, SmallSet};
+use crate::compiler::type_resolver::smallmap::{BoundedSet, SmallMap, SmallSet};
 use call_counter_derive::{count_call, count_calls};
 use rollback_derive::Rollback;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -97,6 +97,9 @@ pub struct TypeResolver {
     // static data about struct fields
     structs: Vec<HashSet<IRFieldLabel>>,
     structs_ord: Vec<Vec<IRFieldLabel>>,
+
+    // just some optimizations
+    truncate_nodes_set: BoundedSet,
 }
 
 impl TypeResolver {
@@ -266,6 +269,7 @@ impl TypeResolver {
         self.add_to_queue(label1);
     }
 
+    #[count_calls]
     fn merge_type(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> CompilerResult<()> {
         let mut typ1 = self.type_dsu.get(label1).typ.clone();
         let mut typ2 = self.type_dsu.get(label2).typ.clone();
@@ -365,14 +369,15 @@ impl TypeResolver {
     // remove unnecessary (equivalent) elements inside nodes of ref_dsu
     // this is just a small performance gain
     fn truncate_nodes(&mut self, label: IRTypeLabel) {
-        let mut new_nodes = HashSet::new();
         for node in self.ref_dsu.get(label).nodes.clone() {
-            new_nodes.insert(self.dsu.get_repr(node));
+            self.truncate_nodes_set.insert(self.dsu.get_repr(node));
         }
-        self.ref_dsu.get(label).nodes = new_nodes.into_iter().collect::<Vec<_>>();
+        self.ref_dsu.get(label).nodes = self.truncate_nodes_set.as_vec().iter().map(|x| *x as IRTypeLabel).collect::<Vec<_>>();
+        self.truncate_nodes_set.clear();
     }
 
     // label2 has exactly offset more references than label1
+    #[count_calls]
     fn merge_ref(&mut self, label1: IRTypeLabel, label2: IRTypeLabel, offset: i32) -> CompilerResult<()> {
         if self.ref_dsu.get_repr(label1) == self.ref_dsu.get_repr(label2) {
             // already merged, just check if there is no contradiction

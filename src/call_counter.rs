@@ -37,6 +37,20 @@ pub fn register(name: &'static str, counter: &'static AtomicU64) {
 /// Prints all counted functions that were called at least once.
 #[cfg(feature = "count_calls")]
 pub fn print_counts() {
+    fn format_with_spaces(n: u64) -> String {
+        let s = n.to_string();
+        let (sign, digits) = s.strip_prefix('-').map_or(("", s.as_str()), |d| ("-", d));
+
+        let mut out = String::new();
+        for (i, ch) in digits.chars().enumerate() {
+            if i > 0 && (digits.len() - i) % 3 == 0 {
+                out.push(' ');
+            }
+            out.push(ch);
+        }
+        format!("{sign}{out}")
+    }
+
     let mut counts: Vec<(&str, u64)> = entries()
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -48,7 +62,7 @@ pub fn print_counts() {
 
     println!("Function call counts:");
     for (name, count) in counts {
-        println!("  {name}: {count}");
+        println!("  {name}: {}", format_with_spaces(count));
     }
 }
 

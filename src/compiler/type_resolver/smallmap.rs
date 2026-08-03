@@ -68,5 +68,48 @@ impl<T: PartialEq> SmallSet<T> {
     }
 }
 
+#[derive(Default)]
+pub struct BoundedSet {
+    present: Vec<bool>,
+    vec: Vec<u32>,
+}
 
+impl Rollback for BoundedSet {
+    type SaveState = ();
+
+    fn save_state(&mut self) -> Self::SaveState {
+        assert!(self.vec.is_empty());
+    }
+
+    fn restore_state(&mut self, _state: Self::SaveState) {
+        assert!(self.vec.is_empty());
+    }
+}
+
+impl BoundedSet {
+    pub fn insert(&mut self, x: usize) {
+        while self.present.len() <= x {
+            self.present.push(false);
+        }
+        if !self.present[x] {
+            self.present[x] = true;
+            self.vec.push(x as u32);
+        }
+    }
+
+    pub fn contains(&self, x: usize) -> bool {
+        self.present.get(x).is_some_and(|x| *x)
+    }
+    
+    pub fn clear(&mut self) {
+        for i in &self.vec {
+            self.present[*i as usize] = false;
+        }
+        self.vec.clear();
+    }
+    
+    pub fn as_vec(&self) -> &Vec<u32> {
+        &self.vec
+    }
+}
 
