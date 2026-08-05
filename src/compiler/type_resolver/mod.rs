@@ -6,7 +6,7 @@ use crate::compiler::type_resolver::rollback::{Rollback, RollbackVec};
 use crate::compiler::type_resolver::smallmap::{BoundedSet, SmallMap};
 use call_counter_derive::{count_call, count_calls};
 use rollback_derive::Rollback;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::mem::swap;
 use std::ops::AddAssign;
 
@@ -82,7 +82,7 @@ impl AddAssign for RefNode {
 #[derive(Default, Rollback)]
 pub struct TypeResolver {
     type_positions: RollbackVec<FilePosition>,
-    queue: VecDeque<IRTypeLabel>,
+    queue: Vec<IRTypeLabel>,
     auto_ref_pairs: Vec<(IRTypeLabel, IRTypeLabel)>,
     // two labels are in the same component if they have exactly the same type
     dsu: Dsu<Node>,
@@ -144,7 +144,7 @@ impl TypeResolver {
             return;
         }
         self.dsu.get(label).in_queue = true;
-        self.queue.push_back(label);
+        self.queue.push(label);
     }
 
     pub fn new_autoref_label(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> IRAutoRefLabel {
@@ -172,14 +172,10 @@ impl TypeResolver {
 
     // push to queue every struct type that depends on label's type (in type_dsu)
     fn push_type_parents(&mut self, label: IRTypeLabel) {
-        let mut to_queue = Vec::new();
         for label2 in self.type_dsu.get(label).ref_map.values().clone() {
-            for (parent_type, _field_label) in &self.dsu.get(label2).parent_structs {
-                to_queue.push(*parent_type);
+            for (parent_type, _field_label) in self.dsu.get(label2).parent_structs.clone() {
+                self.add_to_queue(parent_type);
             }
-        }
-        for i in to_queue {
-            self.add_to_queue(i);
         }
     }
 
@@ -218,7 +214,7 @@ impl TypeResolver {
     }
 
     fn run_queue(&mut self) -> CompilerResult<()> {
-        while let Some(node) = self.queue.pop_front() {
+        while let Some(node) = self.queue.pop() {
             count_call!("type resolver queue runs");
             self.dsu.get(node).in_queue = false;
 
