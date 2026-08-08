@@ -98,7 +98,7 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-        .to_owned()
+    .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {

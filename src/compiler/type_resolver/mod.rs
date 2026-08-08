@@ -12,9 +12,9 @@ use std::ops::AddAssign;
 
 mod compare_sets;
 pub mod dsu;
+pub mod rollback;
 mod smallmap;
 mod test;
-pub mod rollback;
 
 #[derive(Default, Clone, Rollback)]
 pub struct Node {
@@ -457,7 +457,6 @@ impl TypeResolver {
                 self.type_dsu.get(node).ref_map.insert(key, node);
             }
         }
-
 
         self.push_type_parents(label1);
 

@@ -14,7 +14,7 @@
 #![allow(clippy::cast_sign_loss)]
 
 use crate::compiler::codegen::generate_code;
-use crate::compiler::error::CompilerResult;
+use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::lowerer::lower_ast;
 use crate::compiler::macros::insert_macros;
 use crate::compiler::normalizer::normalize_ast;
@@ -55,7 +55,10 @@ pub fn gain_input_sources(input_content: String) -> [String; 7] {
 }
 
 fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
-    let input_content = std::fs::read_to_string(input_file).unwrap();
+    let input_content = std::fs::read_to_string(input_file).map_err(|e| CompilerError {
+        message: format!("Could not read input file '{input_file}': {e}"),
+        position: None,
+    })?;
     let input_sources = gain_input_sources(input_content);
 
     let mut fragment_blocks = Vec::new();
@@ -76,14 +79,19 @@ fn compile_internal(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let ir = normalize_ast(ast)?;
     let code = generate_code(ir);
 
-    std::fs::write(output_file, code).unwrap();
+    std::fs::write(output_file, code).map_err(|e| CompilerError {
+        message: format!("Could not write output file '{output_file}': {e}"),
+        position: None,
+    })?;
 
     Ok(())
 }
 
 /// Compiles `input_file` into `output_file`. Both are paths.
+///
 /// # Panics
-/// Should never panic
+/// Only if compilation itself panics, in which case the panic is resumed on the
+/// calling thread. I/O and source errors come back as `Err`.
 ///
 /// # Errors
 /// Returns compilation error
@@ -94,7 +102,7 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let input_file = input_file.to_string();
     let output_file = output_file.to_string();
 
-    std::thread::Builder::new()
+    let worker = std::thread::Builder::new()
         .stack_size(STACK_SIZE)
         .spawn(move || {
             #[cfg(feature = "measure")]
@@ -106,7 +114,12 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
             }
             Ok(())
         })
-        .unwrap()
-        .join()
-        .unwrap()
+        .map_err(|e| CompilerError {
+            message: format!("Could not spawn compiler thread: {e}"),
+            position: None,
+        })?;
+
+    // A panic in here is an internal compiler bug, not a user error, so let it
+    // stay a panic instead of dressing it up as a `CompilerError`.
+    worker.join().unwrap_or_else(|payload| std::panic::resume_unwind(payload))
 }

@@ -58,9 +58,7 @@ impl<T: Rollback> RollbackVec<T> {
     }*/
 
     pub unsafe fn get_unchecked(&self, idx: usize) -> &T {
-        unsafe {
-            self.vec.get_unchecked(idx)
-        }
+        unsafe { self.vec.get_unchecked(idx) }
     }
 
     pub fn get_mut(&mut self, idx: usize) -> &mut T {
