@@ -5,6 +5,11 @@ mod compiler;
 mod display_error;
 mod tests;
 
+// Normalization clones a lot of small values (see the type resolver's rollback
+// state), which makes the allocator a measurable part of compile time.
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 fn print_usage(program_name: &str) {
     eprintln!("Usage: {} <input_file> -o <output_file>", program_name);
 }

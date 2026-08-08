@@ -10,10 +10,14 @@ call_counter_derive = { path = "src/call_counter_derive" }
 # Only used to turn recorded return addresses into function names when the
 # counts are printed, never while counting.
 backtrace = { version = "0.3", optional = true }
+# The compiler is allocation-bound (the type resolver clones per overload
+# candidate), so the system allocator shows up directly in compile times.
+mimalloc = { version = "0.1", default-features = false }
 
 [profile.release]
-lto = false
-opt-level = "z"
+lto = "fat"
+opt-level = 3
+codegen-units = 1
 panic = "abort"
 strip = "symbols"
 
