@@ -172,11 +172,20 @@ impl TypeResolver {
     }
 
     // push to queue every struct type that depends on label's type (in type_dsu)
+    #[count_calls]
     fn push_type_parents(&mut self, label: IRTypeLabel) {
         for label2 in self.type_dsu.get(label).ref_map.values().clone() {
-            for (parent_type, _field_label) in self.dsu.get(label2).parent_structs.clone() {
-                self.add_to_queue(parent_type);
+            let mut new_parent_structs = Vec::new();
+            for (parent_type, field_label) in self.dsu.get(label2).parent_structs.clone() {
+                if !self.check_is_type_known(parent_type) {
+                    new_parent_structs.push((parent_type, field_label));
+                }
             }
+            for (parent_type, _field_label) in &new_parent_structs {
+                self.add_to_queue(*parent_type);
+            }
+
+            self.dsu.get(label2).parent_structs = new_parent_structs;
         }
     }
 
