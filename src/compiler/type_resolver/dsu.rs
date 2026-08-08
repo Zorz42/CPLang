@@ -29,7 +29,7 @@ impl<T: AddAssign + Default + Rollback> Dsu<T> {
         self.value.push(T::default());
     }
 
-    #[count_calls]
+    #[count_calls(3)]
     pub fn get_repr(&mut self, mut a: usize) -> usize {
         while let x = unsafe { *self.parent.get_unchecked(a) }
             && x >= 0

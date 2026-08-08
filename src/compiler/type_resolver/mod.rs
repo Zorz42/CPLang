@@ -139,6 +139,7 @@ impl TypeResolver {
         res
     }
 
+    #[count_calls(3)]
     fn add_to_queue(&mut self, label: IRTypeLabel) {
         if self.dsu.get(label).in_queue {
             return;
