@@ -25,6 +25,9 @@ strip = "symbols"
 inherits = "release"
 strip = false
 
+[profile.test]
+opt-level = 1
+
 [features]
 trace = []
 measure = []
