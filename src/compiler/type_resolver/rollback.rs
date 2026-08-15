@@ -2,7 +2,7 @@
 // you cannot save twice and then revert twice
 
 use crate::compiler::error::FilePosition;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::mem::swap;
 
 pub trait Rollback {
@@ -117,32 +117,6 @@ impl<K: Clone, V: Clone> Rollback for HashMap<K, V> {
 
     fn restore_state(&mut self, state: Self::SaveState) {
         *self = state;
-    }
-}
-
-impl<T: Clone> Rollback for VecDeque<T> {
-    type SaveState = Self;
-
-    fn save_state(&mut self) -> Self::SaveState {
-        self.clone()
-    }
-
-    fn restore_state(&mut self, state: Self::SaveState) {
-        *self = state;
-    }
-}
-
-impl<T1: Rollback, T2: Rollback> Rollback for (T1, T2) {
-    type SaveState = (T1::SaveState, T2::SaveState);
-
-    fn save_state(&mut self) -> Self::SaveState {
-        (self.0.save_state(), self.1.save_state())
-    }
-
-    fn restore_state(&mut self, state: Self::SaveState) {
-        let (state1, state2) = state;
-        self.0.restore_state(state1);
-        self.1.restore_state(state2);
     }
 }
 

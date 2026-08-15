@@ -75,12 +75,20 @@ errors are rendered — and holds a few red assertions of its own, named
 ## Coverage
 
 `cargo llvm-cov --ignore-run-fail --summary-only` reports the compiler at about
-97% of lines. What is left is almost entirely `unreachable!()` arms that guard
-compiler invariants, and three blocks of dead code: the `Debug` impls in
-`normalizer/ir_debug.rs` and for `ASTBlock`, which nothing ever formats, and the
-`Rollback` impls for `VecDeque` and for pairs in `type_resolver/rollback.rs`,
-which are never instantiated. Excluding those, coverage of reachable code is
-about 99%.
+98.5% of lines and 99.6% of functions. What is left is almost all
+`unreachable!()` arms guarding compiler invariants — AST shapes the lowerer has
+already removed, exhaustive-match tails, and a `panic!()` in `parse_indentation`
+whose two conditions cannot both hold.
+
+The rest is worth knowing about if you touch these files, because a test cannot
+currently reach them: a handful of early rejections in
+`type_resolver/compare_sets.rs`, `Dsu::merge` on two labels already in the same
+component, the "two different struct types" error in `type_resolver` (the
+generic type-conflict message always fires first), "Multiple main functions
+found" in the normalizer (the duplicate-signature check gets there first),
+restoring an overridden binding in `symbol_table`, `\t` escaping in
+`codegen` (nothing can put a tab in a string — tabs become spaces before strings
+are scanned), and three I/O and thread failures that a test cannot provoke.
 
 ## Layout
 
