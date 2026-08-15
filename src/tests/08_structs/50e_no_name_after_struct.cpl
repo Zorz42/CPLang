@@ -1,0 +1,8 @@
+//ERR 4 0 4 5
+//MSG="Expected struct name after struct keyword"
+
+struct
+    x
+
+fn main
+    out "compile"

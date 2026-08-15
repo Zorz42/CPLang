@@ -1,0 +1,20 @@
+//OUT="2 4 3.000000000 6.000000000 2 4"
+
+// Calling one template at alternating types makes the instance cache both hit
+// (the second i32 call) and reject a cached instance whose template types do
+// not match (the f64 calls in between).
+
+fn twice[T] x: T
+    ret x + x
+
+fn quad[T] x: T
+    ret twice(twice(x))
+
+fn main
+    a = twice(1)
+    b = quad(1)
+    c = twice(1.5)
+    d = quad(1.5)
+    e = twice(1)
+    f = quad(1)
+    out "{a} {b} {c} {d} {e} {f}"

@@ -1,0 +1,15 @@
+//OUT="10 ok"
+
+struct Box[T]
+    x: T
+
+struct Tuple[A B]
+    first: Box[A]
+    second: Box[B]
+
+fn make_tuple[A B] a: Box[A] b: Box[B]
+    ret Tuple[A B] first a second b
+
+fn main
+    a = make_tuple(Box x 10 Box x "ok")
+    out "{a.first.x} {a.second.x}"

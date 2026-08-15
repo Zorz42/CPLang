@@ -1,0 +1,21 @@
+//BUG="FEEDBACK.md 1.1 — && and || share a precedence tier"
+//OUT="TRUE"
+
+// parse_expression puts And and Or in one tier
+// (src/compiler/parser/expression.rs, the `operator_precedence` table), and a
+// tier is folded left to right, so `a || b && c` becomes `(a || b) && c` and
+// this program prints FALSE. C, C++, Rust and Python all read it as
+// `a || (b && c)` and print TRUE. Nothing warns, so a solution ported from
+// C++ silently computes a different answer.
+//
+// Fix: give And its own tier above Or —
+// mul/div/mod > add/sub > comparisons > And > Or > Comma > DotDot.
+
+fn main
+    a = true
+    b = false
+    c = false
+    if a || b && c
+        out "TRUE"
+    else
+        out "FALSE"

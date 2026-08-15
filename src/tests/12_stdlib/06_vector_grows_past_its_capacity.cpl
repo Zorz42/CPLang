@@ -1,0 +1,14 @@
+//OUT="4950 1000"
+
+fn main
+    v = Vec()
+    for i 0..100
+        v.push(i)
+    sum = 0
+    for x v
+        sum += x
+    out "{sum} "
+    v2 = Vec()
+    for i 0..1000
+        v2.push(i)
+    out "{v2.size()}"

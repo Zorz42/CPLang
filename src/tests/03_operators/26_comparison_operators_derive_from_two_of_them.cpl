@@ -1,0 +1,18 @@
+//OUT="1 1 1 0"
+
+// The core library defines == and < per type and derives !=, <=, > and >= from
+// them, so overloading the two primitives is enough for a new type.
+
+struct Weight
+    grams: i32
+
+operator== a: Weight b: Weight
+    ret a.grams == b.grams
+
+operator< a: Weight b: Weight
+    ret a.grams < b.grams
+
+fn main
+    light = Weight grams 10
+    heavy = Weight grams 20
+    out "{light < heavy} {light != heavy} {heavy >= light} {heavy <= light}"

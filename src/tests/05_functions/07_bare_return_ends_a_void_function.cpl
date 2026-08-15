@@ -1,0 +1,10 @@
+//OUT="one"
+
+fn once quiet
+    out "one"
+    if quiet
+        ret
+    out "two"
+
+fn main
+    once(true)

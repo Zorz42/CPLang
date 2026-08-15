@@ -1,0 +1,12 @@
+//OUT="42"
+
+struct Box
+    v: i32
+
+fn fill b
+    b.v = 42
+
+fn main
+    box = Box v 0
+    fill(&box)
+    out "{box.v}"

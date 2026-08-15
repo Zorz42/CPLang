@@ -1,0 +1,14 @@
+//BUG="FEEDBACK.md 1.8 — float literals are parsed at f32 precision"
+//OUT="0.123456789"
+
+// Token::ConstFloat holds an f32 and the literal is parsed with
+// parse::<f32>() (src/compiler/tokenizer.rs); the normalizer then widens it
+// with f64::from and types it F64. The precision is already gone, so this
+// prints 0.123456791 — the f32 value 0.12345679104328156 rounded to nine
+// decimals — rather than the f64 value.
+//
+// Fix: store f64 in the token and parse with parse::<f64>().
+
+fn main
+    x = 0.1234567890123
+    out "{x}"

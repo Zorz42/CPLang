@@ -1,0 +1,14 @@
+//OUT="a Z 0 { } ) ' \" \\ ."
+
+fn main
+    letter = 'a'
+    upper = 'Z'
+    digit = '0'
+    open_brace = '{'
+    close_brace = '}'
+    paren = ')'
+    apostrophe = '\''
+    quote = '\"'
+    backslash = '\\'
+    dot = '.'
+    out "{letter} {upper} {digit} {open_brace} {close_brace} {paren} {apostrophe} {quote} {backslash} {dot}"

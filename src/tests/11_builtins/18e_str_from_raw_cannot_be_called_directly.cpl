@@ -1,0 +1,12 @@
+//ERR any
+//MSG="No candidate found for this function call"
+
+// The lowerer rewrites every string literal to _Str_from_raw(literal), so by
+// the time an argument reaches a call it is already a Str. Passing a literal
+// to _Str_from_raw therefore wraps it twice and matches nothing. It is the
+// only way core's _Str_from_raw is ever reached, and it is reached implicitly
+// by every string in every other test.
+
+fn main
+    s = _Str_from_raw("abc")
+    out "{s}"

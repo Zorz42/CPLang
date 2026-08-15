@@ -1,0 +1,16 @@
+//OUT="9 0 1 2 2"
+
+// A `for` loop does not introduce a fresh binding: if the iterator name
+// already exists — here a global — the loop writes to it, and the value it
+// stopped at is still there afterwards. This follows the same rule as
+// 07_deeper_indentation_shares_the_variable.cpl, where an assignment resolves
+// outward to the nearest existing name, but it is easy to be caught by:
+// `for i` in a function silently rewrites a global `i`.
+
+i = 9
+
+fn main
+    out "{i} "
+    for i 0..3
+        out "{i} "
+    out "{i}"

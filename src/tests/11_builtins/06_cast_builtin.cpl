@@ -1,0 +1,6 @@
+//OUT="3 3.000000000"
+
+fn main
+    a = _builtin_cast[i32](3.5)
+    b = _builtin_cast[f64](3)
+    out "{a} {b}"

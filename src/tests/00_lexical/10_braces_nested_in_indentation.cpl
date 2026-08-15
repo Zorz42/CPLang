@@ -1,0 +1,6 @@
+//OUT="12"
+
+fn main
+    a = 0
+    if true { a = 12 }
+    out "{a}"

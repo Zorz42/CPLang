@@ -1,0 +1,8 @@
+//IN="xy"
+//OUT="xy"
+
+fn main
+    a = _builtin_getchar()
+    b = _builtin_getchar()
+    _builtin_putchar(a)
+    _builtin_putchar(b)

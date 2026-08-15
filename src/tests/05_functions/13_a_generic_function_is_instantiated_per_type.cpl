@@ -1,0 +1,11 @@
+//OUT="Hello, 10"
+
+fn id x
+    ret x
+
+fn print_with_hello x
+    out "Hello, {id(x)}"
+
+fn main
+    val = id("test")
+    print_with_hello(10)

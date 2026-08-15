@@ -1,0 +1,9 @@
+//OUT="A 65 1 0 1"
+
+fn main
+    to_char = char 65
+    to_code = i32 'A'
+    true_as_int = i32 true
+    false_as_int = i32 false
+    one_as_bool = bool 1
+    out "{to_char} {to_code} {true_as_int} {false_as_int} {one_as_bool}"

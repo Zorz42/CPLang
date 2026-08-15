@@ -1,0 +1,5 @@
+//OUT="a\nb"
+
+fn main
+    nl = '\n'
+    out "a{nl}b"

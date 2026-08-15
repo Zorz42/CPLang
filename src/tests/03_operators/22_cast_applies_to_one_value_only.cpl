@@ -1,0 +1,7 @@
+//OUT="11"
+
+// A cast binds like a prefix operator on a single value, so `i32 1.9 + 10`
+// is `(i32 1.9) + 10`.
+
+fn main
+    out "{i32 1.9 + 10}"

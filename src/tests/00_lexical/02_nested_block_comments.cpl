@@ -1,0 +1,6 @@
+//OUT="ok"
+
+fn main
+    /* /* /* three levels deep */ */ */
+    /* /* */ out "this line is still commented out" */
+    out "ok"

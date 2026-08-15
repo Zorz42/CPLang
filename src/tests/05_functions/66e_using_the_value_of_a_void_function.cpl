@@ -1,0 +1,9 @@
+//ERR 7 8 7 21
+//MSG="No candidate found for this function call"
+
+fn nothing
+    ret
+
+fn main
+    a = nothing() + 1
+    out "{a}"

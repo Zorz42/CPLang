@@ -1,0 +1,7 @@
+//OUT="30"
+
+fn add/*a*/x/*b*/y
+    ret x + y
+
+fn main
+    out/*c*/"{add(10 20)}"

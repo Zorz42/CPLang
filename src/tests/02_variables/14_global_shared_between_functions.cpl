@@ -1,0 +1,11 @@
+//OUT="0 1 2 3"
+
+counter = 0
+
+fn next
+    res = counter
+    counter++
+    ret res
+
+fn main
+    out "{next()} {next()} {next()} {next()}"

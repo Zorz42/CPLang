@@ -1,0 +1,15 @@
+//OUT="5 7 5"
+
+// The parameter `n` shadows the global of the same name for the body of the
+// function, and the global has to be visible again afterwards.
+
+n = 5
+
+fn show n
+    ret n
+
+fn main
+    a = n
+    b = show(7)
+    c = n
+    out "{a} {b} {c}"

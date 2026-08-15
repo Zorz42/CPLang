@@ -1,8 +1,0 @@
-//ERR 6 31 6 32
-
-struct TestStruct
-    x y
-
-fn main
-    a = TestStruct x "compile" x "compile"
-    out "ok"

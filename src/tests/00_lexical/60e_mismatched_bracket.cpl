@@ -1,0 +1,6 @@
+//ERR any
+//MSG="Expected closing"
+
+fn main
+    a = (10]
+    out "{a}"

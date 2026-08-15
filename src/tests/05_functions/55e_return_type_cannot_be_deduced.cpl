@@ -1,0 +1,8 @@
+//ERR 3 3 3 7
+//MSG="100-th recursive call in the normalization phase"
+
+fn func
+    ret func()
+
+fn main
+    func()

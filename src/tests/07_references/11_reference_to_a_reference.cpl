@@ -1,0 +1,11 @@
+//OUT="5 5 5"
+
+// Two levels of indirection, which makes the resolver reconcile reference
+// depths rather than plain types.
+
+fn main
+    a = 1
+    r = &a
+    rr = &r
+    |(|rr) = 5
+    out "{a} {|r} {|(|rr)}"

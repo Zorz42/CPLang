@@ -1,0 +1,6 @@
+//OUT="2 3 4 "
+
+fn main
+    r = Range start 2 end 5
+    for i r
+        out "{i} "

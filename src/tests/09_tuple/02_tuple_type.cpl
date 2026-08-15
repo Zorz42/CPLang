@@ -1,9 +1,0 @@
-//OUT="10 1.000000000"
-
-struct MyStruct
-    x: i32, f64
-
-fn main
-    a = MyStruct x 10, 1.0
-
-    out "{a.x.0} {a.x.1}"

@@ -1,0 +1,16 @@
+//BUG="FEEDBACK.md 1.4 — codegen panics on a struct or tuple temporary"
+//OUT="1"
+
+// codegen indexes the struct registry directly
+// (`ctx.c_structs[&(struct_label, fields_type_labels)]`, src/compiler/codegen/mod.rs),
+// and that registry is only filled in by gen_type, which runs for variable,
+// argument and return types. A tuple that exists only as a temporary is never
+// registered, so the compiler panics with "no entry found for key" instead of
+// emitting code.
+//
+// Fix: call gen_type on demand in that arm, and stop []-indexing in codegen —
+// at that stage a missing entry is a compiler bug, so it deserves an expect()
+// with context at the very least.
+
+fn main
+    out "{(1, 2).0}"

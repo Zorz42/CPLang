@@ -1,0 +1,6 @@
+//ERR 4 7 4 9
+//MSG="at the same time"
+
+fn main
+    if 10
+        out "x"

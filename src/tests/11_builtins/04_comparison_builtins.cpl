@@ -1,0 +1,4 @@
+//OUT="1 0 1 0"
+
+fn main
+    out "{_builtin_eq[i32](5 5)} {_builtin_eq[i32](5 2)} {_builtin_lesser[i32](2 5)} {_builtin_lesser[i32](5 2)}"

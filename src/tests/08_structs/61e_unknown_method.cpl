@@ -1,0 +1,13 @@
+//ERR 11 6 11 14
+//MSG="does not exist"
+
+struct TestStruct
+    x
+
+    fn get_x
+        ret self.x
+
+fn main
+    a = TestStruct x "no good"
+    a.set_xa()
+    out "{a.get_x()}"

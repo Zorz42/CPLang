@@ -1,0 +1,7 @@
+//OUT="10"
+
+fn add a b
+    ret a + b
+
+fn main
+    out "{add(add(1 2) add(3 4))}"

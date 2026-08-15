@@ -1,0 +1,10 @@
+//BUG="FEEDBACK.md 1.3 — an integer literal too large for i32 becomes a float"
+//OUT="4000000001"
+
+// The same root cause as 02, in the form that actually loses data: because the
+// literal is an f32-parsed float, the addition is done in floating point and
+// the low digits are wrong.
+
+fn main
+    x = 4000000000
+    out "{x + 1}"

@@ -1,7 +1,0 @@
-//ERR 5 0 5 2
-
-struct TestStruct
-
-
-fn main
-    out "compile"

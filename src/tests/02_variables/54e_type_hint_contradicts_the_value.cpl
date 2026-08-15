@@ -1,0 +1,6 @@
+//ERR 4 4 4 10
+//MSG="at the same time"
+
+fn main
+    a: i32 = 1.5
+    out "{a}"

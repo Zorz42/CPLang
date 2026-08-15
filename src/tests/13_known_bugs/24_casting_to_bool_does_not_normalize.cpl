@@ -1,0 +1,16 @@
+//BUG="a cast to bool keeps the numeric value instead of 0 or 1"
+//OUT="1 1 1 0"
+
+// Not in FEEDBACK.md. `bool x` is emitted as a plain C cast to the type bool
+// is represented by, with no `!= 0`, so `bool 2` is a bool whose value is 2.
+// Nothing else in the language produces that, and print x: bool is
+// `print('0' + i32 x)`, so it prints the character '2'.
+//
+// Every truthy value should cast to true. Today this prints "1 2 255 0".
+
+fn main
+    a = bool 1
+    b = bool 2
+    c = bool 255
+    d = bool 0
+    out "{a} {b} {c} {d}"

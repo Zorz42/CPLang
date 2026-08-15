@@ -1,0 +1,5 @@
+//ERR any
+//MSG="Builtin operator does not support"
+
+fn main
+    out "{_builtin_mod[f64](5.0 2.0)}"

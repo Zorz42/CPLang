@@ -1,0 +1,7 @@
+//ERR 5 4 5 11
+//MSG="Left hand side is non-assignable"
+
+fn main
+    a = 10
+    10 = 12
+    out "hello {a}"

@@ -1,0 +1,19 @@
+//ERR any
+//MSG="Variable with name one not found"
+
+// Documented limitation (FEEDBACK.md 1.16): macro expansion is single pass, so
+// a macro call that appears inside another macro's *argument* is passed
+// through as tokens and never expanded. `one` therefore reaches the parser as
+// an identifier.
+
+macro one {
+    1
+}
+
+macro show v {
+    x = v
+    out "{x}"
+}
+
+fn main
+    show one;

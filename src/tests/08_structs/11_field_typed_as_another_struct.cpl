@@ -1,0 +1,11 @@
+//OUT="10"
+
+struct Inner
+    x: i32
+
+struct Outer
+    inner: Inner
+
+fn main
+    a = Outer inner Inner x 10
+    out "{a.inner.x}"

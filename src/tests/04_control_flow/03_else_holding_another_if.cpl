@@ -1,0 +1,15 @@
+//OUT="small medium large "
+
+fn describe n
+    if n < 10
+        out "small "
+    else
+        if n < 100
+            out "medium "
+        else
+            out "large "
+
+fn main
+    describe(1)
+    describe(50)
+    describe(1000)

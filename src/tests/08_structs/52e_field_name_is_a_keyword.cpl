@@ -1,0 +1,8 @@
+//ERR 4 4 4 6
+//MSG="Expected field name or fn keyword"
+
+struct TestStruct
+    if
+
+fn main
+    out "compile"

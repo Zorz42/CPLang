@@ -1,0 +1,5 @@
+//OUT="1 2"
+
+fn main
+    a, b = 1, 2
+    out "{a} {b}"

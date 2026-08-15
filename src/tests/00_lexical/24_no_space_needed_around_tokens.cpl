@@ -1,0 +1,6 @@
+//OUT="7 ok"
+
+fn main
+    a=3
+    b=4
+    out"{a+b} ok"

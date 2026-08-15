@@ -1,0 +1,8 @@
+//IN="-5 -0 7"
+//OUT="-5 0 7"
+
+fn main
+    a = read_i32()
+    b = read_i32()
+    c = read_i32()
+    out "{a} {b} {c}"

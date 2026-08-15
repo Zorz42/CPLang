@@ -1,0 +1,13 @@
+//ERR 8 10 8 15
+//MSG="Variable with name value not found"
+
+// A string is a single token, so a macro parameter mentioned inside a format
+// string is not substituted. Assign the parameter to a variable first — see
+// 04_macro_using_another_macro.cpl.
+
+macro show value {
+    out "{value} "
+}
+
+fn main
+    show 1;

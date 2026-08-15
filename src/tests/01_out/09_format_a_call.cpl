@@ -1,0 +1,7 @@
+//OUT="sum=30"
+
+fn add a b
+    ret a + b
+
+fn main
+    out "sum={add(10 20)}"

@@ -1,8 +1,0 @@
-//OUT="ok"
-
-struct TestStruct
-    x
-
-fn main
-    a = TestStruct x "compile"
-    out "ok"

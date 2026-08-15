@@ -1,0 +1,9 @@
+//OUT="10"
+
+fn try_to_change x
+    x = 999
+
+fn main
+    a = 10
+    try_to_change(a)
+    out "{a}"

@@ -1,0 +1,9 @@
+//OUT="500500"
+
+fn sum_to n
+    if n == 0
+        ret 0
+    ret n + sum_to(n - 1)
+
+fn main
+    out "{sum_to(1000)}"

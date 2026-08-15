@@ -1,0 +1,6 @@
+//ERR any
+//MSG="Expected character after quote, not newline"
+
+fn main
+    c = '
+    out "ok"

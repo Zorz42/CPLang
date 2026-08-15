@@ -1,0 +1,12 @@
+//ERR any
+//MSG="Template type should be known"
+
+// Nothing ties T to either argument, so the builtin is asked for its operand
+// type before one exists.
+
+fn add_them[T] a b
+    ret _builtin_add[T](a b)
+
+fn main
+    x = add_them(1 2)
+    out "{x}"

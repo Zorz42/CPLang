@@ -1,0 +1,7 @@
+//OUT="60"
+
+fn test[T] a: T b c: i32
+    ret a + b + c
+
+fn main
+    out "{test(10 20 30)}"

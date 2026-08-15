@@ -1,0 +1,9 @@
+//ERR 6 0 8 2
+//MSG="Unclosed multiline comment"
+
+fn main
+    0
+
+/* the comment that is never closed
+a
+a

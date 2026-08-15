@@ -1,0 +1,24 @@
+//BUG="FEEDBACK.md 1.6 — an error at end of input carries the unknown position"
+//ERR 23 4 23 7
+//MSG="Unexpected token"
+
+// TokenBlock::peek and ::get return LAST_TOKEN, whose position is
+// FilePosition::unknown(), so an error raised when the parser runs out of
+// tokens carries that sentinel instead of a real span. The compiler builds a
+// perfectly good error and then display_error panics printing it:
+//
+//     Error: Unexpected token
+//     thread 'main' panicked at src/display_error.rs:28:13:
+//     internal error: entered unreachable code
+//
+// This case asks for the error to point at the incomplete assignment. The
+// deeper problem is that there are two spellings of "no position" —
+// Option::None and unknown() — and unknown() carries file_ident: 0, which is a
+// valid file id, the user's own file. Collapse them, and make display_error
+// degrade to message-only instead of panicking.
+//
+// The span below is this case's best guess at where the error belongs; adjust
+// it to whatever the fix actually reports.
+
+fn main
+    x =

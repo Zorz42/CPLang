@@ -1,0 +1,12 @@
+//OUT="inner"
+
+fn main
+    a = 1
+    b = 2
+    if a == 1
+        if b == 2
+            out "inner"
+        else
+            out "wrong"
+    else
+        out "wrong"

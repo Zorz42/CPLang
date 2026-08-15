@@ -1,0 +1,6 @@
+//ERR 5 10 5 11
+//MSG="No candidate found for this function call"
+
+fn main
+    a = |0
+    out "{a}"

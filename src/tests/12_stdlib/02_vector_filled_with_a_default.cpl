@@ -1,0 +1,7 @@
+//OUT="4 5 5 5 5 "
+
+fn main
+    v = Vec(4 5)
+    out "{v.size()} "
+    for x v
+        out "{x} "

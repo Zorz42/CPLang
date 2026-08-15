@@ -1,0 +1,4 @@
+//OUT="1 0 1 0"
+
+fn main
+    out "{_builtin_and[bool](true true)} {_builtin_and[bool](true false)} {_builtin_or[bool](false true)} {_builtin_not(true)}"

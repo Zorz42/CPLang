@@ -1,0 +1,6 @@
+//ERR any
+//MSG="Could not deduce this expression's type"
+
+fn main
+    a = _builtin_alloc(1)
+    out "ok"

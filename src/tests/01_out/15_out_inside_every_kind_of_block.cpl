@@ -1,0 +1,19 @@
+//OUT="fn if else while for "
+
+fn helper
+    out "fn "
+
+fn main
+    helper()
+    if true
+        out "if "
+    if false
+        out "unreachable"
+    else
+        out "else "
+    n = 0
+    while n < 1
+        out "while "
+        n += 1
+    for i 0..1
+        out "for "

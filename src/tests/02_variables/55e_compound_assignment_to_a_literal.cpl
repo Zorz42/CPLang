@@ -1,0 +1,6 @@
+//ERR 4 9 4 10
+//MSG="Cannot reference non-physical value"
+
+fn main
+    3 += 1
+    out "ok"

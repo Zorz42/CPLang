@@ -1,0 +1,9 @@
+//OUT="20"
+
+// Indenting further does not open a new scope for assignment: the deeper line
+// writes to the same variable the outer line declared.
+
+fn main
+    a = 10
+                        a = 20
+    out "{a}"

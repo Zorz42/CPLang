@@ -1,0 +1,10 @@
+//ERR 9 4 9 7
+//MSG="Expected identifier or non-negative integer after dot"
+
+struct TestStruct
+    x
+
+fn main
+    a = TestStruct x "compile"
+    a.
+    out "compile"

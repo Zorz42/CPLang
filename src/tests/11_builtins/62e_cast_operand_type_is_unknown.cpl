@@ -1,0 +1,10 @@
+//ERR any
+//MSG="This type must be known at this point"
+
+// The allocation's element type is never pinned down, so the value being cast
+// has no type yet when the cast is checked.
+
+fn main
+    a = _builtin_alloc(1)
+    x = i32 _builtin_index(a 0)
+    out "{x}"

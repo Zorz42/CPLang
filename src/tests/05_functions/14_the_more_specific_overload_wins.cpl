@@ -1,0 +1,11 @@
+//OUT="hello 10 20"
+
+fn func a b
+    0
+
+fn func a: i32 b: i32
+    out "hello {a} {b}"
+
+fn main
+    func("wrong" 0)
+    func(10 20)

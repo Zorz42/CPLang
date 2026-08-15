@@ -1,0 +1,11 @@
+//ERR any
+//MSG="There should be nothing between []"
+
+struct Holder
+    v: i32
+
+    fn operator[i] i: i32
+        ret &self.v
+
+fn main
+    out "ok"

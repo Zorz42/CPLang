@@ -1,0 +1,7 @@
+//ERR 3 0 3 1
+//MSG="at the same time"
+
+a: i32 = "bad"
+
+fn main
+    out "ok"

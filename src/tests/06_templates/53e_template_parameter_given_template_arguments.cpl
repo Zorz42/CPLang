@@ -1,0 +1,8 @@
+//ERR any
+//MSG="Template value cannot have template arguments"
+
+fn func[T] x: T[i32]
+    ret x
+
+fn main
+    out "{func(1)}"

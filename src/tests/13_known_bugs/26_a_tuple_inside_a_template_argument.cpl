@@ -1,0 +1,21 @@
+//BUG="a tuple type inside a template argument panics the normalizer"
+//ERR any
+
+// Not in FEEDBACK.md, and adjacent to 1.12. `x: i32, f64` is a valid tuple
+// type hint on a variable, but the same thing nested inside a template
+// argument reaches the normalizer un-lowered and hits
+//
+//     unreachable!("ASTType::Tuple should be eliminated by lowerer")
+//     src/compiler/normalizer/mod.rs
+//
+// Either lower tuple types inside template arguments too, or reject them with
+// a diagnostic — but not by aborting the process.
+
+struct Holder[T]
+    v: T
+
+fn take h: Holder[i32, f64]
+    ret 1
+
+fn main
+    out "ok"

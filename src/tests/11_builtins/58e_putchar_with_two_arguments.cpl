@@ -1,0 +1,5 @@
+//ERR any
+//MSG="_builtin_putchar takes 1 arguments, not 2"
+
+fn main
+    _builtin_putchar('a' 'b')

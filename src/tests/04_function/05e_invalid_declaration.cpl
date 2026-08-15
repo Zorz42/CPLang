@@ -1,8 +1,0 @@
-//ERR 2 8 2 10
-
-fn func 10
-    ret
-
-fn main
-    func()
-    out "good"

@@ -1,0 +1,11 @@
+//ERR 6 3 6 14
+//MSG="Found two equivalent signatures for function func"
+
+fn func x: i32
+    ret 1
+
+fn func x: i32
+    ret 2
+
+fn main
+    out "{func(1)}"

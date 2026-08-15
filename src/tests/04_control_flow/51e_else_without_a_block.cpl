@@ -1,0 +1,10 @@
+//ERR 9 4 9 7
+//MSG="Expected block after else keyword"
+
+fn main
+    b = 0
+    if 20 == 10
+        b = 40
+    else
+
+    out "{b}"

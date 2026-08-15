@@ -1,0 +1,7 @@
+//ERR 6 10 6 15
+//MSG="Variable with name inner not found"
+
+fn main
+    if true
+        inner = 7
+    out "{inner}"

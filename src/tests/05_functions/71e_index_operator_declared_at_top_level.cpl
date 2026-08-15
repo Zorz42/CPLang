@@ -1,0 +1,17 @@
+//ERR any
+//MSG="No candidate found for this function call"
+
+// `operator[]` parses at the top level, but indexing only ever resolves
+// against a method of the indexed struct, so a free-standing one can never be
+// called. The working form is a method — see
+// 11_builtins/14_a_bracket_operator_of_your_own.cpl.
+
+struct Sym
+    v: i32
+
+operator[] a: Sym b: i32
+    ret 1
+
+fn main
+    x = Sym v 1
+    out "{x[0]}"

@@ -1,0 +1,12 @@
+//OUT="10 20 30 "
+
+fn main
+    v = Vec()
+    v.push(1)
+    v.push(2)
+    v.push(3)
+    for i 0..v.size()
+        r = &v[i]
+        |r = |r * 10
+    for x v
+        out "{x} "

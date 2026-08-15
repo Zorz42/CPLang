@@ -1,0 +1,14 @@
+//ERR 8 6 8 11
+//MSG="Macro redefinition not allowed"
+
+macro twice x {
+    x
+    x
+}
+
+macro twice x {
+    x
+}
+
+fn main
+    out "ok"

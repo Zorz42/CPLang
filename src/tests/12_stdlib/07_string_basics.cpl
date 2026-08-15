@@ -1,0 +1,8 @@
+//OUT="abc 3 a c"
+
+fn main
+    s = Str()
+    s.push('a')
+    s.push('b')
+    s.push('c')
+    out "{s} {s.size()} {s[0]} {s[2]}"

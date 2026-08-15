@@ -1,0 +1,12 @@
+//OUT="-1 -2"
+
+struct Point
+    x: i32
+    y: i32
+
+operator- a: Point
+    ret Point x -a.x y -a.y
+
+fn main
+    p = -(Point x 1 y 2)
+    out "{p.x} {p.y}"

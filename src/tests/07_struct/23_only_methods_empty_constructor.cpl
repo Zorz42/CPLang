@@ -1,9 +1,0 @@
-//OUT="compile"
-
-struct S
-    fn dummy
-        0
-
-fn main
-    a = S
-    out "compile"

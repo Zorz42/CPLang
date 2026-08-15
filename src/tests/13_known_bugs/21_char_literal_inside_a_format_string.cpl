@@ -1,0 +1,16 @@
+//BUG="a format expression is tokenized without character-literal support"
+//OUT="x"
+
+// Not in FEEDBACK.md. parse_format_string (src/compiler/parser/out.rs) rebuilds
+// fragments from the raw characters of the format expression and calls
+// parse_blocks and tokenize_fragments directly, skipping
+// parse_strings_and_comments — the pass that turns 'x' into a ConstChar. So a
+// character literal inside {} is read as an identifier and the compile fails
+// with "Variable with name 'x' not found."
+//
+// The same gap means a format expression cannot contain a comment or a nested
+// string either. Binding the character to a variable first works, and that is
+// what 00_lexical/16_char_literals.cpl does.
+
+fn main
+    out "{'x'}"

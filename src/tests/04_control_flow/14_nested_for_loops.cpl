@@ -1,0 +1,6 @@
+//OUT="00 01 10 11 "
+
+fn main
+    for i 0..2
+        for j 0..2
+            out "{i}{j} "

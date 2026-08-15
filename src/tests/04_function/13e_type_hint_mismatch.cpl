@@ -1,8 +1,0 @@
-//ERR 6 10 6 24
-
-fn test a: f32 b c
-    ret a + b + c
-
-fn main
-    res = test(10 20 30)
-    out "{res}"

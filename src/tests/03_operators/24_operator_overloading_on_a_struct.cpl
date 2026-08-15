@@ -1,0 +1,14 @@
+//OUT="4 6"
+
+struct Point
+    x: i32
+    y: i32
+
+operator+ a: Point b: Point
+    ret Point x a.x + b.x y a.y + b.y
+
+fn main
+    p = Point x 1 y 2
+    q = Point x 3 y 4
+    sum = p + q
+    out "{sum.x} {sum.y}"

@@ -1,7 +1,0 @@
-//OUT="20"
-
-fn main
-    a = i32 10L
-    b = a == 10
-    c = i64 a == 10L
-    out "{a + a}"

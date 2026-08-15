@@ -1,0 +1,12 @@
+//OUT="1"
+
+struct Box
+    v: i32
+
+fn try_to_change b
+    b.v = 999
+
+fn main
+    box = Box v 1
+    try_to_change(box)
+    out "{box.v}"

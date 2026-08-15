@@ -1,0 +1,11 @@
+//ERR 6 3 6 9
+//MSG="recursive call in the normalization phase"
+
+struct Box
+    x
+
+fn func x
+    ret func(Box x x)
+
+fn main
+    func(0)

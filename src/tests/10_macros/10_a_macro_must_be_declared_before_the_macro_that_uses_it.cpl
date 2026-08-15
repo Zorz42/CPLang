@@ -1,0 +1,20 @@
+//ERR any
+//MSG="Variable with name inner not found"
+
+// Documented limitation (FEEDBACK.md 1.16): the body of a macro is expanded
+// when the macro is *declared*, against the macros known at that point. So
+// `inner` is not yet a macro when `outer` is declared, and it survives as an
+// identifier. Ordinary use of a macro before its declaration does work — see
+// 07_used_before_it_is_declared.cpl — because that expansion happens after the
+// whole file has been scanned.
+
+macro outer {
+    inner
+}
+
+macro inner {
+    out "hi"
+}
+
+fn main
+    outer

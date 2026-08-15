@@ -1,0 +1,5 @@
+//OUT="xxxxx"
+
+fn main
+    s = Str(5 'x')
+    out "{s}"

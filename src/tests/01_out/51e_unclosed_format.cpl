@@ -1,0 +1,5 @@
+//ERR 4 9 4 12
+//MSG="Expected } to close format string"
+
+fn main
+    out "{10"

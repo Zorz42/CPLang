@@ -1,0 +1,14 @@
+//OUT="42"
+
+struct L3
+    v: i32
+
+struct L2
+    inner: L3
+
+struct L1
+    inner: L2
+
+fn main
+    a = L1 inner L2 inner L3 v 42
+    out "{a.inner.inner.v}"

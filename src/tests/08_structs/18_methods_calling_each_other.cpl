@@ -1,0 +1,14 @@
+//OUT="8"
+
+struct Num
+    v: i32
+
+    fn double
+        ret self.v * 2
+
+    fn quadruple
+        ret self.double() * 2
+
+fn main
+    n = Num v 2
+    out "{n.quadruple()}"

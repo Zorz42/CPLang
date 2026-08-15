@@ -1,0 +1,12 @@
+//ERR 11 12 11 19
+//MSG="No candidate found for this function call"
+
+struct TestStruct
+    x
+
+    fn get_x
+        0
+
+fn main
+    a = 0
+    out "{a.get_x()}"

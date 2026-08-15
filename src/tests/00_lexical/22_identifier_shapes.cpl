@@ -1,0 +1,7 @@
+//OUT="6"
+
+fn main
+    a_1 = 1
+    _b = 2
+    c2d = 3
+    out "{a_1 + _b + c2d}"

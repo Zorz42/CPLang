@@ -1,0 +1,9 @@
+//ERR any
+//MSG="not found"
+
+// A token ending in L that does not fit in i64 is not an integer literal, and
+// it is not a float either, so it falls through to being an identifier.
+
+fn main
+    x = 99999999999999999999L
+    out "{x}"

@@ -1,0 +1,11 @@
+//ERR any
+//MSG="This type must be known at this point"
+
+// The cast's target is a template parameter that no call ever pins down.
+
+fn conv[T] n: i32
+    ret _builtin_cast[T](n)
+
+fn main
+    x = conv(1)
+    out "ok"

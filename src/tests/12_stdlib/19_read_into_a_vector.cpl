@@ -1,0 +1,13 @@
+//IN="4\n10 20 30 40\n"
+//OUT="10 20 30 40 = 100"
+
+fn main
+    n = read_i32()
+    v = Vec()
+    for i 0..n
+        v.push(read_i32())
+    sum = 0
+    for x v
+        out "{x} "
+        sum += x
+    out "= {sum}"

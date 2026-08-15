@@ -1,7 +1,0 @@
-//ERR 2 3 2 7
-
-fn func
-    ret func()
-
-fn main
-    func()

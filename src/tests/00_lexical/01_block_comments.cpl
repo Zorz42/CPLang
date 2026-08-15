@@ -1,0 +1,11 @@
+//OUT="ok"
+
+/* before the program */
+
+fn main
+    /*
+    spanning
+    several lines
+    */
+    out /* between two tokens */ "ok"
+    /* after the last statement */

@@ -1,0 +1,8 @@
+//ERR 3 11 3 12
+//MSG="Unknown type: A"
+
+fn func x: A
+    ret x + 10
+
+fn main
+    out "{func(12)}"

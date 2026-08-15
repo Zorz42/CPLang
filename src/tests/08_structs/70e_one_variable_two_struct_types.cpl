@@ -1,0 +1,13 @@
+//ERR any
+//MSG="at the same time"
+
+struct A
+    v: i32
+
+struct B
+    v: i32
+
+fn main
+    x = A v 1
+    x = B v 2
+    out "{x.v}"

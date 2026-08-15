@@ -1,9 +1,0 @@
-//ERR -1 -1 -1 -1
-struct A
-    x
-
-struct A
-    y
-
-fn main
-    out "test"

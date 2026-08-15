@@ -1,0 +1,16 @@
+//IN="5\n3 1 4 1 5\n"
+//OUT="14 5 1"
+
+fn main
+    n = read_i32()
+    total = 0
+    biggest = 0
+    smallest = 1000
+    for i 0..n
+        x = read_i32()
+        total += x
+        if x > biggest
+            biggest = x
+        if x < smallest
+            smallest = x
+    out "{total} {biggest} {smallest}"

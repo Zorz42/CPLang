@@ -1,0 +1,11 @@
+//ERR 9 19 9 27
+//MSG="at the same time"
+
+struct Obj[T]
+    x: T
+    y: T
+    z: f32
+
+fn main
+    a = Obj x 10 y "not ok" z 1.0
+    out "{a.z}"

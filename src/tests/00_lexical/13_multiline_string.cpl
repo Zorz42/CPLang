@@ -1,0 +1,5 @@
+//OUT="one\ntwo"
+
+fn main
+    out "one
+two"

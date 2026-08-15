@@ -1,0 +1,14 @@
+//OUT="1 0 1 0"
+
+fn is_even n
+    if n == 0
+        ret true
+    ret is_odd(n - 1)
+
+fn is_odd n
+    if n == 0
+        ret false
+    ret is_even(n - 1)
+
+fn main
+    out "{is_even(10)} {is_even(7)} {is_odd(7)} {is_odd(10)}"

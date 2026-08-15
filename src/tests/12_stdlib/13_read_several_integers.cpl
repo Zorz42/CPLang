@@ -1,0 +1,8 @@
+//IN="1 2 3\n"
+//OUT="6"
+
+fn main
+    a = read_i32()
+    b = read_i32()
+    c = read_i32()
+    out "{a + b + c}"

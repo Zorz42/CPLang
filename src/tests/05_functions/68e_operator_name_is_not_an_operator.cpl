@@ -1,0 +1,8 @@
+//ERR any
+//MSG="Unexpected token"
+
+operator abc a b
+    ret 1
+
+fn main
+    out "ok"

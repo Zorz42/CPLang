@@ -1,0 +1,8 @@
+//OUT="ok"
+
+fn main
+    // "
+    /*
+        "
+    */
+    out "ok"

@@ -1,0 +1,9 @@
+//ERR any
+//MSG="Expected identifier"
+
+macro 10 {
+    out "hi"
+}
+
+fn main
+    out "ok"

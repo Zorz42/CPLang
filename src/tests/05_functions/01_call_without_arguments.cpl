@@ -1,0 +1,7 @@
+//OUT="OK"
+
+fn greet
+    out "OK"
+
+fn main
+    greet()

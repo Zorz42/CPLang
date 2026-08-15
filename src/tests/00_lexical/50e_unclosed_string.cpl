@@ -1,0 +1,6 @@
+//ERR 5 14 5 16
+//MSG="Unclosed string literal"
+
+fn main
+    str = "a
+    out "{str}"

@@ -1,0 +1,8 @@
+//ERR 3 3 3 17
+//MSG="You cannot declare a builtin function"
+
+fn _builtin_error x
+    ret x
+
+fn main
+    out "ok"

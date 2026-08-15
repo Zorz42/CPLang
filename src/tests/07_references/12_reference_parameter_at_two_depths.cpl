@@ -1,0 +1,15 @@
+//OUT="7 7"
+
+fn set x
+    |x = 7
+
+fn set_through y
+    set(|y)
+
+fn main
+    a = 1
+    b = 1
+    r = &a
+    set(&b)
+    set_through(&r)
+    out "{a} {b}"

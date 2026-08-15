@@ -1,0 +1,7 @@
+//OUT="5"
+
+// parse_type recurses through a parenthesised type.
+
+fn main
+    x: (i32) = 5
+    out "{x}"

@@ -1,0 +1,17 @@
+//OUT="1 2 1.500000000 x 1"
+
+// Repeated calls to the same template exercise the instance cache, including
+// the path where a cached instance is rejected because its template types do
+// not match.
+
+fn id[T] x: T
+    ret x
+
+fn main
+    a = id(1)
+    b = id(2L)
+    c = id(1.5)
+    d = id('x')
+    e = id(true)
+    f = id(2)
+    out "{a} {b} {c} {d} {e}"

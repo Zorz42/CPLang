@@ -1,0 +1,5 @@
+//ERR any
+//MSG="template arguments"
+
+fn main
+    out "{_builtin_add(1 2)}"

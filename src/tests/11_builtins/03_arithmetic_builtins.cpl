@@ -1,0 +1,4 @@
+//OUT="7 3 10 2 1"
+
+fn main
+    out "{_builtin_add[i32](5 2)} {_builtin_sub[i32](5 2)} {_builtin_mul[i32](5 2)} {_builtin_div[i32](5 2)} {_builtin_mod[i32](5 2)}"

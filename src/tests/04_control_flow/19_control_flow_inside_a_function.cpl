@@ -1,0 +1,10 @@
+//OUT="120"
+
+fn factorial n
+    res = 1
+    for i 1..n+1
+        res *= i
+    ret res
+
+fn main
+    out "{factorial(5)}"

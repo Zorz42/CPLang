@@ -1,0 +1,6 @@
+//OUT="{ok}"
+
+fn main
+    open = '{'
+    close = '}'
+    out "{open}ok{close}"

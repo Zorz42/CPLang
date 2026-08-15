@@ -1,0 +1,9 @@
+//OUT="4"
+
+// The hint and the value resolve to the same type label, so the resolver is
+// asked to merge a component with itself.
+
+fn main
+    a = 4
+    a: i32 = a
+    out "{a}"

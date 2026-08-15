@@ -1,0 +1,11 @@
+//OUT="1 2 1.500000000 2.500000000 c 1 0"
+
+fn main
+    a: i32 = 1
+    b: i64 = 2L
+    c: f32 = f32 1.5
+    d: f64 = 2.5
+    e: char = 'c'
+    f: bool = true
+    g: bool = false
+    out "{a} {b} {c} {d} {e} {f} {g}"

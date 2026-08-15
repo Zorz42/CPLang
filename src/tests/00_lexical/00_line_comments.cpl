@@ -1,0 +1,8 @@
+//OUT="ok"
+
+// a comment before the program
+
+fn main
+    // a comment on its own line
+    out "ok" // a comment after a statement
+// a comment on the last line of the file

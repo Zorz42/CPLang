@@ -1,0 +1,25 @@
+//IN="6\n5 3 9 1 7 2\n"
+//OUT="1 2 3 5 7 9 \n"
+
+// Reads n numbers, sorts them with a selection sort over a Vec, prints them.
+// The `+ 0` keeps the element a value rather than a reference into the vector;
+// see 12_stdlib/50e_assigning_one_element_to_another.cpl.
+
+fn main
+    n = read_i32()
+    v = Vec()
+    for i 0..n
+        v.push(read_i32())
+
+    for i 0..n
+        smallest = i
+        for j i+1..n
+            if v[j] < v[smallest]
+                smallest = j
+        tmp = v[i] + 0
+        v[i] = v[smallest] + 0
+        v[smallest] = tmp
+
+    for x v
+        out "{x} "
+    out "\n"

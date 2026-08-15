@@ -1,0 +1,5 @@
+//ERR any
+//MSG="Expected character after quote, not EOF"
+
+fn main
+    c = '

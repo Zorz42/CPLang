@@ -1,7 +1,0 @@
-//OUT="OK"
-
-fn print
-    out "OK"
-
-fn main
-    print()

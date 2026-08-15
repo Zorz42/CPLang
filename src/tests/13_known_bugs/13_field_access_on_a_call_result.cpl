@@ -1,0 +1,21 @@
+//BUG="FEEDBACK.md 1.10 — postfix operators do not apply to a call result"
+//OUT="0"
+
+// parse_value returns immediately when it recognises a function call
+// (src/compiler/parser/expression.rs), before the loop that handles `.field`,
+// `[i]` and `: T`. So `Str().size()` is "Unexpected token", while the same
+// thing through a variable is fine:
+//
+//     s = Str()
+//     x = s.size()        // OK
+//
+// For a language whose goal is to be as short as possible, having to name
+// every intermediate value is a real cost — `read_str().size()` is exactly
+// what people will write.
+//
+// Fix: fall through into the postfix loop with the call as `res` instead of
+// returning early.
+
+fn main
+    x = Str().size()
+    out "{x}"

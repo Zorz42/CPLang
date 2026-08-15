@@ -1,0 +1,7 @@
+//OUT="0"
+
+fn main
+    n = 0
+    while false
+        n = 1
+    out "{n}"

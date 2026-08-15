@@ -1,0 +1,8 @@
+//ERR 6 3 6 7
+//MSG="Found two equivalent signatures for function main"
+
+fn main
+    0
+
+fn main
+    0

@@ -1,0 +1,11 @@
+//OUT="hi"
+
+// Every macro declaration is collected before any expansion happens, so a
+// macro may be used above the line that declares it.
+
+fn main
+    say_hi
+
+macro say_hi {
+    out "hi"
+}

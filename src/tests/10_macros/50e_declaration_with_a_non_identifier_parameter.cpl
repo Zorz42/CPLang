@@ -1,0 +1,9 @@
+//ERR 3 21 3 23
+//MSG="Expected identifier or brace block"
+
+macro my_macro A B C 10 {{
+    A = B
+}}
+
+fn main
+    my_macro A; 10; 20;

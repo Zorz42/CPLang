@@ -1,8 +1,0 @@
-//OUT="OK"
-
-fn func
-    ret
-
-fn main
-    func()
-    out "OK"

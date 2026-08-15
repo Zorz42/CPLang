@@ -1,0 +1,8 @@
+//ERR 5 0 5 3
+//MSG="Indentation must have a multiple of 4 spaces"
+
+fn main
+    a = 10
+   b = 20
+    c = 30
+    out "ok"

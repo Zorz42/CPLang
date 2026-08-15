@@ -1,0 +1,7 @@
+//OUT="100"
+
+fn double x
+    ret x * 2
+
+fn main
+    out "{double(double(double(10))) + double(10)}"

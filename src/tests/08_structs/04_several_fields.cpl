@@ -1,0 +1,10 @@
+//OUT="1 2 3"
+
+struct Triple
+    a
+    b
+    c
+
+fn main
+    t = Triple a 1 b 2 c 3
+    out "{t.a} {t.b} {t.c}"

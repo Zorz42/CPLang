@@ -1,0 +1,19 @@
+//OUT="1 2 3"
+
+// The same struct as a local, an argument, a return value, a field and a Vec
+// element, so every place that registers a struct type with codegen is used.
+
+struct Cell
+    v: i32
+
+struct Holder
+    cell: Cell
+
+fn identity c: Cell
+    ret c
+
+fn main
+    local = Cell v 1
+    returned = identity(Cell v 2)
+    held = Holder cell Cell v 3
+    out "{local.v} {returned.v} {held.cell.v}"

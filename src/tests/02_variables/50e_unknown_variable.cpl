@@ -1,0 +1,7 @@
+//ERR 5 8 5 9
+//MSG="Variable with name c not found"
+
+fn main
+    a = 10
+    b = c + 1
+    out "{a} {b}"

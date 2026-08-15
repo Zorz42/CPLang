@@ -1,0 +1,8 @@
+//OUT="ok"
+
+struct TestStruct
+    x: i32
+
+fn main
+    a = TestStruct x 10
+    out "ok"

@@ -1,0 +1,10 @@
+//OUT="1 99"
+
+struct Box
+    v: i32
+
+fn main
+    a = Box v 1
+    b = a
+    b.v = 99
+    out "{a.v} {b.v}"

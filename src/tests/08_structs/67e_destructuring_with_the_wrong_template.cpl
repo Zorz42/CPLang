@@ -1,0 +1,11 @@
+//ERR 9 4 9 26
+//MSG="at the same time"
+
+struct Point[T]
+    x: T
+    y: T
+
+fn main
+    p = Point x 10 y 20
+    Point[f32] x x y y = p
+    out "{x} {y}"

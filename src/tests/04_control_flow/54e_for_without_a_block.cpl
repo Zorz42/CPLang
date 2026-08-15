@@ -1,0 +1,7 @@
+//ERR 6 4 6 7
+//MSG="Expected block after for statement"
+
+fn main
+    for i 0..10
+
+    out "done"

@@ -1,0 +1,9 @@
+//OUT="a\\tb"
+
+// A backslash the preprocessor does not recognise is kept verbatim inside a
+// string, so "\t" is the two characters \ and t. Note the asymmetry with
+// character literals, where the same escape is rejected — see
+// 57e_unknown_escape_in_char.cpl.
+
+fn main
+    out "a\tb"

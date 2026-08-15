@@ -1,0 +1,9 @@
+//ERR 8 12 8 14
+//MSG="Unknown field xa"
+
+struct TestStruct
+    x
+
+fn main
+    a = TestStruct x "compile"
+    out "{a.xa}"

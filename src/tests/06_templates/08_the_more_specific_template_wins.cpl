@@ -1,0 +1,11 @@
+//OUT="hello 10 20"
+
+fn func[A B] a: A b: B
+    0
+
+fn func[T] a: T b: T
+    out "hello {a} {b}"
+
+fn main
+    func("wrong" 0)
+    func(10 20)

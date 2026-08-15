@@ -1,0 +1,23 @@
+//BUG="v[i] = v[j] is rejected as non-assignable"
+//OUT="2 2"
+
+// Not in FEEDBACK.md. Vec's operator[] returns &T. Writing a plain value works
+// (`v[0] = 7`), and so does writing an expression (`v[0] = v[1] + 0`), but
+// assigning one element straight to another is rejected with
+// "Left hand side is non-assignable" — the reference on the right is not
+// dereferenced, and check_refs then refuses the whole assignment.
+//
+// That makes the ordinary three-line swap
+//     tmp = v[0]
+//     v[0] = v[1]
+//     v[1] = tmp
+// impossible to write, which for a competitive-programming language is a
+// sharp edge: sorting and partitioning are exactly this. The workaround used
+// in 12_stdlib/22_a_whole_small_program.cpl is to add `+ 0` to force a value.
+
+fn main
+    v = Vec()
+    v.push(1)
+    v.push(2)
+    v[0] = v[1]
+    out "{v[0]} {v[1]}"

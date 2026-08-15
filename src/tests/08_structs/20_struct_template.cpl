@@ -1,0 +1,10 @@
+//OUT="1.000000000"
+
+struct Obj[T]
+    x: T
+    y: T
+    z: f64
+
+fn main
+    a = Obj x 10 y 20 z 1.0
+    out "{a.z}"

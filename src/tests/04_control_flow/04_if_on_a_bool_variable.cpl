@@ -1,0 +1,8 @@
+//OUT="yes"
+
+fn main
+    flag = true
+    if flag
+        out "yes"
+    if !flag
+        out "no"

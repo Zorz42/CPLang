@@ -1,0 +1,8 @@
+//ERR 6 0 6 2
+//MSG="Expected block after struct name"
+
+struct TestStruct
+
+
+fn main
+    out "compile"

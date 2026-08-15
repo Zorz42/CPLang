@@ -1,0 +1,22 @@
+//BUG="a void value can be bound to a variable, producing `void var0;` in C"
+//ERR any
+
+// Not in FEEDBACK.md. `void` is accepted as a type hint and a call to a
+// function that returns nothing can be bound to a variable, so codegen emits
+//
+//     void var0;
+//
+// and gcc rejects it with "variable has incomplete type 'void'". The compiler
+// should refuse this itself — a compile that produces C that does not build is
+// the worst of both worlds, because the error surfaces from a tool the user
+// did not run.
+//
+// 05_functions/66e_using_the_value_of_a_void_function.cpl shows that *using*
+// a void value in an expression is caught; only binding it is not.
+
+fn nothing x: i32
+    ret
+
+fn main
+    r: void = nothing(1)
+    out "ok"

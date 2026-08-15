@@ -1,0 +1,6 @@
+//ERR any
+//MSG="Expected quote"
+
+fn main
+    c = 'ab'
+    out "ok"

@@ -1,0 +1,7 @@
+//OUT="0123456789"
+
+fn main
+    s = Str()
+    for i 0..10
+        s.push(char (i + i32 '0'))
+    out "{s}"

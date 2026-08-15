@@ -1,0 +1,9 @@
+//ERR 7 21 7 30
+//MSG="at the same time"
+
+struct TestStruct
+    x: i32
+
+fn main
+    a = TestStruct x "compile"
+    out "ok"

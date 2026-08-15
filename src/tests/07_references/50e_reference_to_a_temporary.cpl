@@ -1,0 +1,11 @@
+//ERR 9 11 9 16
+//MSG="Cannot reference non-physical value"
+
+fn take x
+    |x = 1
+
+fn main
+    a = 1
+    b = 2
+    take(&(a + b))
+    out "ok"

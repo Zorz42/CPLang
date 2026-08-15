@@ -1,0 +1,5 @@
+//ERR 4 10 4 18
+//MSG="No candidate found for this function call"
+
+fn main
+    out "{true + 1}"

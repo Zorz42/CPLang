@@ -1,0 +1,14 @@
+//OUT="ok"
+
+struct Box[T]
+    x: T
+
+fn fun vec: Box
+    out "ok"
+
+fn fun vec: Box[Box]
+    out "err"
+
+fn main
+    v = Box x 10
+    fun(v)

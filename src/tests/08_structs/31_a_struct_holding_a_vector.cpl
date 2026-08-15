@@ -1,0 +1,13 @@
+//OUT="3 1 2 3 "
+
+struct Bag
+    items: Vec[i32]
+
+fn main
+    b = Bag items Vec()
+    b.items.push(1)
+    b.items.push(2)
+    b.items.push(3)
+    out "{b.items.size()} "
+    for x b.items
+        out "{x} "

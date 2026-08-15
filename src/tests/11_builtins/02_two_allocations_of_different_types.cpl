@@ -1,0 +1,11 @@
+//OUT="ok"
+
+struct Vec2
+    vec
+
+fn main
+    v1 = Vec2 vec _builtin_alloc(1)
+    _builtin_index(v1.vec 0) = 10
+    v2 = Vec2 vec _builtin_alloc(1)
+    _builtin_index(v2.vec 0) = "a"
+    out "ok"

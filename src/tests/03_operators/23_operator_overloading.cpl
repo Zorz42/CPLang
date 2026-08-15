@@ -1,0 +1,8 @@
+//OUT="10"
+
+operator+ a: bool b: bool
+    ret 10
+
+fn main
+    a = true + false
+    out "{a}"

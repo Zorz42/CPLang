@@ -1,0 +1,10 @@
+//OUT="found"
+
+fn first_over_ten a b
+    if a > 10
+        ret a
+    ret b
+
+fn main
+    if first_over_ten(20 0) == 20
+        out "found"

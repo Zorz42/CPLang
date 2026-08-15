@@ -1,0 +1,5 @@
+//OUT="a\n    b"
+
+fn main
+    out "a
+    b"

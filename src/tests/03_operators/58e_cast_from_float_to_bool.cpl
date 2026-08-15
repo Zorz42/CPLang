@@ -1,0 +1,6 @@
+//ERR any
+//MSG="Cannot cast"
+
+fn main
+    b = bool 1.5
+    out "{b}"

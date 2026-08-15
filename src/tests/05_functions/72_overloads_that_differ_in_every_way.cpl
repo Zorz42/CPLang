@@ -1,0 +1,35 @@
+//OUT="prim ref struct other vec"
+
+// Overload ordering compares every pair of candidates structurally. These
+// differ by primitive vs reference, by struct vs primitive, by which struct,
+// and by template depth, which is the full set of ways two signatures can be
+// found incomparable.
+
+struct A
+    v: i32
+
+struct B
+    v: i32
+
+fn kind x: i32
+    ret "prim"
+
+fn kind x: &i32
+    ret "ref"
+
+fn kind x: A
+    ret "struct"
+
+fn kind x: B
+    ret "other"
+
+fn kind x: Vec[i32]
+    ret "vec"
+
+fn main
+    n = 1
+    r = &n
+    a = A v 1
+    b = B v 1
+    v = Vec[i32]()
+    out "{kind(n)} {kind(r)} {kind(a)} {kind(b)} {kind(v)}"

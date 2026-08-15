@@ -1,0 +1,6 @@
+//OUT="1 0 1 1"
+
+fn main
+    a = 'a'
+    b = 'b'
+    out "{_builtin_lesser[char](a b)} {_builtin_eq[char](a b)} {_builtin_lesser[f64](1.0 2.0)} {_builtin_eq[f64](1.0 1.0)}"

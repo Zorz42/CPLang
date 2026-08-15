@@ -1,0 +1,14 @@
+//ERR any
+//MSG="Variable with name n not found"
+
+// Documented limitation (FEEDBACK.md 1.16): a macro name is substituted at
+// every use site unconditionally, so once `n` is a macro no variable can be
+// called `n`. Here `n = 1` expands to `99 = 1`.
+
+macro n {
+    99
+}
+
+fn main
+    n = 1
+    out "{n}"

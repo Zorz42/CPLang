@@ -1,0 +1,6 @@
+//ERR any
+//MSG="template arguments"
+
+fn main
+    a = _builtin_alloc[i32](1)
+    out "{_builtin_index[i32](a 0)}"

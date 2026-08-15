@@ -1,0 +1,25 @@
+//BUG="FEEDBACK.md 1.12 — a malformed candidate aborts the whole compile"
+//OUT="2"
+
+// find_matching_function propagates with `?` in two places
+// (`hint_equal(...)?` and `normalize_type(hint)?`, src/compiler/normalizer/mod.rs)
+// while the argument loop below them correctly treats a failure as candidate
+// rejection. So an error in a candidate that is not the one being called
+// escapes and kills the compile: here `f(1)` unambiguously matches the i32
+// overload, but the compile dies on the other one with "Unknown type: Nope".
+//
+// The early return also skips restore_state and the swap that puts
+// self.template_types back, leaving the resolver in rollback_mode with a
+// foreign template map — harmless only because the compile is aborting.
+//
+// Fix: treat both as candidate rejection, and restore state on every exit path
+// (a guard struct, or a closure whose Result you inspect).
+
+fn f x: Nope
+    ret 1
+
+fn f x: i32
+    ret 2
+
+fn main
+    out "{f(1)}"

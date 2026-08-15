@@ -1,0 +1,10 @@
+//OUT="0 1 1 0 0 1 1 0"
+
+// The core library derives !=, >, <= and >= from == and <, so these four
+// builtins are never reached through ordinary source. They still have to work.
+
+fn main
+    out "{_builtin_noteq[i32](5 5)} {_builtin_noteq[i32](5 2)} "
+    out "{_builtin_greater[i32](5 2)} {_builtin_greater[i32](2 5)} "
+    out "{_builtin_lessereq[i32](5 2)} {_builtin_lessereq[i32](2 5)} "
+    out "{_builtin_greatereq[i32](5 5)} {_builtin_greatereq[i32](2 5)}"

@@ -1,0 +1,13 @@
+//OUT="1 3 6"
+
+fn total a
+    ret a
+
+fn total a b
+    ret a + b
+
+fn total a b c
+    ret a + b + c
+
+fn main
+    out "{total(1)} {total(1 2)} {total(1 2 3)}"

@@ -1,0 +1,8 @@
+//OUT="none"
+
+fn main
+    ran = false
+    for i 0..0
+        ran = true
+    if !ran
+        out "none"

@@ -1,0 +1,29 @@
+//OUT="OK"
+
+fn assert x: bool
+    if !x
+        out "ERR"
+
+fn main
+    v = Vec()
+    assert(v.size() == 0)
+    v.push(10)
+    assert(v.size() == 1)
+    assert(v[0] == 10)
+    v.push(20)
+    assert(v.size() == 2)
+    assert(v[0] == 10)
+    assert(v[1] == 20)
+    v.pop()
+    assert(v.size() == 1)
+    assert(v[0] == 10)
+    v.pop()
+    for i 0..100
+        v.push(2 * i)
+        assert(v.size() == i + 1)
+    for i 0..100
+        assert(v[i] == 2 * i)
+    for i 0..100
+        v.pop()
+        assert(v.size() == 99 - i)
+    out "OK"

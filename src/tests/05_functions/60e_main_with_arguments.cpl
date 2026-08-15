@@ -1,0 +1,5 @@
+//ERR 3 8 3 11
+//MSG="main function cannot have arguments"
+
+fn main arg
+    0

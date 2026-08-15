@@ -1,0 +1,6 @@
+//ERR 4 22 4 23
+//MSG="Unclosed ["
+
+fn main
+    a = _builtin_alloc[i32(1)
+    out "ok"

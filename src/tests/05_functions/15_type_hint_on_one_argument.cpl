@@ -1,0 +1,7 @@
+//OUT="60"
+
+fn test a: i32 b c
+    ret a + b + c
+
+fn main
+    out "{test(10 20 30)}"

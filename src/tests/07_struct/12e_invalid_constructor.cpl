@@ -1,8 +1,0 @@
-//ERR 7 4 7 7
-
-struct TestStruct
-    x
-
-fn main
-    a = TestStruct
-    out "ok"

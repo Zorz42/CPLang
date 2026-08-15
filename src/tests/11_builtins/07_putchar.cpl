@@ -1,0 +1,6 @@
+//OUT="hi\n"
+
+fn main
+    _builtin_putchar('h')
+    _builtin_putchar('i')
+    _builtin_putchar('\n')

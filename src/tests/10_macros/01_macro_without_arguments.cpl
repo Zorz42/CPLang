@@ -1,0 +1,8 @@
+//OUT="hi"
+
+macro say_hi {
+    out "hi"
+}
+
+fn main
+    say_hi

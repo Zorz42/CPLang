@@ -1,0 +1,6 @@
+//ERR 5 12 5 13
+//MSG="Unknown field 2"
+
+fn main
+    a = 1, 2
+    out "{a.2}"

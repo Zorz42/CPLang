@@ -1,0 +1,9 @@
+//ERR 4 2 4 3
+//MSG="Expected identifier or brace block"
+
+macro my_macro A B C
+A = B
+    D = C
+
+fn main
+    my_macro A; 10; 20;

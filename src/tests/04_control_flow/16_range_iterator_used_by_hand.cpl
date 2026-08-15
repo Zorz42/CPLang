@@ -1,0 +1,7 @@
+//OUT="0 1 2 "
+
+fn main
+    r = Range start 0 end 3
+    it = r.iter()
+    while it.has_next()
+        out "{it.next()} "

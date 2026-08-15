@@ -1,0 +1,8 @@
+//OUT="30 900"
+
+fn main
+    a = 10
+    b = 20
+    sum = a + b
+    square = sum * sum
+    out "{sum} {square}"

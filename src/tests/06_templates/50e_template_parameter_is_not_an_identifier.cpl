@@ -1,0 +1,8 @@
+//ERR 3 8 3 10
+//MSG="Unexpected token"
+
+fn func[10] x
+    ret x + 10
+
+fn main
+    out "{func(12)}"

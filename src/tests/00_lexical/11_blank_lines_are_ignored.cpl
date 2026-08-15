@@ -1,0 +1,11 @@
+//OUT="ok"
+
+fn main
+
+    a = 1
+
+
+    if a == 1
+
+        out "ok"
+

@@ -1,0 +1,6 @@
+//OUT="one\ntwo\nthree\n"
+
+fn main
+    out "one\n"
+    out "two\n"
+    out "three\n"

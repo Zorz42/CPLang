@@ -1,0 +1,6 @@
+//ERR 4 4 4 18
+//MSG="at the same time"
+
+fn main
+    a, b = 1, 2, 3
+    out "{a} {b}"

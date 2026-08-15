@@ -1,0 +1,8 @@
+//OUT="20"
+
+fn main
+    v = Vec()
+    v.push(10)
+    v.push(20)
+    i = 1L
+    out "{v[i]}"

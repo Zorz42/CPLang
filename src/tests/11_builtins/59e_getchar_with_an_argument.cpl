@@ -1,0 +1,6 @@
+//ERR any
+//MSG="_builtin_getchar takes 0 arguments, not 1"
+
+fn main
+    c = _builtin_getchar(1)
+    out "ok"

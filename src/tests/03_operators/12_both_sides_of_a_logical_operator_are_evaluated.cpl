@@ -1,0 +1,22 @@
+//OUT="both 0"
+
+// && and || are ordinary overloaded functions, so they do not short-circuit:
+// the right-hand side runs even when the left-hand side already decides the
+// result. This test records that.
+
+left_ran = false
+right_ran = false
+
+fn note_left
+    left_ran = true
+    ret false
+
+fn note_right
+    right_ran = true
+    ret true
+
+fn main
+    res = note_left() && note_right()
+    if left_ran && right_ran
+        out "both "
+    out "{res}"

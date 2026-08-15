@@ -1,7 +1,0 @@
-//ERR 4 0 4 3
-
-fn main
-    a = 10
-   b = 20
-    c = 30
-    out "good"

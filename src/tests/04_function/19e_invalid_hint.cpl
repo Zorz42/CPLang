@@ -1,8 +1,0 @@
-//ERR 2 11 2 12
-
-fn func x: A
-    ret x + 10
-
-fn main
-    s = func("OK")
-    out "{func(12)} {s}"

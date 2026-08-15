@@ -1,0 +1,5 @@
+//ERR 4 4 4 13
+//MSG="Function missing does not exist"
+
+fn main
+    missing()

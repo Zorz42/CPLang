@@ -1,0 +1,59 @@
+//OUT="+ - * / % == != < > <= >= && || !"
+
+// One user-defined overload of every operator the parser accepts after the
+// `operator` keyword, so that the whole name table is exercised. `[]` is
+// left out because a top-level one never resolves — see
+// 71e_index_operator_declared_at_top_level.cpl.
+
+struct Sym
+    v: i32
+
+fn name s
+    ret s
+
+operator+ a: Sym b: Sym
+    ret "+"
+
+operator- a: Sym b: Sym
+    ret "-"
+
+operator* a: Sym b: Sym
+    ret "*"
+
+operator/ a: Sym b: Sym
+    ret "/"
+
+operator% a: Sym b: Sym
+    ret "%"
+
+operator== a: Sym b: Sym
+    ret "=="
+
+operator!= a: Sym b: Sym
+    ret "!="
+
+operator< a: Sym b: Sym
+    ret "<"
+
+operator> a: Sym b: Sym
+    ret ">"
+
+operator<= a: Sym b: Sym
+    ret "<="
+
+operator>= a: Sym b: Sym
+    ret ">="
+
+operator&& a: Sym b: Sym
+    ret "&&"
+
+operator|| a: Sym b: Sym
+    ret "||"
+
+operator! a: Sym
+    ret "!"
+
+fn main
+    x = Sym v 1
+    y = Sym v 2
+    out "{x + y} {x - y} {x * y} {x / y} {x % y} {x == y} {x != y} {x < y} {x > y} {x <= y} {x >= y} {x && y} {x || y} {!x}"

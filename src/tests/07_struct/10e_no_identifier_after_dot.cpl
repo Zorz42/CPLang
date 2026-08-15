@@ -1,9 +1,0 @@
-//ERR 8 4 8 7
-
-struct TestStruct
-    x
-
-fn main
-    a = TestStruct x "compile"
-    a.
-    out "compile"

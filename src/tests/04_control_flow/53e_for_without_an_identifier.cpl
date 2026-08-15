@@ -1,0 +1,6 @@
+//ERR 4 8 4 9
+//MSG="Expected identifier after for keyword"
+
+fn main
+    for 0..10
+        out "x"

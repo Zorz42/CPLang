@@ -1,0 +1,15 @@
+//ERR 14 4 14 15
+//MSG="Multiple candidates found for this function call"
+
+fn func a b
+    0
+
+fn func a: i32 b
+    out "hello1 {a} {b}"
+
+fn func a b: i32
+    out "hello2 {a} {b}"
+
+fn main
+    func("wrong" 0)
+    func(10 20)

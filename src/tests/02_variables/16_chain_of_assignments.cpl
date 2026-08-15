@@ -1,0 +1,7 @@
+//OUT="4 4 4"
+
+fn main
+    a = 4
+    b = a
+    c = b
+    out "{a} {b} {c}"

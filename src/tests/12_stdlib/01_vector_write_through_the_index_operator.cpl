@@ -1,0 +1,9 @@
+//OUT="7 8 9 "
+
+fn main
+    v = Vec(3 0)
+    v[0] = 7
+    v[1] = 8
+    v[2] = 9
+    for x v
+        out "{x} "

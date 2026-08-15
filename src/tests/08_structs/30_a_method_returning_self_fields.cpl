@@ -1,0 +1,13 @@
+//OUT="3 4 5"
+
+struct Vec3
+    x: i32
+    y: i32
+    z: i32
+
+    fn sum
+        ret self.x + self.y + self.z
+
+fn main
+    v = Vec3 x 3 y 4 z 5
+    out "{v.x} {v.y} {v.z}"

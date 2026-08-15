@@ -1,0 +1,10 @@
+//OUT="compile"
+
+fn func
+    if 10 == 10
+        ret
+    ret
+
+fn main
+    func()
+    out "compile"

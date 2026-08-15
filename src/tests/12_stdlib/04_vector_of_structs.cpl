@@ -1,0 +1,12 @@
+//OUT="1 2 3 "
+
+struct Item
+    v: i32
+
+fn main
+    items = Vec()
+    items.push(Item v 1)
+    items.push(Item v 2)
+    items.push(Item v 3)
+    for it items
+        out "{it.v} "

@@ -1,0 +1,4 @@
+//OUT="Hello, World!\n"
+
+fn main
+    out "Hello, World!\n"

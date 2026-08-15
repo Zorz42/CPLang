@@ -1,0 +1,9 @@
+//ERR 3 3 3 7
+//MSG="at the same time"
+
+fn func
+    ret 10
+    ret "abc"
+
+fn main
+    func()

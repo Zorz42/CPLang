@@ -1,0 +1,4 @@
+//OUT="// not a comment /* nor this */"
+
+fn main
+    out "// not a comment /* nor this */"

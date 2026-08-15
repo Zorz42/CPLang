@@ -1,0 +1,9 @@
+//OUT="4"
+
+// Both sides resolve to the same type label, which is the one case where the
+// union-find merge has nothing to do.
+
+fn main
+    a = 4
+    a = a
+    out "{a}"

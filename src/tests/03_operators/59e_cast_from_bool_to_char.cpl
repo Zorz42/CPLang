@@ -1,0 +1,6 @@
+//ERR any
+//MSG="Cannot cast"
+
+fn main
+    c = char true
+    out "{c}"

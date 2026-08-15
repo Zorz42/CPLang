@@ -1,0 +1,12 @@
+//ERR 11 10 11 21
+//MSG="Multiple candidates found for this function call"
+
+fn func x: i32 y
+    ret x + 10
+
+fn func x y: i32
+    ret x
+
+fn main
+    s = func("OK" 10)
+    out "{func(12 10)} {s}"

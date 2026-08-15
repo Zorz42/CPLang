@@ -1,0 +1,6 @@
+//ERR 4 9 4 10
+//MSG="Unrecognized escape character"
+
+fn main
+    c = '\t'
+    out "ok"

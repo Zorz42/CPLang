@@ -1,0 +1,7 @@
+//ERR 6 0 6 42
+//MSG="Unclosed multiline comment"
+
+fn main
+    0
+
+/* /* only the inner comment is closed */

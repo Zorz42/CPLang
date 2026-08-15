@@ -1,0 +1,4 @@
+//OUT="1 0 0 0 1 1 1 0 0 1"
+
+fn main
+    out "{true && true} {true && false} {false && true} {false && false} {true || true} {true || false} {false || true} {false || false} {!true} {!false}"

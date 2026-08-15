@@ -1,0 +1,23 @@
+//OUT="1 2 1.500000000 2.500000000 1 z"
+
+fn take_i32 x: i32
+    ret x
+
+fn take_i64 x: i64
+    ret x
+
+fn take_f32 x: f32
+    ret x
+
+fn take_f64 x: f64
+    ret x
+
+fn take_bool x: bool
+    ret x
+
+fn take_char x: char
+    ret x
+
+fn main
+    z = 'z'
+    out "{take_i32(1)} {take_i64(2L)} {take_f32(f32 1.5)} {take_f64(2.5)} {take_bool(true)} {take_char(z)}"

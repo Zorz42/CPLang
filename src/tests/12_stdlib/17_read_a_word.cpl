@@ -1,0 +1,7 @@
+//IN="hello world\n"
+//OUT="hello|world"
+
+fn main
+    a = read_str()
+    b = read_str()
+    out "{a}|{b}"

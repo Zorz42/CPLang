@@ -1,0 +1,16 @@
+//OUT="7 12"
+
+struct Counter
+    n: i32
+
+    fn add k
+        self.n += k
+        ret self.n
+
+    fn add k m
+        self.n += k + m
+        ret self.n
+
+fn main
+    c = Counter n 0
+    out "{c.add(7)} {c.add(2 3)}"

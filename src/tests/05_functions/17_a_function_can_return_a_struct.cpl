@@ -1,0 +1,12 @@
+//OUT="3 4"
+
+struct Point
+    x: i32
+    y: i32
+
+fn make a b
+    ret Point x a y b
+
+fn main
+    p = make(3 4)
+    out "{p.x} {p.y}"

@@ -1,0 +1,9 @@
+//ERR 7 19 7 32
+//MSG="not found"
+
+struct TestStruct
+    x
+
+fn main
+    a = TestStruct invalid_field "compile"
+    out "ok"

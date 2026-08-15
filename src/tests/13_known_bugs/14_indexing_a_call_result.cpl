@@ -1,0 +1,8 @@
+//BUG="FEEDBACK.md 1.10 — postfix operators do not apply to a call result"
+//OUT="7"
+
+// Same cause as 13, for the index operator.
+
+fn main
+    x = Vec[i32](3 7)[0]
+    out "{x}"

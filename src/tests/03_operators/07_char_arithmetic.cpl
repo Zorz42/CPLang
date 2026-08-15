@@ -1,0 +1,8 @@
+//OUT="b ` A"
+
+fn main
+    a = 'a'
+    next = a + 1
+    prev = a - 1
+    upper = a - 32
+    out "{next} {prev} {upper}"

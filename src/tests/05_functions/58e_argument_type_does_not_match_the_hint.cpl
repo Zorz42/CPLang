@@ -1,0 +1,9 @@
+//ERR 7 10 7 26
+//MSG="No candidate found for this function call"
+
+fn test a: f32 b c
+    ret a + b + c
+
+fn main
+    res = test("no" 20 30)
+    out "{res}"

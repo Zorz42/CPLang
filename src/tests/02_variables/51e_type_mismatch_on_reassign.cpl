@@ -1,0 +1,7 @@
+//ERR 5 4 5 5
+//MSG="at the same time"
+
+fn main
+    a = 10
+    a = "a"
+    out "hello {a}"

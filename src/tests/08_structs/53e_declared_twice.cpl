@@ -1,0 +1,11 @@
+//ERR -1 -1 -1 -1
+//MSG="has been declared multiple times"
+
+struct A
+    x
+
+struct A
+    y
+
+fn main
+    out "test"

@@ -1,0 +1,10 @@
+//OUT="3 3.500000000 ab"
+
+fn twice[T] x: T
+    ret x + x
+
+fn main
+    letters = Str()
+    letters.push('a')
+    letters.push('b')
+    out "{twice(1) + 1} {twice(f64 1.75)} {letters}"

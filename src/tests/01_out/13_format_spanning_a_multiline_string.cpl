@@ -1,0 +1,7 @@
+//OUT="a=1\nb=2"
+
+fn main
+    a = 1
+    b = 2
+    out "a={a}
+b={b}"

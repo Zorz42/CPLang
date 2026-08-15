@@ -1,7 +1,0 @@
-//OUT="22"
-
-fn func[] x
-    ret x + 10
-
-fn main
-    out "{func(12)}"

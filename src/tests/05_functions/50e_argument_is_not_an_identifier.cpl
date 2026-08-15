@@ -1,0 +1,9 @@
+//ERR 3 8 3 10
+//MSG="Expected block or argument identifier after function signature"
+
+fn func 10
+    ret
+
+fn main
+    func()
+    out "good"

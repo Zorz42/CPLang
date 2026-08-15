@@ -1,0 +1,17 @@
+//OUT="ok"
+
+// Both calls take the same argument types and differ only in the explicit
+// template argument, so the instance cache has to reject a cached entry on the
+// template types rather than on the arguments.
+
+fn make[T] n: i32
+    ret _builtin_alloc[T](n)
+
+fn main
+    a = make[i32](1)
+    b = make[i64](1)
+    c = make[i32](1)
+    _builtin_index(a 0) = 1
+    _builtin_index(b 0) = 2L
+    _builtin_index(c 0) = 3
+    out "ok"

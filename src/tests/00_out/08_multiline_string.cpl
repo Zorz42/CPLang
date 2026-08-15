@@ -1,9 +1,0 @@
-//OUT="good"
-
-fn main
-    a="Hello
-This is a string
-   that is
- multiline and incorrectly indented
-        which compiler should ignore"
-    out "good"

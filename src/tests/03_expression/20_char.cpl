@@ -1,8 +1,0 @@
-//OUT="ab c"
-
-fn main
-    a: char = 'a'
-    b = 'b'
-    space = ' '
-    c = 'c'
-    out "{a}{b}{space}{c}"

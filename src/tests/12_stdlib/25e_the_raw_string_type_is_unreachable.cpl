@@ -1,0 +1,16 @@
+//ERR any
+//MSG="No candidate found for this function call"
+
+// `_string` is the type of a string literal before the lowerer wraps it, and
+// because that wrapping is unconditional no expression a user can write ever
+// has this type. The hint parses; nothing can satisfy it.
+
+fn length_of s: _string
+    i = 0
+    while _builtin_index_str(s i) != char 0
+        i++
+    ret i
+
+fn main
+    n = length_of("ok!")
+    out "{n}"

@@ -1,9 +1,0 @@
-//OUT="45"
-
-fn main
-    sum = 0
-
-    for i 0..10
-        sum += i
-
-    out "{sum}"

@@ -1,0 +1,9 @@
+//ERR 7 17 7 19
+//MSG="Cannot reference non-physical value"
+
+fn set_to_five x
+    |x = 5
+
+fn main
+    set_to_five(&10)
+    out "ok"

@@ -1,0 +1,16 @@
+//OUT="7"
+
+struct Money
+    cents: i32
+
+macro define_plus T {
+    operator+ a: T b: T {
+        ret T cents a.cents + b.cents
+    }
+}
+
+define_plus Money;
+
+fn main
+    total = (Money cents 3) + (Money cents 4)
+    out "{total.cents}"

@@ -1,0 +1,5 @@
+//OUT="5000000002 1"
+
+fn main
+    a = 5000000000L
+    out "{_builtin_add[i64](a 2L)} {_builtin_lesser[i64](a 6000000000L)}"

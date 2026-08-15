@@ -1,0 +1,5 @@
+//ERR -1 -1 -1 -1
+//MSG="No main function found"
+
+fn maine
+    out "not good"

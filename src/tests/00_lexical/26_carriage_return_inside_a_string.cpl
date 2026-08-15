@@ -1,0 +1,7 @@
+//OUT="a\rb"
+
+// A bare CR is an ordinary character inside a string; codegen has to
+// escape it when it writes the C literal.
+
+fn main
+    out "ab"

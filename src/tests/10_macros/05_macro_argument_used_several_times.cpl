@@ -1,0 +1,9 @@
+//OUT="25"
+
+macro square_into target value {
+    target = value * value
+}
+
+fn main
+    square_into result; 5;
+    out "{result}"

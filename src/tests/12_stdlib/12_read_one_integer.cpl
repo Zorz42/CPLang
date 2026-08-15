@@ -1,0 +1,6 @@
+//IN="42"
+//OUT="42"
+
+fn main
+    n = read_i32()
+    out "{n}"

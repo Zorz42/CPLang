@@ -1,0 +1,6 @@
+//OUT="ab"
+
+fn main
+    out "a"
+    out ""
+    out "b"

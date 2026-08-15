@@ -1,0 +1,9 @@
+//ERR any
+//MSG="Too many template arguments"
+
+struct Box[T]
+    x: T
+
+fn main
+    b = Box[i32 i32] x 1
+    out "{b.x}"

@@ -1,0 +1,11 @@
+//ERR 7 4 7 6
+//MSG="Expected block after if condition"
+
+fn main
+    a = 0
+    if 10 == 10
+
+    if 20 == 10
+        a = 30
+
+    out "{a}"

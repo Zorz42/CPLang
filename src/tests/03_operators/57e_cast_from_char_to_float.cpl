@@ -1,0 +1,6 @@
+//ERR any
+//MSG="Cannot cast"
+
+fn main
+    x = f64 'a'
+    out "{x}"

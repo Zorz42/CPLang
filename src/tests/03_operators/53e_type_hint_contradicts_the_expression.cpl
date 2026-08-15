@@ -1,0 +1,6 @@
+//ERR 4 4 4 12
+//MSG="at the same time"
+
+fn main
+    res: f32 = 10 + 20 * 10: i32
+    out "{res}"

@@ -1,0 +1,15 @@
+//OUT="1 2 3 "
+
+macro show value {
+    shown = value
+    out "{shown} "
+}
+
+macro show_three a b c {
+    show a;
+    show b;
+    show c;
+}
+
+fn main
+    show_three 1; 2; 3;

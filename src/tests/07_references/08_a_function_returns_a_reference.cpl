@@ -1,0 +1,12 @@
+//OUT="99"
+
+struct Box
+    v: i32
+
+    fn slot
+        ret &self.v
+
+fn main
+    box = Box v 1
+    |box.slot() = 99
+    out "{box.v}"

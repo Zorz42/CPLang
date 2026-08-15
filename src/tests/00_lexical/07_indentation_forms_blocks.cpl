@@ -1,0 +1,8 @@
+//OUT="ok"
+
+fn main
+    if true
+        if true
+            while false
+                out "unreachable"
+            out "ok"

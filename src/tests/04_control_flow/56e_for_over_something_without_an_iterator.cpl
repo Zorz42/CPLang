@@ -1,0 +1,6 @@
+//ERR 4 4 5 15
+//MSG="No candidate found for this function call"
+
+fn main
+    for i 10
+        out "x"

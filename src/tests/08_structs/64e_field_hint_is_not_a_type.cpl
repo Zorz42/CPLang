@@ -1,0 +1,9 @@
+//ERR 4 7 4 9
+//MSG="Unexpected token"
+
+struct TestStruct
+    x: 10
+
+fn main
+    a = TestStruct x "compile"
+    out "ok"

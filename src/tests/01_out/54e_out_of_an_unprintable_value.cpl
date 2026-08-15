@@ -1,0 +1,10 @@
+//ERR 9 10 9 11
+//MSG="No candidate found for this function call"
+
+struct Pair
+    x
+    y
+
+fn main
+    p = Pair x 1 y 2
+    out "{p}"

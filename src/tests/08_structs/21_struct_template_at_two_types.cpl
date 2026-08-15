@@ -1,0 +1,9 @@
+//OUT="10 x"
+
+struct Box[T]
+    v: T
+
+fn main
+    a = Box v 10
+    b = Box v 'x'
+    out "{a.v} {b.v}"

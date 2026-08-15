@@ -1,8 +1,0 @@
-//OUT="compiles"
-
-fn new_vec[T] size: i32
-    ret _builtin_alloc[T](size)
-
-fn main
-    vec = new_vec[i32](10)
-    out "compiles"

@@ -1,0 +1,13 @@
+//BUG="FEEDBACK.md 1.16 — a format string cannot escape a brace"
+//OUT="{}"
+
+// parse_format_string treats every `{` as the start of an expression, with no
+// escape for a literal one, so a program simply cannot print `{`. Today this
+// fails with "Unclosed {" because the `{` inside the format is handed to the
+// block parser. The usual spelling is `{{` and `}}`.
+//
+// The workaround — binding '{' to a char variable and interpolating it — is in
+// 01_out/14_braces_printed_via_char.cpl.
+
+fn main
+    out "{{}}"

@@ -1,0 +1,8 @@
+//OUT="abc"
+
+fn main
+    v = Vec()
+    v.push('a')
+    v.push('b')
+    v.push('c')
+    out "{v}"

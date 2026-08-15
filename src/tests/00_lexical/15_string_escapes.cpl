@@ -1,0 +1,4 @@
+//OUT="quote:\" backslash:\\ apostrophe:' newline:\n"
+
+fn main
+    out "quote:\" backslash:\\ apostrophe:\' newline:\n"

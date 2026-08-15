@@ -1,0 +1,5 @@
+//ERR 4 10 4 30
+//MSG="_builtin_add takes 2 arguments, not 1"
+
+fn main
+    out "{_builtin_add[i32](1)}"

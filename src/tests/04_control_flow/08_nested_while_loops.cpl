@@ -1,0 +1,12 @@
+//OUT="9"
+
+fn main
+    count = 0
+    i = 0
+    while i < 3
+        j = 0
+        while j < 3
+            count++
+            j++
+        i++
+    out "{count}"

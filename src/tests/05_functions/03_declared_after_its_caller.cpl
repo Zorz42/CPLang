@@ -1,0 +1,7 @@
+//OUT="7"
+
+fn main
+    out "{later(3 4)}"
+
+fn later a b
+    ret a + b

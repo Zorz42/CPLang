@@ -1,0 +1,9 @@
+//OUT="6"
+
+fn main
+    n = 0
+    total = 0
+    while n < 10 && total < 6
+        total += n
+        n++
+    out "{total}"

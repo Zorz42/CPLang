@@ -1,0 +1,8 @@
+//ERR 7 10 7 27
+//MSG="No candidate found for this function call"
+
+fn func[T] x: T
+    ret x
+
+fn main
+    out "{func[i32 i32](10)}"

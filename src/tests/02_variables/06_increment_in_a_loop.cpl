@@ -1,0 +1,7 @@
+//OUT="5"
+
+fn main
+    n = 0
+    while n < 5
+        n++
+    out "{n}"

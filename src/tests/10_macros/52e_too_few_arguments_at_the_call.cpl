@@ -1,0 +1,10 @@
+//ERR 9 4 9 12
+//MSG="Too few arguments for this macro call"
+
+macro my_macro A B C {{
+    A = B
+    D = C
+}}
+
+fn main
+    my_macro A; 10;

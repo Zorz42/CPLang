@@ -1,0 +1,8 @@
+//OUT="1 2"
+
+struct Pair
+    a b
+
+fn main
+    p = Pair b 2 a 1
+    out "{p.a} {p.b}"

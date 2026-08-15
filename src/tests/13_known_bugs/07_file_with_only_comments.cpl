@@ -1,0 +1,13 @@
+//BUG="FEEDBACK.md 1.5 — a file with no code panics the preprocessor"
+//ERR any
+//MSG="No main function found"
+
+// parse_indentation seeds `lines` with one empty entry and then retains away
+// every blank line (src/compiler/preprocessor.rs); when nothing is left,
+// parse_indentation_block still reads lines[0] and panics with
+// "index out of bounds: the len is 0 but the index is 0". This file is exactly
+// that case — every line in it is a comment.
+//
+// The right behaviour is the ordinary "No main function found" error. While
+// fixing it, note that display_error's `lines.len() - 1` underflows on a
+// source with no lines (FEEDBACK.md 1.16), which this bug currently hides.
