@@ -215,7 +215,7 @@ fn string_to_token(string: &String) -> Token {
         }
     }
 
-    if let Ok(float) = string.parse::<f64>() {
+    if let Ok(float) = string.parse::<f64>() && string.contains('.') {
         return Token::ConstFloat(float);
     }
 
