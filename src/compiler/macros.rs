@@ -83,9 +83,9 @@ fn gen_block(arguments: &Vec<String>, block: TokenBlock, argument_values: &Vec<T
     let mut res = Vec::new();
     for (token, pos) in block.into_iter() {
         match token {
-            Token::Identifier(ident) if let Some(pos) = arguments.iter().position(|x| **x == ident) => {
-                for i in argument_values[pos].clone().into_iter() {
-                    res.push(i);
+            Token::Identifier(ident) if let Some(idx) = arguments.iter().position(|x| **x == ident) => {
+                for i in argument_values[idx].clone().into_iter() {
+                    res.push((i.0, pos));
                 }
             }
             Token::BracketBlock(block) => {
