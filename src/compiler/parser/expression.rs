@@ -8,85 +8,85 @@ use crate::compiler::tokenizer::{Token, TokenBlock};
 // only looks for a single value (if parentheses are used, it will parse whole expression)
 fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<ASTExpression> {
     // check for function call first
-    if let Some((call, pos)) = parse_function_call(structs, block)? {
-        return Ok(ASTExpression::new(ASTExpressionKind::FunctionCall(call), pos));
-    }
+    let mut res = if let Some((call, pos)) = parse_function_call(structs, block)? {
+        ASTExpression::new(ASTExpressionKind::FunctionCall(call), pos)
+    } else {
+        match block.get() {
+            (Token::ConstInteger32(int), pos) => ASTExpression::new(ASTExpressionKind::Integer32(int), pos),
+            (Token::ConstInteger64(int), pos) => ASTExpression::new(ASTExpressionKind::Integer64(int), pos),
+            (Token::ConstFloat(float), pos) => ASTExpression::new(ASTExpressionKind::Float(float), pos),
+            (Token::ConstString(string), pos) => ASTExpression::new(ASTExpressionKind::String(string.iter().map(|x| x.c).collect()), pos),
+            (Token::ConstBoolean(boolean), pos) => ASTExpression::new(ASTExpressionKind::Boolean(boolean), pos),
+            (Token::ConstChar(character), pos) => ASTExpression::new(ASTExpressionKind::Char(character), pos),
 
-    let mut res = match block.get() {
-        (Token::ConstInteger32(int), pos) => ASTExpression::new(ASTExpressionKind::Integer32(int), pos),
-        (Token::ConstInteger64(int), pos) => ASTExpression::new(ASTExpressionKind::Integer64(int), pos),
-        (Token::ConstFloat(float), pos) => ASTExpression::new(ASTExpressionKind::Float(float), pos),
-        (Token::ConstString(string), pos) => ASTExpression::new(ASTExpressionKind::String(string.iter().map(|x| x.c).collect()), pos),
-        (Token::ConstBoolean(boolean), pos) => ASTExpression::new(ASTExpressionKind::Boolean(boolean), pos),
-        (Token::ConstChar(character), pos) => ASTExpression::new(ASTExpressionKind::Char(character), pos),
-
-        (Token::Identifier(identifier), pos) => {
-            // we need to know if this is a struct instantiation or a variable
-            if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
-                parse_struct_instantiation(structs, block, struct_declaration, pos, identifier)?
-            } else {
-                ASTExpression::new(ASTExpressionKind::Variable(identifier.clone()), pos)
+            (Token::Identifier(identifier), pos) => {
+                // we need to know if this is a struct instantiation or a variable
+                if let Some(struct_declaration) = structs.iter().find(|x| x.name == *identifier) {
+                    parse_struct_instantiation(structs, block, struct_declaration, pos, identifier)?
+                } else {
+                    ASTExpression::new(ASTExpressionKind::Variable(identifier.clone()), pos)
+                }
             }
-        }
-        (Token::Reference, _) => {
-            let res = parse_value(structs, block)?;
-            let pos = res.pos;
+            (Token::Reference, _) => {
+                let res = parse_value(structs, block)?;
+                let pos = res.pos;
 
-            ASTExpression::new(ASTExpressionKind::Reference(Box::new(res)), pos)
-        }
-        (Token::Minus, _) => {
-            let res = parse_value(structs, block)?;
-            let pos = res.pos;
+                ASTExpression::new(ASTExpressionKind::Reference(Box::new(res)), pos)
+            }
+            (Token::Minus, _) => {
+                let res = parse_value(structs, block)?;
+                let pos = res.pos;
 
-            ASTExpression::new(ASTExpressionKind::Minus(Box::new(res)), pos)
-        }
-        (Token::Not, _) => {
-            let res = parse_value(structs, block)?;
-            let pos = res.pos;
+                ASTExpression::new(ASTExpressionKind::Minus(Box::new(res)), pos)
+            }
+            (Token::Not, _) => {
+                let res = parse_value(structs, block)?;
+                let pos = res.pos;
 
-            ASTExpression::new(ASTExpressionKind::Not(Box::new(res)), pos)
-        }
-        (token @ (Token::I32 | Token::I64 | Token::F32 | Token::F64 | Token::Bool | Token::Char), pos) => {
-            let expr = parse_value(structs, block)?;
-            let expr_pos = expr.pos;
+                ASTExpression::new(ASTExpressionKind::Not(Box::new(res)), pos)
+            }
+            (token @ (Token::I32 | Token::I64 | Token::F32 | Token::F64 | Token::Bool | Token::Char), pos) => {
+                let expr = parse_value(structs, block)?;
+                let expr_pos = expr.pos;
 
-            let cast_to = match token {
-                Token::I32 => ASTType::Primitive(PrimitiveType::I32, pos),
-                Token::I64 => ASTType::Primitive(PrimitiveType::I64, pos),
-                Token::F32 => ASTType::Primitive(PrimitiveType::F32, pos),
-                Token::F64 => ASTType::Primitive(PrimitiveType::F64, pos),
-                Token::Bool => ASTType::Primitive(PrimitiveType::Bool, pos),
-                Token::Char => ASTType::Primitive(PrimitiveType::Char, pos),
-                _ => unreachable!(),
-            };
+                let cast_to = match token {
+                    Token::I32 => ASTType::Primitive(PrimitiveType::I32, pos),
+                    Token::I64 => ASTType::Primitive(PrimitiveType::I64, pos),
+                    Token::F32 => ASTType::Primitive(PrimitiveType::F32, pos),
+                    Token::F64 => ASTType::Primitive(PrimitiveType::F64, pos),
+                    Token::Bool => ASTType::Primitive(PrimitiveType::Bool, pos),
+                    Token::Char => ASTType::Primitive(PrimitiveType::Char, pos),
+                    _ => unreachable!(),
+                };
 
-            ASTExpression::new(
-                ASTExpressionKind::FunctionCall(ASTFunctionCall {
-                    name: "_builtin_cast".to_owned(),
-                    arguments: vec![expr],
-                    template_arguments: vec![cast_to],
-                }),
-                pos + expr_pos,
-            )
-        }
-        (Token::Pipe, _) => {
-            let res = parse_value(structs, block)?;
-            let pos = res.pos;
+                ASTExpression::new(
+                    ASTExpressionKind::FunctionCall(ASTFunctionCall {
+                        name: "_builtin_cast".to_owned(),
+                        arguments: vec![expr],
+                        template_arguments: vec![cast_to],
+                    }),
+                    pos + expr_pos,
+                )
+            }
+            (Token::Pipe, _) => {
+                let res = parse_value(structs, block)?;
+                let pos = res.pos;
 
-            ASTExpression::new(ASTExpressionKind::Dereference(Box::new(res)), pos)
-        }
-        (Token::ParenthesisBlock(mut block), _) => parse_expression(structs, &mut block)?,
-        (Token::End, _) => {
-            return Err(CompilerError {
-                message: "Expected another token after this one".to_string(),
-                position: Some(block.get_last_pos()),
-            });
-        }
-        (_, pos) => {
-            return Err(CompilerError {
-                message: "Unexpected token".to_owned(),
-                position: Some(pos),
-            });
+                ASTExpression::new(ASTExpressionKind::Dereference(Box::new(res)), pos)
+            }
+            (Token::ParenthesisBlock(mut block), _) => parse_expression(structs, &mut block)?,
+            (Token::End, _) => {
+                return Err(CompilerError {
+                    message: "Expected another token after this one".to_string(),
+                    position: Some(block.get_last_pos()),
+                });
+            }
+            (_, pos) => {
+                return Err(CompilerError {
+                    message: "Unexpected token".to_owned(),
+                    position: Some(pos),
+                });
+            }
         }
     };
 
