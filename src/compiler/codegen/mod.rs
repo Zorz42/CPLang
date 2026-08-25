@@ -37,9 +37,9 @@ static void* bump_malloc(size_t size) {
     return ptr;
 }
 
-{{global_variables}}
-
 {{struct_declarations}}
+
+{{global_variables}}
 
 {{function_signatures}}
 
