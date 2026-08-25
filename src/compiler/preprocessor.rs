@@ -376,10 +376,8 @@ pub fn parse_blocks(input: &Vec<Fragment>, idx: &mut usize) -> CompilerResult<Fr
 }
 
 // recursively convert indentation levels into blocks
-fn parse_indentation_block(lines: &Vec<(i32, Vec<Fragment>)>, curr_idx: &mut usize) -> CompilerResult<FragmentBlock> {
+fn parse_indentation_block(lines: &Vec<(i32, Vec<Fragment>)>, curr_idx: &mut usize, curr_ident: i32) -> CompilerResult<FragmentBlock> {
     let mut res = Vec::new();
-
-    let curr_ident = lines[*curr_idx].0;
 
     while *curr_idx < lines.len() {
         let ident = lines[*curr_idx].0;
@@ -396,7 +394,7 @@ fn parse_indentation_block(lines: &Vec<(i32, Vec<Fragment>)>, curr_idx: &mut usi
                 return Ok(FragmentBlock::from_vec(res));
             }
             Ordering::Greater => {
-                let child_block = parse_indentation_block(lines, curr_idx)?;
+                let child_block = parse_indentation_block(lines, curr_idx, curr_ident + 1)?;
                 res.push(Fragment::BraceBlock(child_block));
             }
         }
@@ -442,5 +440,5 @@ fn parse_indentation(input: &FragmentBlock) -> CompilerResult<FragmentBlock> {
         *indent = (leading_spaces / 4) as i32;
     }
 
-    parse_indentation_block(&lines, &mut 0)
+    parse_indentation_block(&lines, &mut 0, 0)
 }
