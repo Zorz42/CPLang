@@ -76,6 +76,12 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
             ASTExpression::new(ASTExpressionKind::Dereference(Box::new(res)), pos)
         }
         (Token::ParenthesisBlock(mut block), _) => parse_expression(structs, &mut block)?,
+        (Token::End, _) => {
+            return Err(CompilerError {
+                message: "Expected another token after this one".to_string(),
+                position: Some(block.get_last_pos()),
+            });
+        }
         (_, pos) => {
             return Err(CompilerError {
                 message: "Unexpected token".to_owned(),
@@ -115,6 +121,12 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                             },
                             pos,
                         ),
+                        (Token::End, _) => {
+                            return Err(CompilerError {
+                                message: "Expected another token after this one".to_string(),
+                                position: Some(block.get_last_pos()),
+                            });
+                        }
                         (_, pos) => {
                             return Err(CompilerError {
                                 message: "Expected identifier or non-negative integer after dot".to_owned(),

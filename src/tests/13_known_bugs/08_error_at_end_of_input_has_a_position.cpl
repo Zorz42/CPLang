@@ -1,6 +1,6 @@
 //BUG="FEEDBACK.md 1.6 — an error at end of input carries the unknown position"
-//ERR 23 4 23 7
-//MSG="Unexpected token"
+//ERR 23 6 23 7
+//MSG="Expected another token after this one"
 
 // TokenBlock::peek and ::get return LAST_TOKEN, whose position is
 // FilePosition::unknown(), so an error raised when the parser runs out of

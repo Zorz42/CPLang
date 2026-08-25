@@ -77,6 +77,12 @@ pub fn parse_assignment(structs: &Vec<ASTStructDeclaration>, assign_to: ASTExpre
 pub fn parse_global_variable_declaration(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock, file_idx: usize) -> CompilerResult<ASTGlobalVariable> {
     let (ident, ident_pos) = match block.get() {
         (Token::Identifier(ident), ident_pos) => (ident, ident_pos),
+        (Token::End, _) => {
+            return Err(CompilerError {
+                message: "Expected another token after this one".to_string(),
+                position: Some(block.get_last_pos()),
+            });
+        }
         (_, pos) => {
             return Err(CompilerError {
                 message: "Unexpected token, expected one of: fn, struct, identifier".to_owned(),

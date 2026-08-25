@@ -17,6 +17,12 @@ pub fn parse_struct_declaration(block: &mut TokenBlock, file_idx: usize) -> Comp
 
     let name = match block.get() {
         (Token::Identifier(name), _) => name,
+        (Token::End, _) => {
+            return Err(CompilerError {
+                message: "Expected another token after this one".to_string(),
+                position: Some(block.get_last_pos()),
+            });
+        }
         (_, pos) => {
             return Err(CompilerError {
                 message: "Expected struct name after struct keyword".to_owned(),
@@ -29,6 +35,12 @@ pub fn parse_struct_declaration(block: &mut TokenBlock, file_idx: usize) -> Comp
 
     let mut block = match block.get() {
         (Token::BraceBlock(block), _) => block,
+        (Token::End, _) => {
+            return Err(CompilerError {
+                message: "Expected another token after this one".to_string(),
+                position: Some(block.get_last_pos()),
+            });
+        }
         (_, pos) => {
             return Err(CompilerError {
                 message: "Expected block after struct name".to_owned(),
@@ -53,6 +65,12 @@ pub fn parse_struct_declaration(block: &mut TokenBlock, file_idx: usize) -> Comp
                 let type_hint = parse_type_hint(&mut block)?;
 
                 fields.push((name.clone(), type_hint));
+            }
+            (Token::End, _) => {
+                return Err(CompilerError {
+                    message: "Expected another token after this one".to_string(),
+                    position: Some(block.get_last_pos()),
+                });
             }
             (_, pos) => {
                 return Err(CompilerError {
@@ -96,6 +114,12 @@ pub fn parse_struct_instantiation(
                 }
 
                 (ident, pos)
+            }
+            (Token::End, _) => {
+                return Err(CompilerError {
+                    message: "Expected another token after this one".to_string(),
+                    position: Some(block.get_last_pos()),
+                });
             }
             (_, pos) => {
                 return Err(CompilerError {

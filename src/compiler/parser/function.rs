@@ -34,37 +34,49 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
             let (op, op_pos) = block.get();
             res_signature.name = "operator".to_string()
                 + match op {
-                    Token::Plus => "+",
-                    Token::Minus => "-",
-                    Token::Star => "*",
-                    Token::Slash => "/",
-                    Token::Mod => "%",
-                    Token::Equals => "==",
-                    Token::NotEquals => "!=",
-                    Token::LessThan => "<",
-                    Token::LessThanOrEqual => "<=",
-                    Token::GreaterThan => ">",
-                    Token::GreaterThanOrEqual => ">=",
-                    Token::And => "&&",
-                    Token::Or => "||",
-                    Token::Not => "!",
-                    Token::BracketBlock(block) => {
-                        if block.has_tokens() {
-                            return Err(CompilerError {
-                                message: "There should be nothing between []".to_string(),
-                                position: Some(op_pos),
-                            });
-                        }
-                        "[]"
-                    }
-                    _ => {
+                Token::Plus => "+",
+                Token::Minus => "-",
+                Token::Star => "*",
+                Token::Slash => "/",
+                Token::Mod => "%",
+                Token::Equals => "==",
+                Token::NotEquals => "!=",
+                Token::LessThan => "<",
+                Token::LessThanOrEqual => "<=",
+                Token::GreaterThan => ">",
+                Token::GreaterThanOrEqual => ">=",
+                Token::And => "&&",
+                Token::Or => "||",
+                Token::Not => "!",
+                Token::BracketBlock(block) => {
+                    if block.has_tokens() {
                         return Err(CompilerError {
-                            message: "Unexpected token".to_string(),
+                            message: "There should be nothing between []".to_string(),
                             position: Some(op_pos),
                         });
                     }
-                };
+                    "[]"
+                }
+                Token::End => {
+                    return Err(CompilerError {
+                        message: "Expected another token after this one".to_string(),
+                        position: Some(block.get_last_pos()),
+                    });
+                }
+                _ => {
+                    return Err(CompilerError {
+                        message: "Unexpected token".to_string(),
+                        position: Some(op_pos),
+                    });
+                }
+            };
             res_signature.pos = pos + op_pos;
+        }
+        (Token::End, _) => {
+            return Err(CompilerError {
+                message: "Expected another token after this one".to_string(),
+                position: Some(block.get_last_pos()),
+            });
         }
         (_, pos) => {
             return Err(CompilerError {
@@ -93,6 +105,12 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
             (Token::Identifier(arg), pos) => {
                 res_signature.pos += pos;
                 (arg, pos)
+            }
+            (Token::End, _) => {
+                return Err(CompilerError {
+                    message: "Expected another token after this one".to_string(),
+                    position: Some(block.get_last_pos()),
+                });
             }
             (_, pos) => {
                 return Err(CompilerError {

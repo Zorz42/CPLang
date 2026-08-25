@@ -13,6 +13,12 @@ pub fn parse_if_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Token
 
     let res_block = match block.get() {
         (Token::BraceBlock(token_block), _) => parse_block(structs, token_block)?,
+        (Token::End, _) => {
+            return Err(CompilerError {
+                message: "Expected another token after this one".to_string(),
+                position: Some(block.get_last_pos()),
+            });
+        }
         (_, pos) => {
             return Err(CompilerError {
                 message: "Expected block after if condition".to_string(),
@@ -25,6 +31,12 @@ pub fn parse_if_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Token
         block.get();
         match block.get() {
             (Token::BraceBlock(token_block), _) => Some(parse_block(structs, token_block)?),
+            (Token::End, _) => {
+                return Err(CompilerError {
+                    message: "Expected another token after this one".to_string(),
+                    position: Some(block.get_last_pos()),
+                });
+            }
             (_, pos) => {
                 return Err(CompilerError {
                     message: "Expected block after else keyword".to_string(),
@@ -53,6 +65,12 @@ pub fn parse_while_statement(structs: &Vec<ASTStructDeclaration>, block: &mut To
 
     let res_block = match block.get() {
         (Token::BraceBlock(token_block), _) => parse_block(structs, token_block)?,
+        (Token::End, _) => {
+            return Err(CompilerError {
+                message: "Expected another token after this one".to_string(),
+                position: Some(block.get_last_pos()),
+            });
+        }
         (_, pos) => {
             return Err(CompilerError {
                 message: "Expected block after while condition".to_string(),
@@ -75,6 +93,12 @@ pub fn parse_for_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
             pos += pos2;
             ident
         }
+        (Token::End, _) => {
+            return Err(CompilerError {
+                message: "Expected another token after this one".to_string(),
+                position: Some(block.get_last_pos()),
+            });
+        }
         (_, pos) => {
             return Err(CompilerError {
                 message: "Expected identifier after for keyword".to_string(),
@@ -89,6 +113,12 @@ pub fn parse_for_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
         (Token::BraceBlock(token_block), pos2) => {
             pos += pos2;
             parse_block(structs, token_block)?
+        }
+        (Token::End, _) => {
+            return Err(CompilerError {
+                message: "Expected another token after this one".to_string(),
+                position: Some(block.get_last_pos()),
+            });
         }
         (_, pos) => {
             return Err(CompilerError {

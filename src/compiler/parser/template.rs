@@ -8,14 +8,23 @@ pub fn parse_declaration_template(block: &mut TokenBlock) -> CompilerResult<Vec<
     if let (Token::BracketBlock(_), _pos) = block.peek() {
         let Token::BracketBlock(bracket_block) = block.get().0 else { unreachable!() };
 
-        for (token, token_pos) in bracket_block.into_iter() {
-            if let Token::Identifier(name) = token {
-                template.push((name, token_pos));
-            } else {
-                return Err(CompilerError {
-                    message: "Unexpected token, expected identifier".to_string(),
-                    position: Some(token_pos),
-                });
+        for token in bracket_block.into_iter() {
+            match token {
+                (Token::Identifier(name), token_pos) => {
+                    template.push((name, token_pos));
+                }
+                (Token::End, _) => {
+                    return Err(CompilerError {
+                        message: "Expected another token after this one".to_string(),
+                        position: Some(block.get_last_pos()),
+                    });
+                }
+                (_, token_pos) => {
+                    return Err(CompilerError {
+                        message: "Unexpected token, expected identifier".to_string(),
+                        position: Some(token_pos),
+                    });
+                }
             }
         }
     }

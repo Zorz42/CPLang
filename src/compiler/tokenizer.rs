@@ -147,6 +147,7 @@ const fn symbol_from_two_chars(c1: char, c2: char) -> Option<Token> {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TokenBlock {
     tokens: Vec<(Token, FilePosition)>,
+    last_pos: FilePosition,
 }
 
 const LAST_TOKEN: (Token, FilePosition) = (Token::End, FilePosition::unknown());
@@ -154,7 +155,7 @@ const LAST_TOKEN: (Token, FilePosition) = (Token::End, FilePosition::unknown());
 impl TokenBlock {
     pub fn new(mut tokens: Vec<(Token, FilePosition)>) -> Self {
         tokens.reverse();
-        Self { tokens }
+        Self { tokens, last_pos: FilePosition::unknown() }
     }
 
     pub fn peek(&self) -> &(Token, FilePosition) {
@@ -171,7 +172,15 @@ impl TokenBlock {
     }
 
     pub fn get(&mut self) -> (Token, FilePosition) {
-        self.tokens.pop().unwrap_or_else(|| LAST_TOKEN.clone())
+        let res = self.tokens.pop().unwrap_or_else(|| LAST_TOKEN.clone());
+        if res.0 != Token::End {
+            self.last_pos = res.1;
+        }
+        res
+    }
+
+    pub fn get_last_pos(&self) -> FilePosition {
+        self.last_pos
     }
 
     pub fn has_tokens(&self) -> bool {
