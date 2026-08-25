@@ -193,6 +193,10 @@ fn string_to_token(string: &String) -> Token {
         return Token::ConstInteger32(integer);
     }
 
+    if let Ok(integer) = string.parse::<i64>() {
+        return Token::ConstInteger64(integer);
+    }
+
     // parse i64 notation: 1000L
     if string.ends_with('L') {
         let mut string = string.clone();
