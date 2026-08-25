@@ -98,7 +98,7 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -234,9 +234,9 @@ fn gen_expression(ctx: &mut CodegenContext, expression: IRExpression) -> String 
             fields_type_labels,
             field_values,
         } => {
-            let fields_type_labels = fields_type_labels.into_iter().map(|x| ctx.types[&x].clone()).collect();
-            let c_label = ctx.c_structs[&(struct_label, fields_type_labels)];
-            let mut code = format!("({})", gen_struct_name(c_label));
+            let field_types = fields_type_labels.into_iter().map(|x| ctx.types[&x].clone()).collect();
+            let c_name = gen_type(ctx, IRType::Struct(struct_label, field_types));
+            let mut code = format!("({c_name})");
             code += "{";
             for arg in field_values {
                 code += &gen_expression(ctx, arg);
