@@ -135,7 +135,7 @@ impl ASTExpression {
 pub enum ASTExpressionKind {
     Integer32(i32),
     Integer64(i64),
-    Float(f32),
+    Float(f64),
     String(String),
     Boolean(bool),
     Char(char),

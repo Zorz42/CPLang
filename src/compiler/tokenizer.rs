@@ -13,7 +13,7 @@ pub enum Token {
     Identifier(String),
     ConstInteger32(i32),
     ConstInteger64(i64),
-    ConstFloat(f32),
+    ConstFloat(f64),
     ConstString(Vec<PosChar>),
     ConstBoolean(bool),
     ConstChar(char),
@@ -215,7 +215,7 @@ fn string_to_token(string: &String) -> Token {
         }
     }
 
-    if let Ok(float) = string.parse::<f32>() {
+    if let Ok(float) = string.parse::<f64>() {
         return Token::ConstFloat(float);
     }
 
