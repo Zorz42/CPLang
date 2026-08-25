@@ -20,37 +20,42 @@ pub fn insert_macros(tokens: Vec<(Token, FilePosition)>) -> CompilerResult<Vec<(
             continue;
         }
 
-        let (token, pos) = token_block.get();
-        let Token::Identifier(macro_name) = token else {
-            return Err(CompilerError {
-                message: "Expected identifier".to_string(),
-                position: Some(pos),
-            });
+        let (macro_name, name_pos) = match token_block.get() {
+            (Token::Identifier(name), pos) => (name, pos),
+            (Token::End, _) =>
+                return Err(CompilerError {
+                    message: "Expected another token after this one".to_string(),
+                    position: Some(token_block.get_last_pos()),
+                }),
+            (_, pos) =>
+                return Err(CompilerError {
+                    message: "Expected identifier".to_string(),
+                    position: Some(pos),
+                }),
         };
 
         let mut macro_arguments = Vec::new();
         let macro_block;
 
         loop {
-            let (token, pos) = token_block.get();
-
-            if let Token::Identifier(arg_name) = token {
-                macro_arguments.push(arg_name);
-            } else if let Token::BraceBlock(inner_block) = token {
-                macro_block = insert_macros_block(&macros, inner_block)?;
-                break;
-            } else {
-                return Err(CompilerError {
-                    message: "Expected identifier or brace block".to_string(),
-                    position: Some(pos),
-                });
+            match token_block.get() {
+                (Token::Identifier(arg_name), _) => macro_arguments.push(arg_name),
+                (Token::BraceBlock(inner_block), _) => {
+                    macro_block = insert_macros_block(&macros, inner_block)?;
+                    break;
+                }
+                (_, pos) =>
+                    return Err(CompilerError {
+                        message: "Expected identifier or brace block".to_string(),
+                        position: Some(pos),
+                    }),
             }
         }
 
         if macros.contains_key(&macro_name) {
             return Err(CompilerError {
                 message: "Macro redefinition not allowed".to_string(),
-                position: Some(pos),
+                position: Some(name_pos),
             });
         }
 
