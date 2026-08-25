@@ -205,7 +205,8 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
             ASTOperator::LesserEq,
             ASTOperator::NotEquals,
         ],
-        vec![ASTOperator::And, ASTOperator::Or],
+        vec![ASTOperator::And],
+        vec![ASTOperator::Or],
         vec![ASTOperator::Comma],
         vec![ASTOperator::DotDot],
     ];
