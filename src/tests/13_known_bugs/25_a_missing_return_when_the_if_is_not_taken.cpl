@@ -1,0 +1,26 @@
+//BUG="a non-void function may fall off the end, returning whatever C left behind"
+//ERR any
+
+// `f` returns i32 — deduced from `ret 1` — but only when the `if` is taken.
+// Called with -5 it runs off the end of the body, and codegen emits a C
+// function with no `return` on that path, so the caller reads whatever happened
+// to be in the return register. Today this prints 5, the argument, which is
+// simply what was lying around; it is undefined behaviour, not a value.
+//
+// A function whose return type is not void should be required to return on
+// every path, and this is the base case: an `if` with no `else`.
+//
+// No //MSG on any of the cases 25-32: the diagnostic does not exist yet, so its
+// wording cannot be quoted, and the span cannot be predicted either — it might
+// land on the function's name or on the point where control leaves the body.
+// Add both with the fix.
+//
+// The cases that must keep compiling are in 05_functions/26-30; an over-strict
+// check is as wrong as no check at all.
+
+fn f n
+    if n > 0
+        ret 1
+
+fn main
+    out "{f(-5)}"

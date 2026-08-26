@@ -1,0 +1,16 @@
+//OUT="pos done"
+
+// A function that returns nothing may end without a `ret`, and an `if` inside it
+// need not be balanced — there is no value to be missing. The check only applies
+// to functions whose return type is non-void, so it must not fire here.
+//
+// 07_bare_return_ends_a_void_function.cpl and 08_several_bare_returns.cpl cover
+// the same function with explicit bare returns.
+
+fn shout n
+    if n > 0
+        out "pos "
+    out "done"
+
+fn main
+    shout(1)

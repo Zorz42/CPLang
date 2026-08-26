@@ -1,0 +1,17 @@
+//OUT="2 1 0"
+
+// The same idea as 26_if_else_returns_on_both_branches.cpl one level deeper:
+// the checker has to walk into the nested if/else and see that all three leaves
+// return, rather than giving up at the first branch that does not end in `ret`.
+
+fn classify n
+    if n > 0
+        if n > 10
+            ret 2
+        else
+            ret 1
+    else
+        ret 0
+
+fn main
+    out "{classify(50)} {classify(5)} {classify(-5)}"

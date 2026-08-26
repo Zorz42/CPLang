@@ -1,0 +1,15 @@
+//OUT="1 0"
+
+// Every path through `sign` ends in a `ret`, so nothing follows the if/else and
+// nothing needs to. Together with 06_early_return.cpl — which returns from an
+// `if` and then falls through to a trailing `ret` — this is the shape a
+// returns-on-all-paths check has to keep accepting.
+
+fn sign n
+    if n > 0
+        ret 1
+    else
+        ret 0
+
+fn main
+    out "{sign(5)} {sign(-5)}"

@@ -1,0 +1,21 @@
+//OUT="6"
+
+// A `while true` never falls through, so a `ret` inside it is the only way out
+// and the function needs no return after the loop. A returns-on-all-paths check
+// that treats every loop as possibly running zero times would reject this and
+// force an unreachable `ret` after the loop, so the literal `true` condition is
+// special-cased.
+//
+// Only the literal earns this. A loop whose condition happens to always hold —
+// `while 1 == 1`, or a variable that is never set false — is still assumed to
+// fall through; see 28_a_loop_followed_by_a_return.cpl for how that is written.
+
+fn first_hit n
+    i = 0
+    while true
+        if i * i > n
+            ret i
+        i++
+
+fn main
+    out "{first_hit(30)}"
