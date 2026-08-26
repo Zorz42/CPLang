@@ -22,16 +22,18 @@ pub fn insert_macros(tokens: Vec<(Token, FilePosition)>) -> CompilerResult<Vec<(
 
         let (macro_name, name_pos) = match token_block.get() {
             (Token::Identifier(name), pos) => (name, pos),
-            (Token::End, _) =>
+            (Token::End, _) => {
                 return Err(CompilerError {
                     message: "Expected another token after this one".to_string(),
                     position: Some(token_block.get_last_pos()),
-                }),
-            (_, pos) =>
+                });
+            }
+            (_, pos) => {
                 return Err(CompilerError {
                     message: "Expected identifier".to_string(),
                     position: Some(pos),
-                }),
+                });
+            }
         };
 
         let mut macro_arguments = Vec::new();
@@ -44,11 +46,12 @@ pub fn insert_macros(tokens: Vec<(Token, FilePosition)>) -> CompilerResult<Vec<(
                     macro_block = insert_macros_block(&macros, inner_block)?;
                     break;
                 }
-                (_, pos) =>
+                (_, pos) => {
                     return Err(CompilerError {
                         message: "Expected identifier or brace block".to_string(),
                         position: Some(pos),
-                    }),
+                    });
+                }
             }
         }
 

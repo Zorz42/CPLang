@@ -39,7 +39,8 @@ The compiler works in the following steps:
 4. Lowering: Syntactic sugar is transformed into more rudimentary operations. For example for loop -> while loop, a += 1 -> a = a + 1
 5. Normalization: Names/labels and types are resolved/deduced. AST is transformed into IR (Immediate representation), which is AST with
 less different types of nodes and explicit types and indexes instead of string/name labels.
-6. Code generation: IR is converted to C code.
+6. Optimization: IR is pruned and optimized.
+7. Code generation: IR is converted to C code.
  */
 
 pub fn gain_input_sources(input_content: String) -> [String; 6] {

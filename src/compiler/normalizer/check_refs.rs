@@ -1,245 +1,105 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::ValuePhysicality;
-use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IR, IRBlock, IRExpression, IRInstance, IRStatement};
+use crate::compiler::normalizer::ir::{IR, IRExpression, IRStatement};
+use crate::compiler::normalizer::ir_pass::IRPass;
 // this file implements the pass of IR that happens in normalizer and checks
 // that all lhs in assignments are physical and resolves all autorefs
 
-pub fn check_refs(mut ir: IR, autorefs: &[i32]) -> CompilerResult<IR> {
-    let out: CompilerResult<Vec<_>> = ir.instances.into_iter().map(|instance| check_refs_instance(instance, autorefs)).collect();
-    ir.instances = out?;
-    Ok(ir)
+struct CheckRefsPass {
+    autorefs: Vec<i32>,
+    error: Option<CompilerError>,
 }
 
-fn check_refs_instance(mut instance: IRInstance, autorefs: &[i32]) -> CompilerResult<IRInstance> {
-    instance.block = check_refs_block(instance.block, autorefs)?;
-    Ok(instance)
-}
-
-fn check_refs_block(mut block: IRBlock, autorefs: &[i32]) -> CompilerResult<IRBlock> {
-    let out: CompilerResult<Vec<_>> = block
-        .statements
-        .into_iter()
-        .map(|statement| check_refs_statement(statement, autorefs))
-        .collect();
-    block.statements = out?;
-    Ok(block)
-}
-
-fn check_refs_statement(statement: IRStatement, autorefs: &[i32]) -> CompilerResult<IRStatement> {
-    let res = match statement {
-        IRStatement::Block { block } => IRStatement::Block {
-            block: check_refs_block(block, autorefs)?,
-        },
-        IRStatement::If { condition, block, else_block } => IRStatement::If {
-            condition: check_refs_expression(condition, autorefs)?.0,
-            block: check_refs_block(block, autorefs)?,
-            else_block: else_block.map(|else_block| check_refs_block(else_block, autorefs)).transpose()?,
-        },
-        IRStatement::While { condition, block } => IRStatement::While {
-            condition: check_refs_expression(condition, autorefs)?.0,
-            block: check_refs_block(block, autorefs)?,
-        },
-        IRStatement::Expression { expr } => IRStatement::Expression {
-            expr: check_refs_expression(expr, autorefs)?.0,
-        },
-        IRStatement::Return { return_value } => IRStatement::Return {
-            return_value: return_value
-                .map(|return_value| check_refs_expression(return_value, autorefs))
-                .transpose()?
-                .map(|x| x.0),
-        },
-        IRStatement::Assignment { assign_to, value, pos } => {
-            let (assign_to, is_phys) = check_refs_expression(assign_to, autorefs)?;
-
-            if is_phys == ValuePhysicality::Temporary {
-                return Err(CompilerError {
-                    message: "Left hand side is non-assignable".to_string(),
-                    position: Some(pos),
-                });
-            }
-
-            IRStatement::Assignment {
-                assign_to,
-                value: check_refs_expression(value, autorefs)?.0,
-                pos,
-            }
+impl CheckRefsPass {
+    fn report_error(&mut self, error: CompilerError) {
+        if self.error.is_none() {
+            self.error = Some(error);
         }
-    };
-    Ok(res)
+    }
 }
 
-fn check_refs_expression(expression: IRExpression, autorefs: &[i32]) -> CompilerResult<(IRExpression, ValuePhysicality)> {
-    let res = match expression {
-        IRExpression::Constant { .. } => (expression, ValuePhysicality::Temporary),
-        IRExpression::InstanceCall {
-            instance_label,
-            instance_arguments,
-        } => (
-            IRExpression::InstanceCall {
-                instance_label,
-                instance_arguments: instance_arguments
-                    .into_iter()
-                    .map(|arg| check_refs_expression(arg, autorefs))
-                    .collect::<CompilerResult<Vec<_>>>()?
-                    .into_iter()
-                    .map(|x| x.0)
-                    .collect::<Vec<_>>(),
-            },
-            ValuePhysicality::Temporary,
-        ),
-        IRExpression::BuiltinFunctionCall(call) => {
-            let call = check_refs_builtin(call, autorefs)?;
-            let physicality = call.get_value_physicality();
-            (IRExpression::BuiltinFunctionCall(call), physicality)
-        }
-        IRExpression::FieldAccess { field_label, expression } => (
-            IRExpression::FieldAccess {
-                field_label,
-                expression: Box::new(check_refs_expression(*expression, autorefs)?.0),
-            },
-            ValuePhysicality::Physical,
-        ),
-        IRExpression::Dereference { expression } => (
-            IRExpression::Dereference {
-                expression: Box::new(check_refs_expression(*expression, autorefs)?.0),
-            },
-            ValuePhysicality::Physical,
-        ),
-        IRExpression::StructInitialization {
-            struct_label,
-            field_values,
-            fields_type_labels,
-        } => (
-            IRExpression::StructInitialization {
-                struct_label,
-                fields_type_labels,
-                field_values: field_values
-                    .into_iter()
-                    .map(|val| check_refs_expression(val, autorefs))
-                    .collect::<CompilerResult<Vec<_>>>()?
-                    .into_iter()
-                    .map(|x| x.0)
-                    .collect::<Vec<_>>(),
-            },
-            ValuePhysicality::Temporary,
-        ),
-        IRExpression::Reference { expression, pos } => {
-            let (expression, is_phys) = check_refs_expression(*expression, autorefs)?;
-            if is_phys == ValuePhysicality::Temporary {
-                return Err(CompilerError {
-                    message: "Cannot reference non-physical value.".to_string(),
-                    position: Some(pos),
-                });
+impl IRPass for CheckRefsPass {
+    fn post_map_statement(&mut self, statement: IRStatement) -> IRStatement {
+        match statement {
+            IRStatement::Assignment { assign_to, value, pos } => {
+                let is_phys = is_expression_physical(&assign_to);
+                if is_phys == ValuePhysicality::Temporary {
+                    self.report_error(CompilerError {
+                        message: "Left hand side is non-assignable.".to_string(),
+                        position: Some(pos),
+                    });
+                }
+                IRStatement::Assignment { assign_to, value, pos }
             }
-            (
-                IRExpression::Reference {
-                    expression: Box::new(expression),
-                    pos,
-                },
-                ValuePhysicality::Temporary,
-            )
+            _ => statement
         }
-        IRExpression::Variable { .. } => (expression, ValuePhysicality::Physical),
-        IRExpression::AutoRef { expression, autoref_label } => {
-            let mut expression = *expression;
-            let ref_depth = autorefs[autoref_label];
-            if ref_depth > 0 {
-                for _ in 0..ref_depth {
-                    expression = IRExpression::Reference {
-                        expression: Box::new(expression),
-                        pos: FilePosition::unknown(),
+    }
+
+    fn pre_map_expression(&mut self, expression: IRExpression) -> IRExpression {
+        match expression {
+            IRExpression::AutoRef { expression, autoref_label } => {
+                let mut expression = *expression;
+                let ref_depth = self.autorefs[autoref_label];
+                if ref_depth > 0 {
+                    for _ in 0..ref_depth {
+                        expression = IRExpression::Reference {
+                            expression: Box::new(expression),
+                            pos: FilePosition::unknown(),
+                        }
+                    }
+                } else {
+                    for _ in 0..-ref_depth {
+                        expression = IRExpression::Dereference {
+                            expression: Box::new(expression),
+                        }
                     }
                 }
-            } else {
-                for _ in 0..-ref_depth {
-                    expression = IRExpression::Dereference {
-                        expression: Box::new(expression),
-                    }
-                }
+                expression
             }
-            check_refs_expression(expression, autorefs)?
+            _ => expression
         }
-    };
-    Ok(res)
+    }
+
+    fn post_map_expression(&mut self, expression: IRExpression) -> IRExpression {
+        match expression {
+            IRExpression::Reference { expression, pos } => {
+                let is_phys = is_expression_physical(&*expression);
+                if is_phys == ValuePhysicality::Temporary {
+                    self.report_error(CompilerError {
+                        message: "Cannot reference non-physical value.".to_string(),
+                        position: Some(pos),
+                    });
+                }
+                IRExpression::Reference { expression, pos }
+            }
+            _ => expression
+        }
+    }
 }
 
-fn check_refs_builtin(call: BuiltinFunctionCall, autorefs: &[i32]) -> CompilerResult<BuiltinFunctionCall> {
-    let res = match call {
-        BuiltinFunctionCall::Alloc { typ, num } => BuiltinFunctionCall::Alloc {
-            num: Box::new(check_refs_expression(*num, autorefs)?.0),
-            typ,
-        },
-        BuiltinFunctionCall::Index { arr, idx } => BuiltinFunctionCall::Index {
-            arr: Box::new(check_refs_expression(*arr, autorefs)?.0),
-            idx: Box::new(check_refs_expression(*idx, autorefs)?.0),
-        },
-        BuiltinFunctionCall::IndexStr { string, idx } => BuiltinFunctionCall::IndexStr {
-            string: Box::new(check_refs_expression(*string, autorefs)?.0),
-            idx: Box::new(check_refs_expression(*idx, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Getchar {} => call,
-        BuiltinFunctionCall::Putchar { arg } => BuiltinFunctionCall::Putchar {
-            arg: Box::new(check_refs_expression(*arg, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Cast { arg, to_type } => BuiltinFunctionCall::Cast {
-            arg: Box::new(check_refs_expression(*arg, autorefs)?.0),
-            to_type,
-        },
-        BuiltinFunctionCall::Add { arg1, arg2 } => BuiltinFunctionCall::Add {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Sub { arg1, arg2 } => BuiltinFunctionCall::Sub {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Mul { arg1, arg2 } => BuiltinFunctionCall::Mul {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Div { arg1, arg2 } => BuiltinFunctionCall::Div {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Mod { arg1, arg2 } => BuiltinFunctionCall::Mod {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Eq { arg1, arg2 } => BuiltinFunctionCall::Eq {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::NotEq { arg1, arg2 } => BuiltinFunctionCall::NotEq {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Lesser { arg1, arg2 } => BuiltinFunctionCall::Lesser {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Greater { arg1, arg2 } => BuiltinFunctionCall::Greater {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::LesserEq { arg1, arg2 } => BuiltinFunctionCall::LesserEq {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::GreaterEq { arg1, arg2 } => BuiltinFunctionCall::GreaterEq {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::And { arg1, arg2 } => BuiltinFunctionCall::And {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Or { arg1, arg2 } => BuiltinFunctionCall::Or {
-            arg1: Box::new(check_refs_expression(*arg1, autorefs)?.0),
-            arg2: Box::new(check_refs_expression(*arg2, autorefs)?.0),
-        },
-        BuiltinFunctionCall::Not { arg } => BuiltinFunctionCall::Not {
-            arg: Box::new(check_refs_expression(*arg, autorefs)?.0),
-        },
+pub fn check_refs_new(ir: IR, autorefs: Vec<i32>) -> CompilerResult<IR> {
+    let mut passer = CheckRefsPass {
+        autorefs,
+        error: None,
     };
-    Ok(res)
+    let ir = passer.pass_ir(ir);
+    if let Some(error) = passer.error {
+        Err(error)
+    } else {
+        Ok(ir)
+    }
+}
+
+fn is_expression_physical(expression: &IRExpression) -> ValuePhysicality {
+    match expression {
+        IRExpression::Variable { .. } |
+        IRExpression::Dereference { .. } |
+        IRExpression::FieldAccess { .. } => ValuePhysicality::Physical,
+        IRExpression::Reference { .. } |
+        IRExpression::StructInitialization { .. } |
+        IRExpression::Constant { .. } |
+        IRExpression::InstanceCall { .. } => ValuePhysicality::Temporary,
+        IRExpression::BuiltinFunctionCall(call) => call.get_value_physicality(),
+        IRExpression::AutoRef { .. } => unreachable!(),
+    }
 }

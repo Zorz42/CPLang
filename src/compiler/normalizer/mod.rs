@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::check_refs::check_refs;
+use crate::compiler::normalizer::check_refs::check_refs_new;
 use crate::compiler::normalizer::ir::{
     IR, IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
 };
@@ -17,6 +17,7 @@ mod check_refs;
 mod function_cmp;
 pub mod ir;
 mod ir_debug;
+mod ir_pass;
 mod symbol_table;
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
@@ -160,7 +161,7 @@ impl Normalizer {
             });
         }
 
-        self.ir = check_refs(self.ir, &autorefs)?;
+        self.ir = check_refs_new(self.ir, autorefs)?;
 
         Ok(self.ir)
     }

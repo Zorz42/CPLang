@@ -77,3 +77,6 @@ fn print x: f64
 
 fn print x: bool
     print('0' + i32 x)
+
+fn print x: void
+    print("()")

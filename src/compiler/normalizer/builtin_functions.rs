@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::ir::{BuiltinFunctionCall, IRExpression, IRType, IRTypeLabel};
+use crate::compiler::normalizer::ir::{IRBuiltinFunctionCall, IRExpression, IRType, IRTypeLabel};
 use crate::compiler::normalizer::{Normalizer, ValuePhysicality};
 use crate::compiler::parser::ast::PrimitiveType;
 
@@ -66,7 +66,7 @@ macro_rules! define_builtin_ops {
                         $template_types[0]
                     };
 
-                    Ok((BuiltinFunctionCall::$variant { arg1: Box::new(arg1), arg2: Box::new(arg2) }, ret_type))
+                    Ok((IRBuiltinFunctionCall::$variant { arg1: Box::new(arg1), arg2: Box::new(arg2) }, ret_type))
                 }
             )*
             _ => unreachable!(),
@@ -108,7 +108,7 @@ impl Normalizer {
         mut function_arguments: Vec<IRExpression>,
         template_types: Vec<IRTypeLabel>,
         call_pos: FilePosition,
-    ) -> CompilerResult<(BuiltinFunctionCall, IRTypeLabel)> {
+    ) -> CompilerResult<(IRBuiltinFunctionCall, IRTypeLabel)> {
         let num_arguments = match function_name {
             GETCHAR_LABEL => 0,
             ALLOC_LABEL | PUTCHAR_LABEL | CAST_LABEL | NOT_LABEL => 1,
@@ -159,7 +159,7 @@ impl Normalizer {
                 self.relevant_types.push(typ);
 
                 Ok((
-                    BuiltinFunctionCall::Alloc {
+                    IRBuiltinFunctionCall::Alloc {
                         typ,
                         num: Box::new(function_arguments.pop().unwrap()),
                     },
@@ -178,7 +178,7 @@ impl Normalizer {
                 self.type_resolver.hint_is_ref(arr_type, expr_types[0])?;
 
                 Ok((
-                    BuiltinFunctionCall::Index {
+                    IRBuiltinFunctionCall::Index {
                         arr: Box::new(arr_expr),
                         idx: Box::new(index_expr),
                     },
@@ -197,7 +197,7 @@ impl Normalizer {
                 self.type_resolver.hint_is(char_type, PrimitiveType::Char)?;
 
                 Ok((
-                    BuiltinFunctionCall::IndexStr {
+                    IRBuiltinFunctionCall::IndexStr {
                         string: Box::new(str_expr),
                         idx: Box::new(index_expr),
                     },
@@ -208,7 +208,7 @@ impl Normalizer {
             GETCHAR_LABEL => {
                 let char_type = self.type_resolver.new_type_label(FilePosition::unknown());
                 self.type_resolver.hint_is(char_type, PrimitiveType::Char)?;
-                Ok((BuiltinFunctionCall::Getchar {}, char_type))
+                Ok((IRBuiltinFunctionCall::Getchar {}, char_type))
             }
 
             PUTCHAR_LABEL => {
@@ -218,7 +218,7 @@ impl Normalizer {
 
                 let ret_type = self.type_resolver.new_type_label(FilePosition::unknown());
                 self.type_resolver.hint_is(ret_type, PrimitiveType::Void)?;
-                Ok((BuiltinFunctionCall::Putchar { arg: Box::new(char_expr) }, ret_type))
+                Ok((IRBuiltinFunctionCall::Putchar { arg: Box::new(char_expr) }, ret_type))
             }
 
             NOT_LABEL => {
@@ -228,7 +228,7 @@ impl Normalizer {
                 let expr = function_arguments.pop().unwrap();
                 self.type_resolver.hint_is(expr_types[0], PrimitiveType::Bool)?;
 
-                Ok((BuiltinFunctionCall::Not { arg: Box::new(expr) }, res_type))
+                Ok((IRBuiltinFunctionCall::Not { arg: Box::new(expr) }, res_type))
             }
 
             CAST_LABEL => {
@@ -290,7 +290,7 @@ impl Normalizer {
                 let res_type = self.type_resolver.new_type_label(FilePosition::unknown());
                 self.type_resolver.hint_is(res_type, to_type.clone())?;
 
-                Ok((BuiltinFunctionCall::Cast { arg: Box::new(expr), to_type }, res_type))
+                Ok((IRBuiltinFunctionCall::Cast { arg: Box::new(expr), to_type }, res_type))
             }
 
             _ => define_builtin_ops!(
@@ -313,7 +313,7 @@ impl Normalizer {
     }
 }
 
-impl BuiltinFunctionCall {
+impl IRBuiltinFunctionCall {
     pub const fn get_value_physicality(&self) -> ValuePhysicality {
         match self {
             Self::Index { .. } | Self::IndexStr { .. } => ValuePhysicality::Physical,

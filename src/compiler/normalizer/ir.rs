@@ -23,7 +23,7 @@ pub struct IR {
 }
 
 #[derive(Debug)]
-pub enum BuiltinFunctionCall {
+pub enum IRBuiltinFunctionCall {
     Alloc { typ: IRTypeLabel, num: Box<IRExpression> },
     Index { arr: Box<IRExpression>, idx: Box<IRExpression> },
     IndexStr { string: Box<IRExpression>, idx: Box<IRExpression> },
@@ -72,7 +72,7 @@ pub enum IRExpression {
         instance_label: IRInstanceLabel,
         instance_arguments: Vec<Self>,
     },
-    BuiltinFunctionCall(BuiltinFunctionCall),
+    BuiltinFunctionCall(IRBuiltinFunctionCall),
     FieldAccess {
         expression: Box<Self>,
         field_label: IRFieldLabel,

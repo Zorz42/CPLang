@@ -155,7 +155,10 @@ const LAST_TOKEN: (Token, FilePosition) = (Token::End, FilePosition::unknown());
 impl TokenBlock {
     pub fn new(mut tokens: Vec<(Token, FilePosition)>) -> Self {
         tokens.reverse();
-        Self { tokens, last_pos: FilePosition::unknown() }
+        Self {
+            tokens,
+            last_pos: FilePosition::unknown(),
+        }
     }
 
     pub fn peek(&self) -> &(Token, FilePosition) {
@@ -215,7 +218,9 @@ fn string_to_token(string: &String) -> Token {
         }
     }
 
-    if let Ok(float) = string.parse::<f64>() && string.contains('.') {
+    if let Ok(float) = string.parse::<f64>()
+        && string.contains('.')
+    {
         return Token::ConstFloat(float);
     }
 

@@ -1,5 +1,5 @@
 use crate::compiler::normalizer::ir::{
-    BuiltinFunctionCall, IR, IRBlock, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType,
+    IR, IRBlock, IRBuiltinFunctionCall, IRConstant, IRExpression, IRFieldLabel, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType,
     IRTypeLabel, IRVariableLabel,
 };
 use crate::compiler::parser::ast::PrimitiveType;
@@ -98,7 +98,7 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-        .to_owned()
+    .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -156,34 +156,34 @@ fn gen_variable_label(func: IRVariableLabel) -> String {
     format!("var{func}")
 }
 
-fn gen_builtin_call(ctx: &mut CodegenContext, call: BuiltinFunctionCall) -> String {
+fn gen_builtin_call(ctx: &mut CodegenContext, call: IRBuiltinFunctionCall) -> String {
     fn gen_op(ctx: &mut CodegenContext, arg1: IRExpression, arg2: IRExpression, op: &str) -> String {
         format!("({} {} {})", gen_expression(ctx, arg1), op, gen_expression(ctx, arg2))
     }
     match call {
-        BuiltinFunctionCall::Alloc { typ, num } => {
+        IRBuiltinFunctionCall::Alloc { typ, num } => {
             let typ = ctx.types[&typ].clone();
             format!("bump_malloc(sizeof({})*({}))", gen_type(ctx, typ), gen_expression(ctx, *num))
         }
-        BuiltinFunctionCall::Index { arr, idx } => format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
-        BuiltinFunctionCall::IndexStr { string, idx } => format!("({})[{}]", gen_expression(ctx, *string), gen_expression(ctx, *idx)),
-        BuiltinFunctionCall::Getchar {} => "getchar()".to_string(),
-        BuiltinFunctionCall::Putchar { arg } => format!("putchar({})", gen_expression(ctx, *arg)),
-        BuiltinFunctionCall::Cast { arg, to_type } => format!("({})({})", gen_primitive_type(to_type), gen_expression(ctx, *arg)),
-        BuiltinFunctionCall::Add { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "+"),
-        BuiltinFunctionCall::Sub { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "-"),
-        BuiltinFunctionCall::Mul { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "*"),
-        BuiltinFunctionCall::Div { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "/"),
-        BuiltinFunctionCall::Mod { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "%"),
-        BuiltinFunctionCall::Eq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "=="),
-        BuiltinFunctionCall::NotEq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "!="),
-        BuiltinFunctionCall::Lesser { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "<"),
-        BuiltinFunctionCall::LesserEq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "<="),
-        BuiltinFunctionCall::Greater { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, ">"),
-        BuiltinFunctionCall::GreaterEq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, ">="),
-        BuiltinFunctionCall::And { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "&&"),
-        BuiltinFunctionCall::Or { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "||"),
-        BuiltinFunctionCall::Not { arg } => format!("(!{})", gen_expression(ctx, *arg)),
+        IRBuiltinFunctionCall::Index { arr, idx } => format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
+        IRBuiltinFunctionCall::IndexStr { string, idx } => format!("({})[{}]", gen_expression(ctx, *string), gen_expression(ctx, *idx)),
+        IRBuiltinFunctionCall::Getchar {} => "getchar()".to_string(),
+        IRBuiltinFunctionCall::Putchar { arg } => format!("putchar({})", gen_expression(ctx, *arg)),
+        IRBuiltinFunctionCall::Cast { arg, to_type } => format!("({})({})", gen_primitive_type(to_type), gen_expression(ctx, *arg)),
+        IRBuiltinFunctionCall::Add { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "+"),
+        IRBuiltinFunctionCall::Sub { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "-"),
+        IRBuiltinFunctionCall::Mul { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "*"),
+        IRBuiltinFunctionCall::Div { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "/"),
+        IRBuiltinFunctionCall::Mod { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "%"),
+        IRBuiltinFunctionCall::Eq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "=="),
+        IRBuiltinFunctionCall::NotEq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "!="),
+        IRBuiltinFunctionCall::Lesser { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "<"),
+        IRBuiltinFunctionCall::LesserEq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "<="),
+        IRBuiltinFunctionCall::Greater { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, ">"),
+        IRBuiltinFunctionCall::GreaterEq { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, ">="),
+        IRBuiltinFunctionCall::And { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "&&"),
+        IRBuiltinFunctionCall::Or { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "||"),
+        IRBuiltinFunctionCall::Not { arg } => format!("(!{})", gen_expression(ctx, *arg)),
     }
 }
 
