@@ -33,15 +33,6 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
         }
     }
 
-    ast.functions = ast
-        .functions
-        .into_iter()
-        .map(|(sign, block)| {
-            let block = lowerer.lower_block(block);
-            (sign, block)
-        })
-        .collect();
-
     for structure in &ast.structs {
         for (sign, block) in &structure.methods {
             let mut sign = sign.clone();
@@ -61,11 +52,15 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
             let typ = lowerer.lower_type(typ);
             sign.args.insert(0, ("self".to_string(), typ, sign.pos));
 
-            let block = lowerer.lower_block(block);
-
             ast.functions.push((sign, block));
         }
     }
+
+    ast.functions = ast.functions.into_iter().map(|(mut sign, block)| {
+        sign.args = sign.args.into_iter().map(|(arg_name, arg_type, arg_pos)| (arg_name, lowerer.lower_type(arg_type), arg_pos)).collect();
+        let block = lowerer.lower_block(block);
+        (sign, block)
+    }).collect();
 
     for tuple_size in lowerer.used_tuples {
         let mut fields = Vec::new();
@@ -425,21 +420,21 @@ impl Lowerer {
 
                 let name = "operator".to_string()
                     + match operator {
-                        ASTOperator::Plus => "+",
-                        ASTOperator::Minus => "-",
-                        ASTOperator::Mul => "*",
-                        ASTOperator::Div => "/",
-                        ASTOperator::Mod => "%",
-                        ASTOperator::Equals => "==",
-                        ASTOperator::NotEquals => "!=",
-                        ASTOperator::Greater => ">",
-                        ASTOperator::Lesser => "<",
-                        ASTOperator::GreaterEq => ">=",
-                        ASTOperator::LesserEq => "<=",
-                        ASTOperator::And => "&&",
-                        ASTOperator::Or => "||",
-                        ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
-                    };
+                    ASTOperator::Plus => "+",
+                    ASTOperator::Minus => "-",
+                    ASTOperator::Mul => "*",
+                    ASTOperator::Div => "/",
+                    ASTOperator::Mod => "%",
+                    ASTOperator::Equals => "==",
+                    ASTOperator::NotEquals => "!=",
+                    ASTOperator::Greater => ">",
+                    ASTOperator::Lesser => "<",
+                    ASTOperator::GreaterEq => ">=",
+                    ASTOperator::LesserEq => "<=",
+                    ASTOperator::And => "&&",
+                    ASTOperator::Or => "||",
+                    ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
+                };
 
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {

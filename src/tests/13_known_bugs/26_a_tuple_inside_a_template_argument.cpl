@@ -1,5 +1,5 @@
 //BUG="a tuple type inside a template argument panics the normalizer"
-//ERR any
+//OUT="ok"
 
 // Not in FEEDBACK.md, and adjacent to 1.12. `x: i32, f64` is a valid tuple
 // type hint on a variable, but the same thing nested inside a template
