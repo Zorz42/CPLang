@@ -42,7 +42,7 @@ less different types of nodes and explicit types and indexes instead of string/n
 6. Code generation: IR is converted to C code.
  */
 
-pub fn gain_input_sources(input_content: String) -> [String; 7] {
+pub fn gain_input_sources(input_content: String) -> [String; 6] {
     [
         input_content,
         include_str!("../core/operators.cpl").to_string(),
@@ -50,7 +50,6 @@ pub fn gain_input_sources(input_content: String) -> [String; 7] {
         include_str!("../core/io.cpl").to_string(),
         include_str!("../core/vector.cpl").to_string(),
         include_str!("../core/string.cpl").to_string(),
-        include_str!("../core/print.cpl").to_string(),
     ]
 }
 

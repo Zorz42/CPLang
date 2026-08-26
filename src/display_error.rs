@@ -7,14 +7,13 @@ const RESET: &str = "\x1b[0m";
 const RED_TEXT: &str = "\x1b[31m";
 const BOLD_TEXT: &str = "\x1b[1m";
 
-pub const INPUT_NAMES: [&str; 7] = [
+pub const INPUT_NAMES: [&str; 6] = [
     "",
     "src/core/operators.cpl",
     "src/core/range.cpl",
     "src/core/io.cpl",
     "src/core/vector.cpl",
     "src/core/string.cpl",
-    "src/core/print.cpl",
 ];
 
 pub fn display_error(error: &CompilerError, input_path: &str, input: &str) {
