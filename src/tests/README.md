@@ -68,6 +68,12 @@ marker should come off. Every one of them explains in its header what goes
 wrong, why, and where in the compiler — most quote the section of `FEEDBACK.md`
 they come from.
 
+A `//OUT` case is also given a deadline: ten seconds, overridable with
+`CPLANG_TEST_TIMEOUT_SECS`. A miscompilation that makes a program loop forever
+is otherwise indistinguishable from a suite that has stopped — one bad `/=`
+inside `print` is enough to hang every case that prints a number — so the
+harness kills the program and fails the case with its output so far.
+
 `tests/cli.rs` covers the binary itself — argument parsing, exit status and how
 errors are rendered — and holds a few red assertions of its own, named
 `known_bug_…`, for bugs that are only visible from outside the process.

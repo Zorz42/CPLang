@@ -126,3 +126,24 @@ operator|| a: bool b: bool
 
 operator! a: bool
     ret _builtin_not(a)
+
+operator+=[T] a: &T b
+    |a = |a + b
+
+operator-=[T] a: &T b
+    |a = |a - b
+
+operator*=[T] a: &T b
+    |a = |a * b
+
+operator/=[T] a: &T b
+    |a = |a / b
+
+operator%=[T] a: &T b
+    |a = |a % b
+
+operator++[T] a: &T
+    |a += 1
+
+operator--[T] a: &T
+    |a -= 1

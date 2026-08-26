@@ -538,8 +538,7 @@ impl Normalizer {
             ASTExpressionKind::TupleAccess { .. } => unreachable!("ASTExpression::TupleAccess should be eliminated by lowerer"),
             ASTExpressionKind::MethodCall { .. } => unreachable!("ASTExpression::MethodCall should be eliminated by lowerer"),
             ASTExpressionKind::BinaryOperation { .. } => unreachable!("ASTExpression::BinaryOperation should be eliminated by lowerer"),
-            ASTExpressionKind::Minus { .. } => unreachable!("ASTExpression::Minus should be eliminated by lowerer"),
-            ASTExpressionKind::Not { .. } => unreachable!("ASTExpression::Not should be eliminated by lowerer"),
+            ASTExpressionKind::UnaryOperation { .. } => unreachable!("ASTExpression::UnaryOperation should be eliminated by lowerer"),
             ASTExpressionKind::Index { .. } => unreachable!("ASTExpression::Index should be eliminated by lowerer"),
         };
 
@@ -658,9 +657,6 @@ impl Normalizer {
                 }
 
                 ASTStatement::SemiBlock { .. } => unreachable!("ASTStatement::SemiBlock should be eliminated by lowerer"),
-                ASTStatement::AssignmentOperator { .. } => unreachable!("ASTStatement::AssignmentOperator should be eliminated by lowerer"),
-                ASTStatement::AssignmentIncrement { .. } => unreachable!("ASTStatement::AssignmentIncrement should be eliminated by lowerer"),
-                ASTStatement::AssignmentDecrement { .. } => unreachable!("ASTStatement::AssignmentDecrement should be eliminated by lowerer"),
                 ASTStatement::For { .. } => unreachable!("ASTStatement::For should be eliminated by lowerer"),
                 ASTStatement::Print { .. } => unreachable!("ASTStatement::Print should be eliminated by lowerer"),
             }

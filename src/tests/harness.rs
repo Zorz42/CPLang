@@ -42,11 +42,13 @@ use cplang::display_error;
 use cplang::{FilePosition, compile};
 use std::fmt::Write as _;
 use std::hash::{DefaultHasher, Hasher};
+use std::io::Read as _;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant};
 
 /// Flags handed to the C compiler. Part of the cache key, so changing them
 /// here cannot silently reuse binaries built with the old ones.
@@ -298,8 +300,26 @@ fn compile_c(c_file: &Path) -> PathBuf {
     exec_file
 }
 
+/// How long a test program may run before the harness gives up on it. A case
+/// that loops forever must fail as itself rather than freeze the whole suite —
+/// a miscompiled `n /= 10` inside `print` is enough to hang every `//OUT` case
+/// at once, and without a deadline `cargo test` just stops with no output.
+/// Override with `CPLANG_TEST_TIMEOUT_SECS` when a slow machine needs longer.
+fn run_timeout() -> Duration {
+    static TIMEOUT: OnceLock<Duration> = OnceLock::new();
+    *TIMEOUT.get_or_init(|| {
+        let secs = std::env::var("CPLANG_TEST_TIMEOUT_SECS").ok().and_then(|v| v.parse().ok()).unwrap_or(10);
+        Duration::from_secs(secs)
+    })
+}
+
 /// Runs the built program and returns its stdout, or the reason it could not
 /// be run to completion.
+///
+/// Every pipe is serviced by its own thread, so neither a program that ignores
+/// its stdin nor one that prints more than a pipe buffer can wedge the harness;
+/// the wait is a poll against [`run_timeout`] so a runaway program is killed
+/// and reported instead of hanging the run.
 fn run_program(exec_file: &Path, stdin_data: &str) -> Result<String, String> {
     let mut child = Command::new(exec_file)
         .stdin(Stdio::piped())
@@ -308,34 +328,80 @@ fn run_program(exec_file: &Path, stdin_data: &str) -> Result<String, String> {
         .spawn()
         .map_err(|e| format!("could not start {}: {e}", exec_file.display()))?;
 
-    child
-        .stdin
-        .take()
-        .expect("stdin was requested as a pipe")
-        .write_all(stdin_data.as_bytes())
-        .map_err(|e| format!("could not write to the program's stdin: {e}"))?;
+    let mut stdin = child.stdin.take().expect("stdin was requested as a pipe");
+    let mut stdout = child.stdout.take().expect("stdout was requested as a pipe");
+    let mut stderr = child.stderr.take().expect("stderr was requested as a pipe");
 
-    let output = child.wait_with_output().map_err(|e| format!("could not wait for the program: {e}"))?;
+    let input = stdin_data.to_owned();
+    // The write is a thread of its own: a program that never reads its stdin
+    // would otherwise block the harness here once the pipe buffer filled, and
+    // the deadline below would never be reached. Dropping the handle when the
+    // thread ends is what closes the pipe and lets the program see EOF.
+    let writer = std::thread::spawn(move || stdin.write_all(input.as_bytes()));
+    let out_reader = std::thread::spawn(move || {
+        let mut buf = Vec::new();
+        let _ = stdout.read_to_end(&mut buf);
+        buf
+    });
+    let err_reader = std::thread::spawn(move || {
+        let mut buf = Vec::new();
+        let _ = stderr.read_to_end(&mut buf);
+        buf
+    });
 
-    match output.status.code() {
+    let deadline = Instant::now() + run_timeout();
+    let status = loop {
+        match child.try_wait().map_err(|e| format!("could not wait for the program: {e}"))? {
+            Some(status) => break Some(status),
+            None if Instant::now() >= deadline => {
+                let _ = child.kill();
+                let _ = child.wait();
+                break None;
+            }
+            None => std::thread::sleep(Duration::from_millis(5)),
+        }
+    };
+
+    // The readers end as soon as the program's pipes close, which killing it
+    // guarantees, so joining cannot block past the deadline.
+    let stdout = out_reader.join().expect("the stdout reader panicked");
+    let stderr = err_reader.join().expect("the stderr reader panicked");
+    // A program that exits without reading everything makes this write fail
+    // with EPIPE, which says nothing about the case; only report it when the
+    // program otherwise looks fine, and let the output comparison speak first.
+    let write_result = writer.join().expect("the stdin writer panicked");
+
+    let Some(status) = status else {
+        return Err(format!(
+            "the program did not finish within {:?} and was killed — it is most likely looping forever\nstdout so far: {:?}\nstderr so far: {}",
+            run_timeout(),
+            String::from_utf8_lossy(&stdout),
+            String::from_utf8_lossy(&stderr)
+        ));
+    };
+
+    match status.code() {
         Some(0) => {}
         Some(code) => {
             return Err(format!(
                 "the program exited with status {code}\nstdout: {:?}\nstderr: {}",
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
+                String::from_utf8_lossy(&stdout),
+                String::from_utf8_lossy(&stderr)
             ));
         }
         None => {
             return Err(format!(
-                "the program was killed by a signal ({})\nstdout so far: {:?}",
-                output.status,
-                String::from_utf8_lossy(&output.stdout)
+                "the program was killed by a signal ({status})\nstdout so far: {:?}",
+                String::from_utf8_lossy(&stdout)
             ));
         }
     }
 
-    String::from_utf8(output.stdout).map_err(|e| format!("the program printed invalid UTF-8: {e}"))
+    if let Err(e) = write_result {
+        return Err(format!("could not write to the program's stdin: {e}"));
+    }
+
+    String::from_utf8(stdout).map_err(|e| format!("the program printed invalid UTF-8: {e}"))
 }
 
 // ---------------------------------------------------------------------------

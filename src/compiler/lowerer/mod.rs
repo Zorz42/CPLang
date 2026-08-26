@@ -1,7 +1,5 @@
 use crate::compiler::error::FilePosition;
-use crate::compiler::parser::ast::{
-    ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType, Ast,
-};
+use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType, ASTUnaryOperator, Ast};
 use std::collections::{HashMap, HashSet};
 // Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
@@ -120,40 +118,6 @@ impl Lowerer {
                 self.touch_tuple(types.len());
                 ASTType::Identifier(gen_tuple_name(types.len()), pos, types)
             }
-        }
-    }
-
-    /* transform a += b into
-    {
-        $tmp = &a
-        :$tmp = :$tmp + b
-    }
-     */
-    fn gen_op_block(&mut self, pos: FilePosition, operator: ASTOperator, assign_to: ASTExpression, value: ASTExpression) -> ASTStatement {
-        let var_name = self.new_tmp_name();
-        let var_expr = ASTExpression::new(ASTExpressionKind::Variable(var_name), pos);
-        ASTStatement::Block {
-            block: ASTBlock {
-                children: vec![
-                    ASTStatement::Assignment {
-                        assign_to: var_expr.clone(),
-                        value: ASTExpression::new(ASTExpressionKind::Reference(Box::new(assign_to)), pos),
-                        pos,
-                    },
-                    ASTStatement::Assignment {
-                        assign_to: ASTExpression::new(ASTExpressionKind::Dereference(Box::new(var_expr.clone())), pos),
-                        value: ASTExpression::new(
-                            ASTExpressionKind::BinaryOperation {
-                                expression1: Box::new(ASTExpression::new(ASTExpressionKind::Dereference(Box::new(var_expr)), pos)),
-                                operator,
-                                expression2: Box::new(value),
-                            },
-                            pos,
-                        ),
-                        pos,
-                    },
-                ],
-            },
         }
     }
 
@@ -423,26 +387,42 @@ impl Lowerer {
                 operator,
                 expression2,
             } => {
-                let expression1 = self.lower_expression(*expression1);
+                let mut expression1 = self.lower_expression(*expression1);
                 let expression2 = self.lower_expression(*expression2);
 
                 let name = "operator".to_string()
                     + match operator {
-                        ASTOperator::Plus => "+",
-                        ASTOperator::Minus => "-",
-                        ASTOperator::Mul => "*",
-                        ASTOperator::Div => "/",
-                        ASTOperator::Mod => "%",
-                        ASTOperator::Equals => "==",
-                        ASTOperator::NotEquals => "!=",
-                        ASTOperator::Greater => ">",
-                        ASTOperator::Lesser => "<",
-                        ASTOperator::GreaterEq => ">=",
-                        ASTOperator::LesserEq => "<=",
-                        ASTOperator::And => "&&",
-                        ASTOperator::Or => "||",
-                        ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
-                    };
+                    ASTOperator::Plus => "+",
+                    ASTOperator::Minus => "-",
+                    ASTOperator::Mul => "*",
+                    ASTOperator::Div => "/",
+                    ASTOperator::Mod => "%",
+                    ASTOperator::Equals => "==",
+                    ASTOperator::NotEquals => "!=",
+                    ASTOperator::Greater => ">",
+                    ASTOperator::Lesser => "<",
+                    ASTOperator::GreaterEq => ">=",
+                    ASTOperator::LesserEq => "<=",
+                    ASTOperator::And => "&&",
+                    ASTOperator::Or => "||",
+                    ASTOperator::PlusEquals => "+=",
+                    ASTOperator::MinusEquals => "-=",
+                    ASTOperator::MulEquals => "*=",
+                    ASTOperator::DivEquals => "/=",
+                    ASTOperator::ModEquals => "%=",
+                    ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
+                };
+
+                if let ASTOperator::PlusEquals
+                | ASTOperator::MinusEquals
+                | ASTOperator::MulEquals
+                | ASTOperator::DivEquals
+                | ASTOperator::ModEquals = operator {
+                    let pos = expression1.pos;
+                    expression1 = ASTExpression::new(ASTExpressionKind::Reference(
+                        Box::new(expression1)
+                    ), pos);
+                }
 
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {
@@ -453,22 +433,26 @@ impl Lowerer {
                     pos,
                 )
             }
-            ASTExpressionKind::Minus(expression) => {
-                let expression = self.lower_expression(*expression);
+            ASTExpressionKind::UnaryOperation { expression, operator } => {
+                let operator_str = match operator {
+                    ASTUnaryOperator::Increment => "++",
+                    ASTUnaryOperator::Decrement => "--",
+                    ASTUnaryOperator::Minus => "-",
+                    ASTUnaryOperator::Not => "!",
+                };
+
+                let mut expression = self.lower_expression(*expression);
+
+                if let ASTUnaryOperator::Increment | ASTUnaryOperator::Decrement = operator {
+                    let pos = expression.pos;
+                    expression = ASTExpression::new(ASTExpressionKind::Reference(
+                        Box::new(expression)
+                    ), pos);
+                }
+
                 ASTExpression::new(
                     ASTExpressionKind::FunctionCall(ASTFunctionCall {
-                        name: "operator-".to_string(),
-                        arguments: vec![expression],
-                        template_arguments: Vec::new(),
-                    }),
-                    pos,
-                )
-            }
-            ASTExpressionKind::Not(expression) => {
-                let expression = self.lower_expression(*expression);
-                ASTExpression::new(
-                    ASTExpressionKind::FunctionCall(ASTFunctionCall {
-                        name: "operator!".to_string(),
+                        name: format!("operator{operator_str}"),
                         arguments: vec![expression],
                         template_arguments: Vec::new(),
                     }),
@@ -543,20 +527,6 @@ impl Lowerer {
                     _ => assignment,
                 }
             }
-            ASTStatement::AssignmentOperator { assign_to, value, operator } => {
-                let block = self.gen_op_block(value.pos, operator, assign_to, value);
-                self.lower_statement(block)
-            }
-            ASTStatement::AssignmentIncrement { assign_to, pos } => self.lower_statement(ASTStatement::AssignmentOperator {
-                assign_to,
-                value: ASTExpression::new(ASTExpressionKind::Integer32(1), pos),
-                operator: ASTOperator::Plus,
-            }),
-            ASTStatement::AssignmentDecrement { assign_to, pos } => self.lower_statement(ASTStatement::AssignmentOperator {
-                assign_to,
-                value: ASTExpression::new(ASTExpressionKind::Integer32(1), pos),
-                operator: ASTOperator::Minus,
-            }),
             ASTStatement::Block { block } => ASTStatement::Block {
                 block: ASTBlock {
                     children: self.lower_statements(block.children),

@@ -1,4 +1,4 @@
-//ERR 4 9 4 10
+//ERR 4 4 4 5
 //MSG="Cannot reference non-physical value"
 
 fn main

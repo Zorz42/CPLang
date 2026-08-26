@@ -44,20 +44,6 @@ pub enum ASTStatement {
         value: ASTExpression,
         pos: FilePosition,
     },
-    // just like a += b but for any operator
-    AssignmentOperator {
-        assign_to: ASTExpression,
-        value: ASTExpression,
-        operator: ASTOperator,
-    },
-    AssignmentIncrement {
-        assign_to: ASTExpression,
-        pos: FilePosition,
-    },
-    AssignmentDecrement {
-        assign_to: ASTExpression,
-        pos: FilePosition,
-    },
     Print {
         values: Vec<ASTExpression>,
     },
@@ -101,21 +87,34 @@ impl Debug for ASTBlock {
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ASTOperator {
-    Plus,      // +
+    Plus,        // +
+    Minus,       // -
+    Mul,         // *
+    Div,         // /
+    Mod,         // %
+    Equals,      // ==
+    NotEquals,   // !=
+    Greater,     // >
+    Lesser,      // <
+    GreaterEq,   // >=
+    LesserEq,    // <=
+    And,         // &&
+    Or,          // ||
+    Comma,       // , for tuples
+    DotDot,      // .. for ranges
+    PlusEquals,  // +=
+    MinusEquals, // -=
+    MulEquals,   // *=
+    DivEquals,   // /=
+    ModEquals,   // %=
+}
+
+#[derive(Debug, Clone)]
+pub enum ASTUnaryOperator {
     Minus,     // -
-    Mul,       // *
-    Div,       // /
-    Mod,       // %
-    Equals,    // ==
-    NotEquals, // !=
-    Greater,   // >
-    Lesser,    // <
-    GreaterEq, // >=
-    LesserEq,  // <=
-    And,       // &&
-    Or,        // ||
-    Comma,     // , for tuples
-    DotDot,    // .. for ranges
+    Not,       // !
+    Increment, // ++
+    Decrement, // --
 }
 
 #[derive(Debug, Clone)]
@@ -170,6 +169,10 @@ pub enum ASTExpressionKind {
         operator: ASTOperator,
         expression2: Box<ASTExpression>,
     },
+    UnaryOperation {
+        expression: Box<ASTExpression>,
+        operator: ASTUnaryOperator,
+    },
     // wrapper that automatically decides how many references/dereferences should the expression have
     // using this is worse for type checker, since it has less information but better for the user,
     // since there is no need for manual referencing
@@ -179,11 +182,6 @@ pub enum ASTExpressionKind {
         expression: Box<ASTExpression>,
         type_hint: ASTType,
     },
-    // prefix minus
-    Minus(Box<ASTExpression>),
-    
-    // prefix not
-    Not(Box<ASTExpression>),
 }
 
 #[derive(Debug, Clone)]

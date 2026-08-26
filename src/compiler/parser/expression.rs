@@ -4,6 +4,7 @@ use crate::compiler::parser::function::parse_function_call;
 use crate::compiler::parser::structure::parse_struct_instantiation;
 use crate::compiler::parser::typed::parse_type_hint;
 use crate::compiler::tokenizer::{Token, TokenBlock};
+use cplang::compiler::parser::ast::ASTUnaryOperator;
 
 // only looks for a single value (if parentheses are used, it will parse whole expression)
 fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<ASTExpression> {
@@ -37,13 +38,19 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                 let res = parse_value(structs, block)?;
                 let pos = res.pos;
 
-                ASTExpression::new(ASTExpressionKind::Minus(Box::new(res)), pos)
+                ASTExpression::new(ASTExpressionKind::UnaryOperation {
+                    expression: Box::new(res),
+                    operator: ASTUnaryOperator::Minus,
+                }, pos)
             }
             (Token::Not, _) => {
                 let res = parse_value(structs, block)?;
                 let pos = res.pos;
 
-                ASTExpression::new(ASTExpressionKind::Not(Box::new(res)), pos)
+                ASTExpression::new(ASTExpressionKind::UnaryOperation {
+                    expression: Box::new(res),
+                    operator: ASTUnaryOperator::Not,
+                }, pos)
             }
             (token @ (Token::I32 | Token::I64 | Token::F32 | Token::F64 | Token::Bool | Token::Char), pos) => {
                 let expr = parse_value(structs, block)?;
@@ -154,6 +161,25 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                     pos,
                 );
             }
+            // postfix operators
+            Token::Increment | Token::Decrement => {
+                let (token, pos) = block.get();
+                let pos = res.pos + pos;
+
+                let operator = match token {
+                    Token::Increment => ASTUnaryOperator::Increment,
+                    Token::Decrement => ASTUnaryOperator::Decrement,
+                    _ => unreachable!(),
+                };
+
+                res = ASTExpression::new(
+                    ASTExpressionKind::UnaryOperation {
+                        expression: Box::new(res),
+                        operator,
+                    },
+                    pos,
+                );
+            }
             _ => break,
         }
     }
@@ -190,6 +216,11 @@ const fn token_to_operator(symbol: &Token) -> Option<ASTOperator> {
         Token::Or => Some(ASTOperator::Or),
         Token::Comma => Some(ASTOperator::Comma),
         Token::DotDot => Some(ASTOperator::DotDot),
+        Token::PlusEquals => Some(ASTOperator::PlusEquals),
+        Token::MinusEquals => Some(ASTOperator::MinusEquals),
+        Token::MulEquals => Some(ASTOperator::MulEquals),
+        Token::DivEquals => Some(ASTOperator::DivEquals),
+        Token::ModEquals => Some(ASTOperator::ModEquals),
         _ => None,
     }
 }
@@ -220,6 +251,7 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
         vec![ASTOperator::And],
         vec![ASTOperator::Or],
         vec![ASTOperator::Comma],
+        vec![ASTOperator::PlusEquals, ASTOperator::MinusEquals, ASTOperator::MulEquals, ASTOperator::DivEquals, ASTOperator::ModEquals],
         vec![ASTOperator::DotDot],
     ];
 
