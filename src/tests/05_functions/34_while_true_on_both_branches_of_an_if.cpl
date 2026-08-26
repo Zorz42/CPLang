@@ -1,0 +1,20 @@
+//OUT="1 0"
+
+// Neither branch of the `if` falls through, because each ends in a `while true`
+// that only a `ret` can leave, so nothing has to follow the `if`. This combines
+// the loop exemption with the per-branch walk of
+// 26_if_else_returns_on_both_branches.cpl, and an over-strict check that
+// requires a literal `ret` as the last statement of each branch would reject it.
+//
+// Uses no `brk` or `cnt`, so unlike 31-33 it is green before those exist.
+
+fn f n
+    if n > 0
+        while true
+            ret 1
+    else
+        while true
+            ret 0
+
+fn main
+    out "{f(5)} {f(-5)}"

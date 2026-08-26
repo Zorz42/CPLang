@@ -1,0 +1,14 @@
+//OUT="1 3 "
+
+// The same as 37 for a real iterator: `_VecIter.next()` must still be reached
+// on the skipped iteration.
+
+fn main
+    v = Vec()
+    v.push(1)
+    v.push(2)
+    v.push(3)
+    for x v
+        if x == 2
+            cnt
+        out "{x} "

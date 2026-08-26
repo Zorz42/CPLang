@@ -98,7 +98,7 @@ are scanned), and three I/O and thread failures that a test cannot provoke.
 | `01_out`          | the `out` statement and format strings                        |
 | `02_variables`    | locals, globals, scope, compound assignment                   |
 | `03_operators`    | arithmetic, comparison, logic, precedence, casts, overloading |
-| `04_control_flow` | `if`/`else`, `while`, `for`, ranges, nesting                  |
+| `04_control_flow` | `if`/`else`, `while`, `for`, ranges, nesting, `brk`/`cnt`      |
 | `05_functions`    | calls, recursion, returns, overload resolution                |
 | `06_templates`    | function templates and explicit template arguments            |
 | `07_references`   | `&` and `\|`                                                  |

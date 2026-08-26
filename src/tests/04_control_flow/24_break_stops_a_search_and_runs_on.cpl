@@ -1,0 +1,12 @@
+//OUT="found 3 done"
+
+// Control resumes at the statement after the loop, not at the end of the
+// function — the `out` still runs.
+
+fn main
+    hit = -1
+    for i 0..10
+        if i * i > 5
+            hit = i
+            brk
+    out "found {hit} done"

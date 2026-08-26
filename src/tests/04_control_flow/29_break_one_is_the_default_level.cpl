@@ -1,0 +1,12 @@
+//OUT="0 1 2 "
+
+// `brk 1` is the spelling of the default. The body is
+// 28_break_leaves_only_the_innermost_loop.cpl with the level written out, and
+// it has to behave identically.
+
+fn main
+    for i 0..3
+        for j 0..10
+            if j == 1
+                brk 1
+            out "{i} "

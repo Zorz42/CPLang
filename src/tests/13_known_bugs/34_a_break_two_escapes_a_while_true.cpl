@@ -1,0 +1,26 @@
+//BUG="a levelled break out of `while true` leaves a path that falls off the end"
+//ERR any
+
+// 33 with the `brk` one loop further in. The level is what makes it escape: a
+// bare `brk` here would leave only the `for`, and the `while true` would still
+// never fall through — that is
+// 05_functions/32_a_break_from_an_inner_loop_does_not_escape_a_while_true.cpl,
+// which has to keep compiling. The `2` reaches past the `for` and out of the
+// `while true`, so `f(0)` leaves the loop and runs off the end of the body.
+//
+// So the check cannot just scan the loop's body for the keyword; it has to
+// resolve each `brk` to the loop it actually targets. This is the case that
+// separates the two.
+//
+// Same caveat as 33: until `brk` compiles, this passes because the parser
+// rejects the keyword, not because the missing return was caught.
+
+fn f n
+    while true
+        for i 0..10
+            if i > n
+                brk 2
+        ret 1
+
+fn main
+    out "{f(0)}"

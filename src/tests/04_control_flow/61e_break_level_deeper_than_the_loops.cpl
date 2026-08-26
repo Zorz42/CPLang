@@ -1,0 +1,9 @@
+//ERR 8 8 8 11
+
+// Only one loop encloses the `brk 2`, so there is no second one to leave. The
+// level is checked against the actual nesting depth rather than clamped to it —
+// silently behaving like `brk 1` would hide the typo.
+
+fn main
+    for i 0..3
+        brk 2

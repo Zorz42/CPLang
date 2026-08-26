@@ -1,0 +1,13 @@
+//OUT="00 "
+
+// The counterpart of 32 for an explicit level: two `if` blocks sit between the
+// `brk 2` and the inner loop, and neither may be counted. The 2 has to reach
+// past both loops.
+
+fn main
+    for i 0..2
+        for j 0..2
+            out "{i}{j} "
+            if true
+                if true
+                    brk 2

@@ -1,0 +1,12 @@
+//OUT="0 1 "
+
+// The `brk` is three blocks deep but only one loop deep. A level counts loops,
+// so an implementation that counts enclosing blocks instead would leave only
+// the inner `if` here and print every value.
+
+fn main
+    for i 0..5
+        if i < 3
+            if i == 2
+                brk
+        out "{i} "

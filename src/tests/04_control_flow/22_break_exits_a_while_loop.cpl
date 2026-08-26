@@ -1,0 +1,12 @@
+//OUT="0 1 2 "
+
+// The base case: `brk` leaves the enclosing loop even though the condition is
+// still true. Without it the loop would print through 9.
+
+fn main
+    i = 0
+    while i < 10
+        if i == 3
+            brk
+        out "{i} "
+        i++

@@ -1,0 +1,13 @@
+//OUT="6"
+
+// `while true` with a `brk` is the idiomatic unbounded search — see
+// 05_functions/29_while_true_returns_from_inside.cpl for the version that
+// returns instead of breaking.
+
+fn main
+    i = 0
+    while true
+        if i * i > 30
+            brk
+        i++
+    out "{i}"

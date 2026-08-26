@@ -1,0 +1,9 @@
+//ERR 8 8 8 11
+
+// Leaving zero loops is not a thing the statement can do. The level counts
+// loops to unwind, so the smallest meaningful one is 1 — see
+// 29_break_one_is_the_default_level.cpl.
+
+fn main
+    for i 0..3
+        brk 0

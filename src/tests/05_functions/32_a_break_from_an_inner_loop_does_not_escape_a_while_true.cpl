@@ -1,0 +1,21 @@
+//OUT="6"
+
+// The `brk` belongs to the `for`, not to the `while true` around it, so the
+// outer loop still never falls through and no `ret` is needed after it. A check
+// that asks "does this `while true` contain a `brk` anywhere" would reject this
+// and force an unreachable return; the question is which loop the `brk` targets.
+//
+// 13_known_bugs/34_a_break_two_escapes_a_while_true.cpl is the level that does
+// escape.
+
+fn first_over n
+    i = 0
+    while true
+        for j 0..3
+            brk
+        if i * i > n
+            ret i
+        i++
+
+fn main
+    out "{first_over(30)}"

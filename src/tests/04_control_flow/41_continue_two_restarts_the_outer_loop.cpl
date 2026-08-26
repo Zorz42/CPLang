@@ -1,0 +1,13 @@
+//OUT="00 10 20 "
+
+// `cnt 2` abandons the inner loop entirely and takes the *outer* loop's next
+// iteration — so it skips the rest of both bodies. The `out "x"` below it and
+// the j == 1 and j == 2 passes are all missed.
+
+fn main
+    for i 0..3
+        for j 0..3
+            out "{i}{j} "
+            if j == 0
+                cnt 2
+            out "x"

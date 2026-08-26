@@ -6,11 +6,13 @@
 //! whole of the user-facing surface — what a Makefile or `cses-tests/run.py`
 //! sees — so they are worth testing directly.
 //!
-//! An assertion that is expected to fail is named `known_bug_…` and its message
-//! starts with `KNOWN BUG`, in the same spirit as the `//BUG` cases in
-//! `src/tests/13_known_bugs/`. When the bug is fixed the prefix comes off, the
+//! Every assertion here passes. An assertion for a bug that is known but not
+//! yet fixed is named `known_bug_…` with a message starting `KNOWN BUG`, in the
+//! same spirit as the `//BUG` cases in `src/tests/13_known_bugs/`; there are
+//! none at the moment. When such a bug is fixed the prefix comes off, the
 //! comment is rewritten to describe the guarantee rather than the defect, and
-//! the assertion is tightened past "it did not panic" where that is cheap.
+//! the assertion is tightened past "it did not panic" where that is cheap —
+//! the last section of this file is the ones that have been through that.
 //!
 //! Note that `cargo test` stops at the first failing target, so while any
 //! `//BUG` case under `src/tests/` is red the binary's tests fail and this file
@@ -281,6 +283,51 @@ fn an_error_with_a_position_prints_a_snippet() {
 }
 
 #[test]
+fn location_line_number_matches_the_snippet() {
+    // FEEDBACK.md 1.15. display_error printed the header straight from
+    // `position.first_pos.0` while the gutter numbered its rows `line + 1`, and
+    // added 1 to the column but not to the line — so "--> file:LINE:COL" named
+    // the line above the one it went on to highlight.
+    //
+    // `out` sits on line 2 of this input and starts at column 5, so the header
+    // must read `input.cpl:2:5`, and the gutter row numbered 2 must be the one
+    // holding it. Checking both is the point: the two numbers came from
+    // different expressions, so asserting the header alone would not notice
+    // them drifting apart again.
+    let scratch = Scratch::new("offbyone");
+    let (_, printed) = compile(&scratch, "fn main\n    out 10\n");
+
+    let location = printed
+        .lines()
+        .find(|l| l.contains("-->"))
+        .unwrap_or_else(|| panic!("no location line in:\n{printed}"));
+    let mut parts = location.rsplit(':');
+    let column: usize = parts
+        .next()
+        .and_then(|n| n.trim().parse().ok())
+        .unwrap_or_else(|| panic!("could not read a column out of {location:?}"));
+    let line: usize = parts
+        .next()
+        .and_then(|n| n.trim().parse().ok())
+        .unwrap_or_else(|| panic!("could not read a line number out of {location:?}"));
+
+    assert_eq!(
+        (line, column),
+        (2, 5),
+        "the header must give the 1-based position of `out`:\n{printed}"
+    );
+
+    let gutter = printed
+        .lines()
+        .find(|l| l.trim_start().starts_with(&format!("{line} |")))
+        .unwrap_or_else(|| panic!("no gutter row numbered {line} in:\n{printed}"));
+    assert!(
+        gutter.contains("out 10"),
+        "the row the header names must be the row it highlights:\n{printed}"
+    );
+}
+
+#[test]
 fn an_error_inside_the_core_library_names_the_core_file() {
     // A program that makes a core function fail type checking reports a
     // position inside src/core, which is the one case where the location line
@@ -293,37 +340,9 @@ fn an_error_inside_the_core_library_names_the_core_file() {
 }
 
 // ---------------------------------------------------------------------------
-// known bugs — these assertions are expected to fail
+// behaviour that was once broken, kept fixed
 // ---------------------------------------------------------------------------
 
-#[test]
-fn known_bug_location_line_number_matches_the_snippet() {
-    // FEEDBACK.md 1.15. display_error prints the header with
-    // `position.first_pos.0` raw but the gutter with `line + 1`, and it adds 1
-    // to the column but not to the line. So the "--> file:LINE:COL" header
-    // points one line above the line it then highlights.
-    //
-    // Here `out 10` is on line 2 of the file (1-based), so the header should
-    // read `input.cpl:2:5` and the gutter should mark line 2. Today the header
-    // says `:1:5`.
-    let scratch = Scratch::new("offbyone");
-    let (_, printed) = compile(&scratch, "fn main\n    out 10\n");
-
-    let location = printed
-        .lines()
-        .find(|l| l.contains("-->"))
-        .unwrap_or_else(|| panic!("no location line in:\n{printed}"));
-    let reported: usize = location
-        .rsplit(':')
-        .nth(1)
-        .and_then(|n| n.trim().parse().ok())
-        .unwrap_or_else(|| panic!("could not read a line number out of {location:?}"));
-
-    assert_eq!(
-        reported, 2,
-        "KNOWN BUG (FEEDBACK.md 1.15): the --> header is one line above the line it highlights.\n{printed}"
-    );
-}
 
 #[test]
 fn f64_is_compiled_to_double() {

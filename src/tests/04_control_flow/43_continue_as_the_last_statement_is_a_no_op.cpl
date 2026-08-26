@@ -1,0 +1,9 @@
+//OUT="0 1 2 "
+
+// Nothing follows the `cnt`, so it has nothing to skip and the loop runs to
+// completion exactly as it would without it.
+
+fn main
+    for i 0..3
+        out "{i} "
+        cnt

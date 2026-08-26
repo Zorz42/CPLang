@@ -1,0 +1,12 @@
+//OUT="0"
+
+// The loop breaks before anything in the body has had an effect, so the body
+// contributes nothing at all. The counter stays at its initial value.
+
+fn main
+    n = 0
+    for i 0..10
+        if i == 0
+            brk
+        n++
+    out "{n}"

@@ -1,0 +1,12 @@
+//OUT="0 1 2 "
+
+// A bare `brk` targets the loop it is written in and nothing further out, so
+// the outer `for` still runs all three of its iterations. Each of them prints
+// once before the inner loop is cut short at j == 1.
+
+fn main
+    for i 0..3
+        for j 0..10
+            if j == 1
+                brk
+            out "{i} "

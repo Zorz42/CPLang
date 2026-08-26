@@ -1,0 +1,11 @@
+//OUT="00 01 "
+
+// `brk 2` leaves the inner loop and the one around it, so the outer `for`
+// never reaches i == 1.
+
+fn main
+    for i 0..3
+        for j 0..3
+            out "{i}{j} "
+            if j == 1
+                brk 2

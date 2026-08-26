@@ -1,0 +1,24 @@
+//OUT="12"
+
+// Both keywords in a function that is not `main`, with a `ret` after the loop.
+// The 0 is skipped, the sum stops at the first negative element, and the 100
+// behind it is never seen.
+
+fn sum_until_negative v
+    total = 0
+    for x v
+        if x == 0
+            cnt
+        if x < 0
+            brk
+        total += x
+    ret total
+
+fn main
+    v = Vec()
+    v.push(5)
+    v.push(0)
+    v.push(7)
+    v.push(-1)
+    v.push(100)
+    out "{sum_until_negative(v)}"

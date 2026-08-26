@@ -1,0 +1,11 @@
+//OUT="00 02 10 12 "
+
+// A bare `cnt` restarts the loop it is written in. The outer loop is untouched
+// and still runs both of its iterations to the end.
+
+fn main
+    for i 0..2
+        for j 0..3
+            if j == 1
+                cnt
+            out "{i}{j} "

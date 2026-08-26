@@ -1,0 +1,16 @@
+//ERR 15 4 15 7
+
+// There is no loop to leave, so the `brk` cannot mean anything.
+//
+// No //MSG on 57e-64e: the diagnostics do not exist yet, so their wording
+// cannot be quoted. Add one to each with the fix. The spans assume the error is
+// reported on the keyword itself, which is the only token the statement has to
+// point at; if the check reports somewhere else, these four numbers move.
+//
+// CAVEAT while `brk` and `cnt` are unimplemented: 57e-64e all pass today for
+// the wrong reason — the normalizer rejects the keyword as an unknown variable,
+// at exactly the span asserted here. They only start testing what they are for
+// once the keywords tokenize.
+
+fn main
+    brk

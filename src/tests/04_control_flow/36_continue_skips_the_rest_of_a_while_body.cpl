@@ -1,0 +1,13 @@
+//OUT="1 3 5 7 9 "
+
+// `cnt` jumps to the loop's condition, skipping what is left of the body. The
+// counter is advanced *before* the `cnt`, because a `while` does no advancing
+// of its own — moving `i++` below the `cnt` would hang.
+
+fn main
+    i = 0
+    while i < 10
+        i++
+        if i % 2 == 0
+            cnt
+        out "{i} "

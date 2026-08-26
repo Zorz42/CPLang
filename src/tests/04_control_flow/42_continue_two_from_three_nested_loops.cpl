@@ -1,0 +1,11 @@
+//OUT="000 010 100 110 "
+
+// From the innermost of three loops, `cnt 2` continues the middle one: the k
+// loop is left, the j loop advances, and the i loop is not disturbed.
+
+fn main
+    for i 0..2
+        for j 0..2
+            for k 0..2
+                out "{i}{j}{k} "
+                cnt 2

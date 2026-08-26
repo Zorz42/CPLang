@@ -1,0 +1,7 @@
+//ERR 6 4 6 7
+
+// The `cnt` half of 57e_break_outside_a_loop.cpl. Neither keyword is a
+// statement that stands on its own.
+
+fn main
+    cnt

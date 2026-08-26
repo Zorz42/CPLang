@@ -1,0 +1,11 @@
+//OUT="0 1 2 3 "
+
+// A `for` is lowered into a `while` over an iterator
+// (`gen_for_statement` in src/compiler/lowerer/mod.rs), so `brk` has to leave
+// the loop the lowering produced, not just the block the body was written in.
+
+fn main
+    for i 0..100
+        if i == 4
+            brk
+        out "{i} "

@@ -1,0 +1,17 @@
+//OUT="7"
+
+// `cnt` restarts the loop, it does not leave it, so a `while true` holding one
+// still cannot reach the code after itself. Only `brk` opens that path — a
+// check that treats every jump keyword alike would demand a return here.
+
+fn first_odd_over n
+    i = 0
+    while true
+        i++
+        if i % 2 == 0
+            cnt
+        if i * i > n
+            ret i
+
+fn main
+    out "{first_odd_over(30)}"

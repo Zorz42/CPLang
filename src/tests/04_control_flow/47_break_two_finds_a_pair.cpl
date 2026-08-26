@@ -1,0 +1,15 @@
+//OUT="3 4"
+
+// What `brk 2` is for: leaving a double loop the moment a pair is found,
+// without a flag variable to unwind the outer loop by hand.
+
+fn main
+    a = -1
+    b = -1
+    for i 1..10
+        for j 1..10
+            if i * i + j * j == 25 && i < j
+                a = i
+                b = j
+                brk 2
+    out "{a} {b}"

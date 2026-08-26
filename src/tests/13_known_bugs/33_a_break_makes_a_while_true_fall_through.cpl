@@ -1,0 +1,33 @@
+//BUG="a break out of `while true` leaves a path that falls off the end"
+//ERR any
+
+// The loop-exemption case of 27_the_only_return_is_inside_a_while.cpl. A
+// `while true` is the one loop a returns-on-all-paths check may treat as never
+// falling through — see 05_functions/29_while_true_returns_from_inside.cpl —
+// but that only holds while nothing can leave it. The `brk` here is a second
+// exit, so the end of the body is reachable after all and `f(1000)` runs off it.
+//
+// The exemption therefore cannot be "the condition is the literal `true`"; it
+// has to be "the condition is the literal `true` and no reachable `brk` targets
+// this loop". 05_functions/31_a_while_true_with_a_break_returns_after_the_loop.cpl
+// is the accepted form — the same function with a `ret -1` at the end.
+//
+// No //MSG, for the same reason as 25-32: the diagnostic does not exist yet.
+//
+// CAVEAT while `brk` is unimplemented: this case passes today for the wrong
+// reason — the parser rejects `brk` itself, which is still a compile error and
+// so still satisfies `//ERR any`. The harness will say the bug looks fixed. It
+// is not. Keep the //BUG line until `brk` compiles and this case goes red on
+// the missing-return check.
+
+fn f n
+    i = 0
+    while true
+        if i > 10
+            brk
+        if i * i > n
+            ret i
+        i++
+
+fn main
+    out "{f(1000)}"

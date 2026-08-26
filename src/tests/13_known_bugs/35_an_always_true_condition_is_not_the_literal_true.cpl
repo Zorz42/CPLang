@@ -1,0 +1,26 @@
+//BUG="only the literal `true` should exempt a loop, but no loop is checked at all"
+//ERR any
+
+// `1 == 1` is always true, but it is an expression, not the literal `true`, and
+// 05_functions/29_while_true_returns_from_inside.cpl states the rule the check
+// is meant to follow: the exemption is syntactic, and a condition that merely
+// happens to always hold is still assumed to fall through. Constant-folding
+// conditions to decide reachability would put the compiler in the business of
+// proving termination.
+//
+// So this has to be rejected and written with a `ret` after the loop instead,
+// exactly as 05_functions/28_a_loop_followed_by_a_return.cpl is. Today it is
+// accepted, because there is no check at all — this is the over-permissive end
+// of the same gap as 25-32, not a separate bug.
+//
+// Unlike 33 and 34 this uses no `brk`, so it is red now and stays red for the
+// right reason.
+
+fn f n
+    while 1 == 1
+        if n > 0
+            ret 1
+        n++
+
+fn main
+    out "{f(-3)}"

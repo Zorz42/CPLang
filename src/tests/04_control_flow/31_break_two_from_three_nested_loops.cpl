@@ -1,0 +1,12 @@
+//OUT="000 100 "
+
+// The level says how many loops to leave, not "leave everything". From the
+// innermost of three loops, `brk 2` unwinds the k and j loops and lets the i
+// loop take its next iteration.
+
+fn main
+    for i 0..2
+        for j 0..2
+            for k 0..2
+                out "{i}{j}{k} "
+                brk 2

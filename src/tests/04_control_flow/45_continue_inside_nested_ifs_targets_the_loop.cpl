@@ -1,0 +1,11 @@
+//OUT="0 2 4 "
+
+// The `cnt` counterpart of 32: two `if` blocks between the keyword and the
+// loop, and neither counts towards the level.
+
+fn main
+    for i 0..5
+        if i > 0
+            if i % 2 == 1
+                cnt
+        out "{i} "

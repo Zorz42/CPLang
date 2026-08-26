@@ -1,0 +1,14 @@
+//OUT="1 2 "
+
+// Breaking out of a loop driven by a real iterator rather than a range: the
+// `_VecIter` is simply abandoned mid-way.
+
+fn main
+    v = Vec()
+    v.push(1)
+    v.push(2)
+    v.push(3)
+    for x v
+        if x == 3
+            brk
+        out "{x} "

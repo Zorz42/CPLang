@@ -31,7 +31,7 @@ pub fn display_error(error: &CompilerError, input_path: &str, input: &str) {
         if file_name.is_empty() {
             file_name = input_path;
         }
-        println!("  --> {file_name}:{}:{}", position.first_pos.0, position.first_pos.1 + 1);
+        println!("  --> {file_name}:{}:{}", position.first_pos.0 + 1, position.first_pos.1 + 1);
         println!();
 
         let source = &gain_input_sources(input.to_string())[position.file_ident];

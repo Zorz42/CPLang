@@ -1,0 +1,10 @@
+//ERR 9 12 9 15
+
+// The `cnt` half of 61e_break_level_deeper_than_the_loops.cpl. Two loops are
+// written, but the second is an `if`, so the `cnt 2` still has only one loop
+// above it.
+
+fn main
+    for i 0..3
+        if i > 0
+            cnt 2

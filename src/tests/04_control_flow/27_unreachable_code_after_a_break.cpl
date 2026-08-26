@@ -1,0 +1,12 @@
+//OUT="a"
+
+// `brk` ends its block, so the `out "b"` that follows it in the same block can
+// never run. Unreachable code is accepted rather than rejected — nothing else
+// in the language diagnoses it, and a competitive programmer commenting a line
+// out should not have to restructure the loop.
+
+fn main
+    while true
+        out "a"
+        brk
+        out "b"

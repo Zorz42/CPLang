@@ -1,0 +1,13 @@
+//OUT="ababa"
+
+// `brk` abandons the rest of the iteration as well as the loop: on the last
+// pass "a" is printed and "b" is not, because the `brk` sits between them.
+
+fn main
+    i = 0
+    while i < 5
+        out "a"
+        if i == 2
+            brk
+        out "b"
+        i++

@@ -1,0 +1,22 @@
+//OUT="6 -1"
+
+// `while true` is exempt from the returns-on-all-paths check because it never
+// falls through — but a `brk` gives it a way out, and then the code after the
+// loop is reachable and has to return. The trailing `ret -1` is what makes this
+// function legal, and it is the value f(1000) actually produces.
+//
+// 13_known_bugs/33_a_break_makes_a_while_true_fall_through.cpl is the same
+// function with the trailing `ret` removed.
+
+fn f n
+    i = 0
+    while true
+        if i > 10
+            brk
+        if i * i > n
+            ret i
+        i++
+    ret -1
+
+fn main
+    out "{f(30)} {f(1000)}"

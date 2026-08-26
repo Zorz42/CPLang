@@ -1,0 +1,20 @@
+//OUT="2"
+
+// Methods reach the normalizer by their own path — see
+// 08_structs/12_method_declaration.cpl — so a loop inside one has to resolve
+// its `brk` the same way a free function's does.
+
+struct Counter
+    limit: i32
+
+    fn first_over n
+        i = 0
+        while true
+            if i * i > n
+                brk
+            i++
+        ret i
+
+fn main
+    c = Counter limit 0
+    out "{c.first_over(3)}"

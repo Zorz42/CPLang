@@ -1,0 +1,20 @@
+//OUT="4 4"
+
+// A template body is checked once per instance. Whatever resolves `brk` to its
+// loop has to survive being run twice over the same block, once for each type.
+//
+// Both bounds are the template type: an explicit `first_over[i64](0 3)` would
+// be rejected because the literals are i32 — see
+// 06_templates/51e_explicit_template_argument_contradicts_the_call.cpl — so the
+// i64 instance is reached with `L` literals instead.
+
+fn first_over[T] a: T b: T
+    i = a
+    while true
+        if i > b
+            brk
+        i++
+    ret i
+
+fn main
+    out "{first_over(0 3)} {first_over(0L 3L)}"
