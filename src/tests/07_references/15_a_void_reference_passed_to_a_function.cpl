@@ -1,0 +1,15 @@
+//OUT="5"
+
+// A reference to a void value is passed like any other reference — compare
+// 02_reference_passed_to_a_function.cpl. The parameter deduces to a reference
+// to void.
+
+fn nothing
+    ret
+
+fn take x
+    ret 5
+
+fn main
+    r = nothing()
+    out "{take(&r)}"

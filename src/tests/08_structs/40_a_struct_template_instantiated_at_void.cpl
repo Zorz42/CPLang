@@ -1,9 +1,7 @@
-//BUG="a struct template instantiated at void emits `void F0;`, which gcc rejects"
 //OUT="3"
 
 // `void` reaching a field through a template argument rather than through the
-// instantiation's values. The instance `Box[void]` should be emitted with only
-// its `n` member.
+// values written in the instantiation.
 
 fn nothing
     ret

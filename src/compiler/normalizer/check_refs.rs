@@ -2,6 +2,7 @@ use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
 use crate::compiler::normalizer::ValuePhysicality;
 use crate::compiler::normalizer::ir::{IR, IRExpression, IRStatement};
 use crate::compiler::normalizer::ir_pass::IRPass;
+
 // this file implements the pass of IR that happens in normalizer and checks
 // that all lhs in assignments are physical and resolves all autorefs
 
@@ -77,7 +78,7 @@ impl IRPass for CheckRefsPass {
     }
 }
 
-pub fn check_refs_new(ir: IR, autorefs: Vec<i32>) -> CompilerResult<IR> {
+pub fn check_refs(ir: IR, autorefs: Vec<i32>) -> CompilerResult<IR> {
     let mut passer = CheckRefsPass {
         autorefs,
         error: None,

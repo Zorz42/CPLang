@@ -1,0 +1,15 @@
+//OUT="()"
+
+// `core/io.cpl` declares `fn print x: void`, which prints `()`, so a void value
+// is printable like any other — including through a format string, which is
+// where the overload has to be picked without an explicit call being written.
+//
+// 05_functions/66e_using_the_value_of_a_void_function.cpl is the other side of
+// this: a void value is printable, but still not usable in arithmetic.
+
+fn nothing
+    ret
+
+fn main
+    r = nothing()
+    out "{r}"

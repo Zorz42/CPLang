@@ -1,0 +1,14 @@
+//OUT="ok"
+
+// A call to a function that returns nothing produces a value like any other,
+// and it can be bound to a variable. C has no variable of type `void`, so the
+// normalizer rewrites every void into an empty struct before codegen sees it
+// (`process_void.rs`) and the binding comes out as `S0 var0; var0 = func1();`.
+// The value is real, it just carries no information.
+
+fn nothing x
+    ret
+
+fn main
+    r = nothing(1)
+    out "ok"

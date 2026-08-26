@@ -1,0 +1,12 @@
+//OUT="ok"
+
+// The binding of 21_binding_a_void_result.cpl with the type written out rather
+// than deduced. `void` is spellable as a hint, so both forms have to arrive at
+// the same variable.
+
+fn nothing
+    ret
+
+fn main
+    r: void = nothing()
+    out "ok"

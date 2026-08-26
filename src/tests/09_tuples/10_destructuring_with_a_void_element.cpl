@@ -1,0 +1,11 @@
+//OUT="5"
+
+// The destructuring form of 09_a_void_element.cpl: `a` binds the void element
+// and `b` still lines up with the second.
+
+fn nothing
+    ret
+
+fn main
+    a, b = nothing(), 5
+    out "{b}"

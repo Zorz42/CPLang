@@ -1,0 +1,12 @@
+//OUT="5"
+
+// Tuples are lowered to structs, so a void element is a void field — see
+// 08_structs/35_a_field_holding_a_void_value.cpl. It takes element 0, and `.1`
+// still names the second element.
+
+fn nothing
+    ret
+
+fn main
+    a = nothing(), 5
+    out "{a.1}"

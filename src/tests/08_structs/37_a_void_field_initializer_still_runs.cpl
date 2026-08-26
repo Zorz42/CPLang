@@ -1,0 +1,20 @@
+//OUT="1 5"
+
+// The field-position counterpart of
+// 02_variables/23_a_bound_void_call_still_runs.cpl: the expression written for
+// a void field is evaluated when the struct is built, so `bump()` runs even
+// though what it returns carries nothing.
+
+g = 0
+
+fn bump
+    g++
+    ret
+
+struct T
+    x
+    y
+
+fn main
+    a = T x bump() y 5
+    out "{g} {a.y}"

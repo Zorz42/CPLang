@@ -1,0 +1,16 @@
+//OUT="5"
+
+// A field can hold a void value. It takes a slot in the emitted struct like any
+// other field, so the fields beside it keep their own and `y` is still
+// reachable.
+
+fn nothing
+    ret
+
+struct T
+    x
+    y
+
+fn main
+    a = T x nothing() y 5
+    out "{a.y}"

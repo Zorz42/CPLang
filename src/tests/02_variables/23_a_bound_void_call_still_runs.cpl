@@ -1,0 +1,15 @@
+//OUT="1"
+
+// Binding a void result keeps the call. The variable holds nothing worth
+// reading, but `bump()` still runs and its side effect is still visible — the
+// binding is not a licence to drop the work that produced the value.
+
+g = 0
+
+fn bump
+    g++
+    ret
+
+fn main
+    r = bump()
+    out "{g}"

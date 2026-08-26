@@ -1,0 +1,13 @@
+//OUT="ok"
+
+// A void variable on both sides of an assignment. There is no call to keep
+// here, unlike 23_a_bound_void_call_still_runs.cpl — the statement is a plain
+// copy of one empty value into another.
+
+fn nothing
+    ret
+
+fn main
+    r = nothing()
+    s = r
+    out "ok"

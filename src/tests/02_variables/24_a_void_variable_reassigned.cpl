@@ -1,0 +1,15 @@
+//OUT="2"
+
+// A void variable can be assigned more than once, and each assignment keeps its
+// own call, so both `bump()`s run.
+
+g = 0
+
+fn bump
+    g++
+    ret
+
+fn main
+    r = bump()
+    r = bump()
+    out "{g}"

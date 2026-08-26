@@ -1,0 +1,17 @@
+//OUT="ok"
+
+// Nothing in `wrap` is written as void: the type arrives from the call, flows
+// through the parameter and out of the return.
+//
+// 07_bare_return_ends_a_void_function.cpl covers a void return on its own; what
+// is new here is returning a void *value*.
+
+fn nothing
+    ret
+
+fn wrap x
+    ret x
+
+fn main
+    r = wrap(nothing())
+    out "ok"

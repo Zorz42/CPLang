@@ -1,0 +1,10 @@
+//OUT="ok"
+
+// Globals are emitted by a different path from locals — see
+// 20_a_global_of_a_struct_type.cpl, where that path had a bug of its own — so a
+// void global is worth its own case.
+
+g: void
+
+fn main
+    out "ok"

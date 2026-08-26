@@ -1,8 +1,9 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::check_refs::check_refs_new;
+use crate::compiler::normalizer::check_refs::check_refs;
 use crate::compiler::normalizer::ir::{
     IR, IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
 };
+use crate::compiler::normalizer::process_void::process_void_variables;
 use crate::compiler::normalizer::symbol_table::SymbolTable;
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType, Ast, PrimitiveType,
@@ -19,6 +20,7 @@ pub mod ir;
 mod ir_debug;
 mod ir_pass;
 mod symbol_table;
+mod process_void;
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     Normalizer::default().normalize_ast(ast)
@@ -161,7 +163,8 @@ impl Normalizer {
             });
         }
 
-        self.ir = check_refs_new(self.ir, autorefs)?;
+        self.ir = check_refs(self.ir, autorefs)?;
+        self.ir = process_void_variables(self.ir);
 
         Ok(self.ir)
     }

@@ -1,0 +1,14 @@
+//OUT="ok"
+
+// `id[void]` is a void parameter and a void return in one instance, reached
+// through an explicit template argument rather than deduced from the call.
+
+fn id[T] x: T
+    ret x
+
+fn nothing
+    ret
+
+fn main
+    r = id[void](nothing())
+    out "ok"

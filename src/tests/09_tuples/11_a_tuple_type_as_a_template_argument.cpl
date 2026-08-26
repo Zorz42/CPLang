@@ -1,0 +1,19 @@
+//OUT="ok"
+
+// `i32, f64` is a tuple type, and it is valid as a template argument as well as
+// as a variable's type hint. It used to reach the normalizer un-lowered and
+// abort the process on
+//
+//     unreachable!("ASTType::Tuple should be eliminated by lowerer")
+//
+// so this stays as a regression test for lowering tuple types that are nested
+// inside a template argument.
+
+struct Holder[T]
+    v: T
+
+fn take h: Holder[i32, f64]
+    ret 1
+
+fn main
+    out "ok"

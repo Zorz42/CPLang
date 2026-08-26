@@ -1,0 +1,16 @@
+//OUT="1 2"
+
+// `void` is an ordinary type as far as overload resolution is concerned: the
+// two declarations do not collide, and `f(nothing())` picks the void one.
+
+fn nothing
+    ret
+
+fn f x: void
+    ret 1
+
+fn f x: i32
+    ret 2
+
+fn main
+    out "{f(nothing())} {f(5)}"

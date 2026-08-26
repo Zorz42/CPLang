@@ -1,0 +1,16 @@
+//OUT="ok"
+
+// The degenerate case of 35_a_field_holding_a_void_value.cpl: every field is
+// void, so the struct carries no information at all. It is still a struct and
+// still instantiable, and its one member is the empty struct that codegen uses
+// for `void` (see `normalizer/process_void.rs`).
+
+fn nothing
+    ret
+
+struct Only
+    x
+
+fn main
+    a = Only x nothing()
+    out "ok"

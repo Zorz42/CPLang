@@ -1,0 +1,14 @@
+//OUT="7"
+
+// A void value passed to a function deduces a void parameter. It occupies an
+// argument position like any other value, so `y` is still the second parameter
+// and still receives 7.
+
+fn nothing
+    ret
+
+fn take x y
+    ret y
+
+fn main
+    out "{take(nothing() 7)}"

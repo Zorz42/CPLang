@@ -1,0 +1,14 @@
+//OUT="7"
+
+// The call of 21_a_void_argument.cpl with the parameter types written out, so
+// the void reaches the function from its declaration rather than from the
+// argument.
+
+fn nothing
+    ret
+
+fn take x: void y: i32
+    ret y
+
+fn main
+    out "{take(nothing() 7)}"

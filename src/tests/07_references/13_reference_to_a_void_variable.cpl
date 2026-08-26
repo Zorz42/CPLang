@@ -1,0 +1,19 @@
+//OUT="()"
+
+// A void value carries no information, but it is a real object with a real
+// address — the normalizer rewrites `void` to an empty struct, so there is
+// something for `&r` to point at. Reading back through the reference gives the
+// void value again, which prints as `()`.
+//
+// This was briefly a known-bug case asserting the opposite. That was written
+// when the plan was to erase void variables in codegen, which would have left
+// `&r` pointing at a variable that was never declared; the empty-struct
+// lowering makes the question go away.
+
+fn nothing
+    ret
+
+fn main
+    r = nothing()
+    p = &r
+    out "{|p}"

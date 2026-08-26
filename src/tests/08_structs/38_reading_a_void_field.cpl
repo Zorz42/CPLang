@@ -1,0 +1,16 @@
+//OUT="5"
+
+// Reading a void field yields a void value, which binds to a variable like any
+// other — see 02_variables/21_binding_a_void_result.cpl.
+
+fn nothing
+    ret
+
+struct T
+    x
+    y
+
+fn main
+    a = T x nothing() y 5
+    b = a.x
+    out "{a.y}"

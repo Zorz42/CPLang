@@ -1,0 +1,15 @@
+//OUT="ok"
+
+// The write counterpart of 13_reference_to_a_void_variable.cpl, mirroring
+// 00_write_through_a_reference.cpl. There is only one void value, so the store
+// cannot be observed — what the case pins down is that it is accepted and that
+// the call on the right still runs.
+
+fn nothing
+    ret
+
+fn main
+    r = nothing()
+    p = &r
+    |p = nothing()
+    out "ok"

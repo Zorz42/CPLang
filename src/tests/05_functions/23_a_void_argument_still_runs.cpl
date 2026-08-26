@@ -1,0 +1,18 @@
+//OUT="1 7"
+
+// The argument-position counterpart of
+// 02_variables/23_a_bound_void_call_still_runs.cpl: an argument that evaluates
+// to void is still evaluated, and before the call it is an argument to.
+
+g = 0
+
+fn bump
+    g++
+    ret
+
+fn take x y
+    ret y
+
+fn main
+    v = take(bump() 7)
+    out "{g} {v}"

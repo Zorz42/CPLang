@@ -1,0 +1,16 @@
+//OUT="() 5"
+
+// A void field has a slot in its struct like any other field, so it has an
+// address too — compare 04_reference_to_a_struct_field.cpl.
+
+fn nothing
+    ret
+
+struct T
+    x
+    y
+
+fn main
+    a = T x nothing() y 5
+    p = &a.x
+    out "{|p} {a.y}"

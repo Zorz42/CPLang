@@ -1,0 +1,17 @@
+//OUT="5 5"
+
+// Assignment copies a struct — see 08_assignment_copies_the_struct.cpl — and a
+// void field does not change that; both names keep seeing the field that does
+// carry something.
+
+fn nothing
+    ret
+
+struct T
+    x
+    y
+
+fn main
+    a = T x nothing() y 5
+    b = a
+    out "{a.y} {b.y}"
