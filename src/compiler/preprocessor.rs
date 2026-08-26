@@ -240,8 +240,13 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                 // check for \
                 else if pos_char.c == '\\'
                     && let Some(next_char) = chars.peek()
-                    && let Some(escape_char) = map_escape_char(next_char.c)
                 {
+                    let Some(escape_char) = map_escape_char(next_char.c) else {
+                        return Err(CompilerError {
+                            message: format!("Unrecognized escape character: {}", next_char.c),
+                            position: Some(next_char.pos),
+                        })
+                    };
                     // remove the \
                     current_string.push(PosChar {
                         c: escape_char,

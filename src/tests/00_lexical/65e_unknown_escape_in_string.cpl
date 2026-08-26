@@ -1,0 +1,16 @@
+//ERR 15 11 15 12
+//MSG="Unrecognized escape character"
+
+// An escape the preprocessor does not recognise is rejected inside a string,
+// the same way it already was inside a character literal — see
+// 56e_unknown_escape_in_char.cpl. 15_string_escapes.cpl lists the ones that are
+// recognised.
+//
+// This used to be a split between the two: the character literal rejected the
+// unknown escape while the string kept the backslash verbatim, so "a\tb" was
+// the four characters a \ t b and someone reaching for a tab got a backslash
+// and no diagnostic. The case that recorded the old behaviour,
+// 25_unrecognized_string_escape_stays_literal.cpl, is gone along with it.
+
+fn main
+    out "a\tb"
