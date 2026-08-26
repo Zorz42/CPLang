@@ -1,0 +1,9 @@
+//OUT="2"
+
+// Same as 07, reading the field into a variable. `x = (1, 2)` on its own was
+// always fine, because that registers the variable's type; only reading a
+// field off the temporary hit the missing registration.
+
+fn main
+    x = (1, 2).1
+    out "{x}"

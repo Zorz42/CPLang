@@ -1,0 +1,10 @@
+//OUT="7"
+
+// The same temporary as 09_tuples/07, with a named struct rather than a tuple.
+
+struct Point
+    x: i32
+    y: i32
+
+fn main
+    out "{(Point x 7 y 8).x}"

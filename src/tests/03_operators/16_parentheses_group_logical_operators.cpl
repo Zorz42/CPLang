@@ -1,0 +1,8 @@
+//OUT="1 0 1 0"
+
+// Explicit parentheses around && and || group as written. The precedence
+// relation between the two is covered by 33 and 34; write the parentheses out
+// whenever the grouping could matter.
+
+fn main
+    out "{(true || false) && true} {(true || false) && false} {true || (false && false)} {false && (true || true)}"

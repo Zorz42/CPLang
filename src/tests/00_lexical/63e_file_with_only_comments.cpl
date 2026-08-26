@@ -1,0 +1,7 @@
+//ERR any
+//MSG="No main function found"
+
+// A source file with no code at all. It should reach the ordinary "No main
+// function found" error; the preprocessor used to panic with "index out of
+// bounds: the len is 0 but the index is 0" because every line had been
+// retained away before parse_indentation_block read lines[0].

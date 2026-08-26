@@ -1,0 +1,16 @@
+//OUT="b"
+
+// Expanding a macro from src/core splices call-site tokens into a macro body
+// that came from a different file, and the parser merges positions across the
+// two. Regression test: the merge asserted that both sides came from the same
+// file, so using any core macro aborted the compile.
+//
+// The program adds the char+char overload that the core library does not
+// define, and prints 'a' + 1 as a char.
+
+_def_operator +; _builtin_add; char; char; char;
+
+fn main
+    a = 'a'
+    one = char 1
+    out "{a + one}"

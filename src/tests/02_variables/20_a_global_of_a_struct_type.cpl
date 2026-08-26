@@ -1,0 +1,17 @@
+//OUT="1 99"
+
+// A global whose type is a struct — which is how a Vec or a Str would be
+// shared between functions. Regression test: codegen emitted the globals above
+// the typedefs, so gcc rejected the output with "unknown type name 'S0'".
+// Globals of primitive type were unaffected, which is why nothing else caught it.
+
+struct Point
+    x: i32
+    y: i32
+
+origin = Point x 1 y 2
+
+fn main
+    a = origin.x
+    origin.y = 99
+    out "{a} {origin.y}"

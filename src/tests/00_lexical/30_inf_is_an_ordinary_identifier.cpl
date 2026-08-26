@@ -1,0 +1,10 @@
+//OUT="1"
+
+// `inf` is a name, not a float literal. Regression test: numeric literals were
+// recognised by handing the token to parse::<f32>(), which accepts "inf",
+// "infinity" and "NaN" in any case, so this failed with "This expression cannot
+// be f64 and i32 at the same time."
+
+fn main
+    inf = 1
+    out "{inf}"

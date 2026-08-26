@@ -1,0 +1,9 @@
+//OUT="1"
+
+// A field can be read straight off a tuple that is never bound to a variable.
+// Regression test: codegen only registered the C struct for types that reached
+// gen_type — variable, argument and return types — so a temporary's type was
+// missing and the compiler panicked with "no entry found for key".
+
+fn main
+    out "{(1, 2).0}"

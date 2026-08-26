@@ -1,0 +1,9 @@
+//OUT="4000000001"
+
+// The same promotion as 27, in the form that would lose data: arithmetic on a
+// literal above the i32 range stays integer arithmetic, so the low digits are
+// exact.
+
+fn main
+    x = 4000000000
+    out "{x + 1}"

@@ -1,0 +1,9 @@
+//OUT="3000000000"
+
+// A decimal integer literal too large for i32 becomes an i64, without needing
+// the `…L` suffix. Regression test: it used to fall through to the float
+// parser and print 3000000000.000000000.
+
+fn main
+    x = 3000000000
+    out "{x}"

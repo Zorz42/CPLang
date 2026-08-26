@@ -1,0 +1,7 @@
+//OUT="2"
+
+// Same as 30, for `nan`.
+
+fn main
+    nan = 2
+    out "{nan}"

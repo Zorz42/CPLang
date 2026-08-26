@@ -1,0 +1,11 @@
+//OUT="1 1 1"
+
+// The three shapes where the grouping actually changes the answer: a true left
+// operand followed by an && that is false. Under C precedence all three are 1;
+// under one shared tier folded left to right all three would be 0.
+//
+// Most other combinations agree under either reading — `false && false || true`
+// is 1 both ways — which is why a precedence bug here is easy to miss.
+
+fn main
+    out "{true || false && false} {true || true && false} {false || true || false && false}"

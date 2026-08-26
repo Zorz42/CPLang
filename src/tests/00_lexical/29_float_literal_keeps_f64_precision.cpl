@@ -1,0 +1,9 @@
+//OUT="0.123456789"
+
+// A float literal is parsed and stored at f64 precision. Regression test: it
+// used to go through parse::<f32>() and be widened afterwards, which printed
+// 0.123456791 — the f32 value rounded to nine decimals.
+
+fn main
+    x = 0.1234567890123
+    out "{x}"

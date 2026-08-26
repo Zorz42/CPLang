@@ -1,0 +1,11 @@
+//ERR 10 6 10 7
+//MSG="Expected another token after this one"
+
+// An error raised when the parser runs out of tokens points at the last real
+// token, here the `=` of the incomplete assignment. Regression test: peek and
+// get returned a sentinel token carrying FilePosition::unknown(), so the
+// compiler built a good error and then display_error hit an unreachable!()
+// printing it.
+
+fn main
+    x =

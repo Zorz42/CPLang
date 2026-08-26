@@ -1,0 +1,14 @@
+//OUT="TRUE"
+
+// `a || b && c` groups as `a || (b && c)`, the same as in C, C++, Rust and
+// Python. Regression test: && and || used to share one precedence tier, folded
+// left to right, so this printed FALSE.
+
+fn main
+    a = true
+    b = false
+    c = false
+    if a || b && c
+        out "TRUE"
+    else
+        out "FALSE"
