@@ -1,11 +1,7 @@
 use std::process::ExitCode;
 
-use crate::compiler::compile;
-use crate::compiler::error::CompilerError;
-use crate::display_error::display_error;
+use cplang::{CompilerError, compile, display_error};
 
-mod compiler;
-mod display_error;
 mod tests;
 
 // Normalization clones a lot of small values (see the type resolver's rollback

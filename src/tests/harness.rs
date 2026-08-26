@@ -38,9 +38,8 @@
 //! Positions in `//ERR` are the compiler's own: 0-based line and column,
 //! counted over the whole file including the header, with the end exclusive.
 
-use crate::compiler::compile;
-use crate::compiler::error::FilePosition;
-use crate::display_error::display_error;
+use cplang::display_error;
+use cplang::{FilePosition, compile};
 use std::fmt::Write as _;
 use std::hash::{DefaultHasher, Hasher};
 use std::io::Write as _;
@@ -346,7 +345,7 @@ fn run_program(exec_file: &Path, stdin_data: &str) -> Result<String, String> {
 /// Pretty-prints a compiler error, unless it carries the "unknown position"
 /// sentinel — `display_error` reaches an `unreachable!()` on that value, and a
 /// panic from the reporter would hide the failure it is meant to explain.
-fn report(error: &crate::compiler::error::CompilerError, case: &Case) {
+fn report(error: &cplang::CompilerError, case: &Case) {
     if error.position == Some(FilePosition::unknown()) {
         println!("Error: {} (at an unknown position)", error.message);
         return;
@@ -563,7 +562,7 @@ mod header_tests {
     /// this is the only thing that exercises it.
     #[test]
     fn a_compiler_error_can_be_formatted() {
-        use crate::compiler::error::{CompilerError, FilePosition};
+        use cplang::{CompilerError, FilePosition};
 
         let positioned = CompilerError {
             message: "boom".to_string(),

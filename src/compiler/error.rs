@@ -16,6 +16,10 @@ impl Debug for FilePosition {
 }
 
 impl FilePosition {
+    // `#[must_use]` because `lib.rs` re-exports `FilePosition` for the binary
+    // crate, which puts this constructor on the crate's public surface and
+    // brings it under `clippy::must_use_candidate`.
+    #[must_use]
     pub const fn unknown() -> Self {
         Self {
             file_ident: 0,
