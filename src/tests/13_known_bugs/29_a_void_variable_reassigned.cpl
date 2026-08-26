@@ -1,0 +1,17 @@
+//BUG="assigning to a void variable twice emits `void var1;` and two dead stores"
+//OUT="2"
+
+// A void variable can be assigned more than once. Each assignment keeps its
+// call and drops its store, so both `bump()` calls have to run — an erasure
+// that only handled the declaration site would silently lose the second one.
+
+g = 0
+
+fn bump
+    g++
+    ret
+
+fn main
+    r = bump()
+    r = bump()
+    out "{g}"

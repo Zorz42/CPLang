@@ -1,0 +1,14 @@
+//BUG="an explicitly `: void` hinted variable emits `void var0;`, which gcc rejects"
+//OUT="ok"
+
+// The same binding as 25_binding_a_void_result_to_a_variable.cpl, with the type
+// written out instead of deduced. `void` is spellable as a hint, so both forms
+// reach codegen and both have to be erased the same way — nothing in the fix
+// should depend on how the variable's type was arrived at.
+
+fn nothing
+    ret
+
+fn main
+    r: void = nothing()
+    out "ok"

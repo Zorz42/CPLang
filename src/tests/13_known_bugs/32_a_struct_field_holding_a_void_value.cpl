@@ -1,0 +1,18 @@
+//BUG="a struct field deduced void emits `void F0;`, which gcc rejects"
+//OUT="5"
+
+// A field whose type comes out void gets no storage either: the member is left
+// out of the emitted struct and the remaining fields keep working. `y` must
+// still be reachable, so the fix has to remap field indices rather than just
+// skipping a line of the struct body.
+
+fn nothing
+    ret
+
+struct T
+    x
+    y
+
+fn main
+    a = T x nothing() y 5
+    out "{a.y}"

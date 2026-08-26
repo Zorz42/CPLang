@@ -1,22 +1,33 @@
-//BUG="a void value can be bound to a variable, producing `void var0;` in C"
-//ERR any
+//BUG="a void value bound to a variable emits `void var0;`, which gcc rejects"
+//OUT="ok"
 
-// Not in FEEDBACK.md. `void` is accepted as a type hint and a call to a
-// function that returns nothing can be bound to a variable, so codegen emits
+// `void` is a type the compiler accepts in a binding position, so a call to a
+// function that returns nothing can be bound to a variable. Codegen then gives
+// that variable storage:
 //
 //     void var0;
+//     var0 = func1(1);
 //
-// and gcc rejects it with "variable has incomplete type 'void'". The compiler
-// should refuse this itself — a compile that produces C that does not build is
-// the worst of both worlds, because the error surfaces from a tool the user
-// did not run.
+// and gcc rejects it with "variable has incomplete type 'void'" — a compile
+// that produces C which does not build is the worst of both worlds, because
+// the error surfaces from a tool the user did not run.
 //
-// 05_functions/66e_using_the_value_of_a_void_function.cpl shows that *using*
-// a void value in an expression is caught; only binding it is not.
+// A void variable has nothing to hold, so it should have no storage in C at
+// all: the declaration is dropped and the assignment collapses to the bare
+// call `func1(1);`. The other cases numbered 25-47 here cover the same erasure
+// in every other position a value can appear in.
+//
+// This case used to assert the opposite — that the compiler should reject the
+// binding outright. Binding is now the intended behaviour, so it asserts that
+// the program builds and runs instead.
+//
+// 05_functions/66e_using_the_value_of_a_void_function.cpl and
+// 05_functions/73e_printing_a_bound_void_value.cpl pin down the other side of
+// this: erasing the storage must not make a void value usable as a value.
 
-fn nothing x: i32
+fn nothing x
     ret
 
 fn main
-    r: void = nothing(1)
+    r = nothing(1)
     out "ok"

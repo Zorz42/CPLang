@@ -1,0 +1,19 @@
+//ERR 18 10 18 11
+//MSG="No candidate found for this function call"
+
+// 66e_using_the_value_of_a_void_function.cpl rejects a void value used in
+// arithmetic. This one rejects it after a trip through a variable: binding a
+// void result is allowed (13_known_bugs/25_binding_a_void_result_to_a_variable.cpl),
+// but the variable is still not a value, so there is no `print` overload that
+// takes it.
+//
+// The regression this guards: erasing void variables in codegen must not erase
+// them from the type system. If the binding ever made `r` look like a value,
+// this case would start compiling and emit a call to a print that does not exist.
+
+fn nothing
+    ret
+
+fn main
+    r = nothing()
+    out "{r}"

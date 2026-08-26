@@ -39,7 +39,7 @@ pub fn parse_block(structs: &Vec<ASTStructDeclaration>, mut block: TokenBlock) -
                 parser_res
             } else {
                 let expression = parse_expression(structs, &mut block)?;
-                parse_assignment(structs, expression.clone(), &mut block)?.map_or(ASTStatement::Expression { expression }, |statement| statement)
+                parse_assignment(structs, expression.clone(), &mut block)?.unwrap_or(ASTStatement::Expression { expression })
             }
         };
         res.children.push(statement);

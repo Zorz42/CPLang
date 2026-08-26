@@ -179,7 +179,7 @@ impl TokenBlock {
         res
     }
 
-    pub fn get_last_pos(&self) -> FilePosition {
+    pub const fn get_last_pos(&self) -> FilePosition {
         self.last_pos
     }
 

@@ -1,0 +1,16 @@
+//BUG="a struct field hinted `: void` emits `void F0;`, which gcc rejects"
+//OUT="5"
+
+// The same field as 32_a_struct_field_holding_a_void_value.cpl, with the type
+// written on the field instead of deduced from the instantiation.
+
+struct T
+    x: void
+    y: i32
+
+fn nothing
+    ret
+
+fn main
+    a = T x nothing() y 5
+    out "{a.y}"

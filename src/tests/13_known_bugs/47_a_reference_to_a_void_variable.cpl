@@ -1,0 +1,23 @@
+//BUG="a reference can be taken to a void variable, which has no storage to point at"
+//ERR any
+
+// The one place where erasure has no sensible answer. Once a void variable has
+// no storage in C there is no address for `&r` to produce, so the compiler
+// should reject this rather than emit a `void*` pointing at a variable it did
+// not declare.
+//
+// Today it compiles, and the C fails on the erased variable rather than on the
+// reference: `void var0;void* var1;`. Once void locals are dropped the second
+// half of that line has nothing left to initialise from, so this needs a real
+// diagnostic of its own.
+//
+// No //MSG, because the message does not exist yet; add one with the fix, and
+// note that the span will land on `&r`.
+
+fn nothing
+    ret
+
+fn main
+    r = nothing()
+    p = &r
+    out "ok"

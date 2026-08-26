@@ -1,0 +1,19 @@
+//BUG="a struct with only void fields emits a struct whose only member is `void F0;`"
+//OUT="ok"
+
+// The degenerate case of 32_a_struct_field_holding_a_void_value.cpl: once the
+// only field is erased there are no members left, so the fix has to emit a
+// struct that C will accept with an empty body. gcc and clang both take
+// `typedef struct {} S0;` as an extension, and the harness passes `-w`, so
+// emitting nothing between the braces is enough — but it is a shape the
+// current codegen never produces, so it needs saying out loud.
+
+fn nothing
+    ret
+
+struct Only
+    x
+
+fn main
+    a = Only x nothing()
+    out "ok"

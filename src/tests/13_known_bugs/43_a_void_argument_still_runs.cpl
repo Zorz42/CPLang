@@ -1,0 +1,20 @@
+//BUG="a void parameter does not build, so its argument cannot be shown to run"
+//OUT="1 7"
+
+// The argument-position counterpart of 28_a_bound_void_call_still_runs.cpl and
+// 34_a_void_field_initializer_still_runs.cpl. Dropping the parameter must not
+// drop the argument: `bump()` is written at the call site, so it runs, and it
+// has to run before the call it is an argument to.
+
+g = 0
+
+fn bump
+    g++
+    ret
+
+fn take x y
+    ret y
+
+fn main
+    v = take(bump() 7)
+    out "{g} {v}"

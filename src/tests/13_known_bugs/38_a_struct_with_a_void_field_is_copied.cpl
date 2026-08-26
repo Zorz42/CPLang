@@ -1,0 +1,18 @@
+//BUG="a struct with a void field does not build, so copying it cannot be tested"
+//OUT="5 5"
+
+// Assignment copies a struct — see 08_structs/08_assignment_copies_the_struct.cpl.
+// With the void member gone the copy is a copy of what is left, and both names
+// have to keep seeing the surviving field.
+
+fn nothing
+    ret
+
+struct T
+    x
+    y
+
+fn main
+    a = T x nothing() y 5
+    b = a
+    out "{a.y} {b.y}"

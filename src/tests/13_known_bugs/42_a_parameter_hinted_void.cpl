@@ -1,0 +1,15 @@
+//BUG="a parameter hinted `: void` emits `void var0` in the C signature"
+//OUT="7"
+
+// The same call as 41_a_void_argument_to_a_function.cpl with the parameter
+// types written out, so the void reaches codegen from the declaration rather
+// than from the argument.
+
+fn nothing
+    ret
+
+fn take x: void y: i32
+    ret y
+
+fn main
+    out "{take(nothing() 7)}"

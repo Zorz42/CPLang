@@ -1,0 +1,18 @@
+//BUG="binding a read of a void field emits both a `void` member and a `void` local"
+//OUT="5"
+
+// Reading a void field yields a void value, which can be bound like any other
+// void value. There is no member to read from, so `b = a.x` should erase to
+// nothing at all — the access has no side effect of its own to preserve.
+
+fn nothing
+    ret
+
+struct T
+    x
+    y
+
+fn main
+    a = T x nothing() y 5
+    b = a.x
+    out "{a.y}"
