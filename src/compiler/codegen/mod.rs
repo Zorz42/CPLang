@@ -93,12 +93,12 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::I32 | PrimitiveType::Bool => "int",
         PrimitiveType::I64 => "long long",
         PrimitiveType::F32 => "float",
-        PrimitiveType::F64 => "long double",
+        PrimitiveType::F64 => "double",
         PrimitiveType::String => "char*",
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-    .to_owned()
+        .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {

@@ -62,11 +62,32 @@ fn run(args: &[String]) -> ExitCode {
     };
 
     if let Err(err) = compile(args.input, args.output) {
+        remove_stale_output(args.output);
         report_error(&err, args.input);
         return ExitCode::FAILURE;
     }
 
     ExitCode::SUCCESS
+}
+
+/// Deletes the output file after a failed compile, so a run that failed never
+/// leaves a `.c` behind.
+///
+/// Without this, a failed compile keeps whatever the last successful one wrote,
+/// and a driver that compiles, edits, recompiles and then builds whatever is on
+/// disk silently builds the stale file. Having no output at all turns that into
+/// an error the next step cannot miss, for the drivers that do not check the
+/// exit status.
+///
+/// Nothing to delete is the normal case — most failures happen long before
+/// codegen writes anything — so it is not worth reporting. A file that exists
+/// and cannot be removed is worth reporting, because the stale `.c` survives.
+fn remove_stale_output(output_path: &str) {
+    match std::fs::remove_file(output_path) {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => eprintln!("Error removing stale output file '{}': {}", output_path, e),
+    }
 }
 
 /// Renders a compiler error. Only a positioned error needs the source text, to

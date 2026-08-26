@@ -6,9 +6,15 @@
 //! whole of the user-facing surface — what a Makefile or `cses-tests/run.py`
 //! sees — so they are worth testing directly.
 //!
-//! A few assertions here are expected to fail: they are named `known_bug_…`
-//! and their message starts with `KNOWN BUG`, in the same spirit as the
-//! `//BUG` cases in `src/tests/13_known_bugs/`.
+//! An assertion that is expected to fail is named `known_bug_…` and its message
+//! starts with `KNOWN BUG`, in the same spirit as the `//BUG` cases in
+//! `src/tests/13_known_bugs/`. When the bug is fixed the prefix comes off, the
+//! comment is rewritten to describe the guarantee rather than the defect, and
+//! the assertion is tightened past "it did not panic" where that is cheap.
+//!
+//! Note that `cargo test` stops at the first failing target, so while any
+//! `//BUG` case under `src/tests/` is red the binary's tests fail and this file
+//! never runs. Use `cargo test --no-fail-fast` to reach it.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -232,6 +238,29 @@ fn a_failed_compile_exits_nonzero() {
 }
 
 #[test]
+fn a_failed_compile_removes_the_stale_output() {
+    // FEEDBACK.md 1.2, second half. Exiting non-zero only helps a driver that
+    // checks the status; one that compiles, edits, recompiles and then builds
+    // whatever .c is on disk would go on using the previous successful output.
+    // A failed compile leaves no output at all, so there is nothing stale to
+    // pick up.
+    let scratch = Scratch::new("stale");
+
+    let (ok, printed) = compile(&scratch, HELLO);
+    assert_eq!(ok.status.code(), Some(0), "{printed}");
+    assert!(scratch.output().exists(), "the first compile should have written the output");
+
+    let (failed, _) = compile(&scratch, "fn maine\n    0\n");
+    assert_eq!(failed.status.code(), Some(1));
+
+    assert!(
+        !scratch.output().exists(),
+        "a failed compile must not leave the previous output file in place, \
+         or a driver that ignores the exit status compiles stale C."
+    );
+}
+
+#[test]
 fn an_error_without_a_position_prints_only_the_message() {
     let scratch = Scratch::new("nopos");
     let (_, printed) = compile(&scratch, "fn maine\n    0\n");
@@ -297,37 +326,15 @@ fn known_bug_location_line_number_matches_the_snippet() {
 }
 
 #[test]
-fn known_bug_a_failed_compile_removes_the_stale_output() {
-    // FEEDBACK.md 1.2, second half. The exit status is fixed, but the output
-    // file from the previous successful compile is left untouched, so a driver
-    // that ignores the status — or one that compiles, edits, recompiles and
-    // then builds whatever is on disk — silently uses a stale .c file.
-    let scratch = Scratch::new("stale");
-
-    let (ok, printed) = compile(&scratch, HELLO);
-    assert_eq!(ok.status.code(), Some(0), "{printed}");
-    assert!(scratch.output().exists(), "the first compile should have written the output");
-
-    let (failed, _) = compile(&scratch, "fn maine\n    0\n");
-    assert_eq!(failed.status.code(), Some(1));
-
-    assert!(
-        !scratch.output().exists(),
-        "KNOWN BUG (FEEDBACK.md 1.2): a failed compile leaves the previous output file in place, \
-         so a driver that ignores the exit status compiles stale C."
-    );
-}
-
-#[test]
-fn known_bug_f64_is_compiled_to_double_not_long_double() {
-    // FEEDBACK.md 1.11. gen_primitive_type maps f64 to C `long double`, which
-    // is 80-bit x87 on x86-64 (the judges) and 64-bit on Apple Silicon (this
-    // machine) — so the same program can print different numbers on different
-    // platforms, and on x86 every float operation goes through x87.
+fn f64_is_compiled_to_double() {
+    // FEEDBACK.md 1.11. gen_primitive_type used to map f64 to C `long double`,
+    // which is 80-bit x87 on x86-64 (the judges) and 64-bit on Apple Silicon,
+    // so the same program printed different numbers on different platforms and
+    // every float operation on x86 went through x87. It maps to `double` now.
     //
-    // Related: bump_malloc rounds allocations to 8 bytes while x86-64
-    // `long double` wants 16-byte alignment, so Vec[f64] storage can be
-    // misaligned.
+    // Worth keeping: bump_malloc rounds allocations to 8 bytes, which is fine
+    // for `double` but was not for x86-64 `long double`'s 16-byte alignment, so
+    // a regression here would misalign Vec[f64] storage again.
     let scratch = Scratch::new("longdouble");
     let (output, printed) = compile(&scratch, "fn main\n    x = 1.5\n    out \"{x}\"\n");
     assert_eq!(output.status.code(), Some(0), "{printed}");
@@ -336,51 +343,51 @@ fn known_bug_f64_is_compiled_to_double_not_long_double() {
     let occurrences = c.matches("long double").count();
     assert_eq!(
         occurrences, 0,
-        "KNOWN BUG (FEEDBACK.md 1.11): f64 is emitted as `long double` ({occurrences} occurrences), \
-         which is 80-bit on x86-64 and 64-bit here, so results are platform-dependent."
+        "f64 must not be emitted as `long double` ({occurrences} occurrences), \
+         or results become platform-dependent."
     );
 }
 
 #[test]
-fn known_bug_a_file_without_code_does_not_panic() {
-    // FEEDBACK.md 1.5, seen through the CLI: the exit status is 101, the
-    // signature of a panic, rather than a diagnostic. The library-level case
-    // is 13_known_bugs/07_file_with_only_comments.cpl.
+fn a_file_without_code_reports_no_main_function() {
+    // FEEDBACK.md 1.5, seen through the CLI. This used to exit 101 — the
+    // signature of a panic in the preprocessor — instead of saying anything.
+    // The library-level case is 00_lexical/63e_file_with_only_comments.cpl.
     let scratch = Scratch::new("emptyfile");
     let (output, printed) = compile(&scratch, "// nothing but a comment\n");
 
+    assert!(!panicked(&output), "a source file with no code must not panic:\n{printed}");
+    assert_eq!(output.status.code(), Some(1), "{printed}");
     assert!(
-        !panicked(&output),
-        "KNOWN BUG (FEEDBACK.md 1.5): a source file with no code panics the preprocessor \
-         instead of reporting that there is no main function.\n{printed}"
+        printed.contains("No main function found"),
+        "it should say what is missing, not just fail:\n{printed}"
     );
 }
 
 #[test]
-fn known_bug_an_error_at_end_of_input_does_not_panic_the_printer() {
-    // FEEDBACK.md 1.6, seen through the CLI: the compiler produces a good
-    // error and then display_error hits its `unreachable!()` printing it, so
-    // the user sees a Rust panic after the diagnostic.
+fn an_error_at_end_of_input_prints_a_diagnostic() {
+    // FEEDBACK.md 1.6, seen through the CLI. The compiler produced a good error
+    // and then display_error hit its `unreachable!()` while printing it, so the
+    // user saw a Rust panic after the diagnostic. The library-level case is
+    // 00_lexical/64e_error_at_end_of_input_has_a_position.cpl.
     let scratch = Scratch::new("eofpanic");
     let (output, printed) = compile(&scratch, "fn main\n    x =\n");
 
-    assert!(
-        !panicked(&output),
-        "KNOWN BUG (FEEDBACK.md 1.6): display_error panics on the unknown-position sentinel, \
-         which any error at end of input carries.\n{printed}"
-    );
+    assert!(!panicked(&output), "an error at end of input must not panic the printer:\n{printed}");
+    assert_eq!(output.status.code(), Some(1), "{printed}");
+    assert!(printed.contains("Expected another token after this one"), "{printed}");
+    assert!(printed.contains("-->"), "the error carries a position, so it should draw a snippet:\n{printed}");
 }
 
 #[test]
-fn known_bug_using_a_core_macro_does_not_panic() {
-    // FEEDBACK.md 1.7, seen through the CLI. The library-level case is
-    // 13_known_bugs/09_calling_a_core_library_macro.cpl.
+fn a_core_macro_can_be_used() {
+    // FEEDBACK.md 1.7, seen through the CLI. Merging a position from the core
+    // library with one from the user's file used to trip an assert_eq! and
+    // abort the process; the macro now expands and the program compiles.
     let scratch = Scratch::new("macropanic");
     let (output, printed) = compile(&scratch, "_def_operator +; _builtin_add; char; char; char;\n\nfn main\n    out \"hi\"\n");
 
-    assert!(
-        !panicked(&output),
-        "KNOWN BUG (FEEDBACK.md 1.7): merging a position from the core library with one from the \
-         user's file trips an assert_eq! and aborts the process.\n{printed}"
-    );
+    assert!(!panicked(&output), "using a core macro must not panic:\n{printed}");
+    assert_eq!(output.status.code(), Some(0), "{printed}");
+    assert!(scratch.output().exists(), "the compile succeeded, so it should have written output");
 }

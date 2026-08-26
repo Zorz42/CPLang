@@ -64,7 +64,7 @@ impl IRPass for CheckRefsPass {
     fn post_map_expression(&mut self, expression: IRExpression) -> IRExpression {
         match expression {
             IRExpression::Reference { expression, pos } => {
-                let is_phys = is_expression_physical(&*expression);
+                let is_phys = is_expression_physical(&expression);
                 if is_phys == ValuePhysicality::Temporary {
                     self.report_error(CompilerError {
                         message: "Cannot reference non-physical value.".to_string(),
@@ -84,11 +84,7 @@ pub fn check_refs(ir: IR, autorefs: Vec<i32>) -> CompilerResult<IR> {
         error: None,
     };
     let ir = passer.pass_ir(ir);
-    if let Some(error) = passer.error {
-        Err(error)
-    } else {
-        Ok(ir)
-    }
+    passer.error.map_or(Ok(ir), Err)
 }
 
 fn is_expression_physical(expression: &IRExpression) -> ValuePhysicality {
