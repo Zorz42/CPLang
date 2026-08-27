@@ -4,7 +4,8 @@ use crate::compiler::normalizer::ir::{
     IR, IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
 };
 use crate::compiler::normalizer::process_void::process_void_variables;
-use crate::compiler::normalizer::ref_check::check_refs;
+use crate::compiler::normalizer::reference_check::check_references;
+use crate::compiler::normalizer::return_analysis::analyze_return_statements;
 use crate::compiler::normalizer::symbol_table::SymbolTable;
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType, Ast, PrimitiveType,
@@ -15,7 +16,7 @@ use std::collections::{HashMap, HashSet};
 use std::mem::swap;
 
 pub mod builtin_functions;
-mod ref_check;
+mod reference_check;
 mod function_cmp;
 pub mod ir;
 mod ir_debug;
@@ -23,6 +24,7 @@ mod ir_pass;
 mod symbol_table;
 mod process_void;
 mod control_flow_check;
+mod return_analysis;
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     Normalizer::default().normalize_ast(ast)
@@ -165,9 +167,10 @@ impl Normalizer {
             });
         }
 
-        self.ir = check_refs(self.ir, autorefs)?;
+        self.ir = check_references(self.ir, autorefs)?;
         self.ir = check_control_flow(self.ir)?;
         self.ir = process_void_variables(self.ir);
+        analyze_return_statements(&self.ir)?;
 
         Ok(self.ir)
     }
@@ -631,15 +634,14 @@ impl Normalizer {
                 }
                 ASTStatement::Return { return_value, pos: _ } => {
                     self.has_ret_statement = true;
-                    let st = if let Some(expr) = return_value {
+                    if let Some(expr) = return_value {
                         let (expr, type_label) = self.normalize_expression(expr)?;
                         self.type_resolver.hint_equal(self.curr_func_ret_type, type_label)?;
                         IRStatement::Return { return_value: Some(expr) }
                     } else {
                         self.type_resolver.hint_is(self.curr_func_ret_type, PrimitiveType::Void)?;
                         IRStatement::Return { return_value: None }
-                    };
-                    st
+                    }
                 }
                 ASTStatement::If { condition, block, else_block } => {
                     let (condition, type_label) = self.normalize_expression(condition)?;
@@ -813,6 +815,7 @@ impl Normalizer {
             ret_type: self.curr_func_ret_type,
             block: IRBlock { statements: Vec::new() },
             label: instance_label,
+            pos: sign.pos,
         });
 
         self.ir.instances[instance_label].block = self.normalize_block(block)?;

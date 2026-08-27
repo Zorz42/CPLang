@@ -144,6 +144,7 @@ pub struct IRInstance {
     pub block: IRBlock,
     pub ret_type: IRTypeLabel,
     pub label: IRInstanceLabel,
+    pub pos: FilePosition,
 }
 
 #[derive(Debug, Clone)]

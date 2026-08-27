@@ -1,0 +1,20 @@
+//ERR 12 3 12 6
+//MSG="This function does not return a value in all control paths"
+
+// `1 == 1` is always true, but it is an expression, not the literal `true`, and
+// the exemption in 29_while_true_returns_from_inside.cpl is syntactic: a
+// condition that merely happens to always hold is still assumed to fall
+// through. Constant-folding conditions to decide reachability would put the
+// compiler in the business of proving termination.
+//
+// So this has to be rejected, and written with a `ret` after the loop instead —
+// exactly as 28_a_loop_followed_by_a_return.cpl is.
+
+fn f n
+    while 1 == 1
+        if n > 0
+            ret 1
+        n++
+
+fn main
+    out "{f(-3)}"

@@ -1,8 +1,10 @@
 // this replaces all void instances with empty struct, since void variables do not compile in c
 
-use crate::compiler::normalizer::ir::{IR, IRExpression, IRStatement, IRStruct, IRStructLabel, IRType};
+use crate::compiler::normalizer::ir::{IR, IRExpression, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel};
 use crate::compiler::normalizer::ir_pass::IRPass;
 use crate::compiler::parser::ast::PrimitiveType;
+use cplang::compiler::normalizer::ir::IRInstance;
+use std::collections::HashMap;
 
 fn process_type(typ: IRType, void_struct: IRStructLabel) -> IRType {
     match typ {
@@ -17,9 +19,17 @@ fn process_type(typ: IRType, void_struct: IRStructLabel) -> IRType {
 // we still need the pass to modify all return statements of void function to return struct instead
 struct VoidPass {
     void_struct: IRStructLabel,
+    types: HashMap<IRTypeLabel, IRType>,
 }
 
 impl IRPass for VoidPass {
+    fn pre_map_instance(&mut self, mut instance: IRInstance) -> IRInstance {
+        if self.types[&instance.ret_type] == IRType::Struct(self.void_struct, Vec::new()) {
+            instance.block.statements.push(IRStatement::Return { return_value: None });
+        }
+        instance
+    }
+
     fn pre_map_statement(&mut self, statement: IRStatement) -> IRStatement {
         match statement {
             IRStatement::Return { return_value: None } =>
@@ -43,6 +53,6 @@ pub fn process_void_variables(mut ir: IR) -> IR {
         (key, process_type(val, void_struct))
     }).collect();
 
-    let mut pass = VoidPass { void_struct };
+    let mut pass = VoidPass { void_struct, types: ir.types.clone() };
     pass.pass_ir(ir)
 }

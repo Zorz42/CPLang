@@ -3,7 +3,7 @@
 // A `while` whose body returns, backed by a `ret` after the loop for the case
 // where it never runs or runs out. The return inside the loop cannot be what
 // satisfies the check — the trailing one is — and this is the correct way to
-// write 13_known_bugs/27_the_only_return_is_inside_a_while.cpl.
+// write 81e_the_only_return_is_inside_a_while.cpl.
 //
 // 04_control_flow/19_control_flow_inside_a_function.cpl is the `for` counterpart.
 

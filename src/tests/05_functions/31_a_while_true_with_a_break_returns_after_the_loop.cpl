@@ -5,7 +5,7 @@
 // loop is reachable and has to return. The trailing `ret -1` is what makes this
 // function legal, and it is the value f(1000) actually produces.
 //
-// 13_known_bugs/33_a_break_makes_a_while_true_fall_through.cpl is the same
+// 79e_a_break_makes_a_while_true_fall_through.cpl is the same
 // function with the trailing `ret` removed.
 
 fn f n

@@ -1,0 +1,22 @@
+//ERR 13 3 13 13
+//MSG="This function does not return a value in all control paths"
+
+// Every path is covered except one: the outer `else` returns and the inner `if`
+// returns, but taking the outer branch without the inner one runs off the end.
+// `classify(5)` is that path.
+//
+// The uncovered path is buried, so this is what stops a shallow implementation
+// that only looks at the last statement of the body, or that stops descending
+// once it has seen a `ret` at some level.
+//
+// 27_nested_if_else_returns_on_every_leaf.cpl is the accepted form.
+
+fn classify n
+    if n > 0
+        if n > 10
+            ret 2
+    else
+        ret 0
+
+fn main
+    out "{classify(5)}"

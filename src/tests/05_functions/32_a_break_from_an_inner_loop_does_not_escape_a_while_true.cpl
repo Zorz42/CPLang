@@ -5,7 +5,7 @@
 // that asks "does this `while true` contain a `brk` anywhere" would reject this
 // and force an unreachable return; the question is which loop the `brk` targets.
 //
-// 13_known_bugs/34_a_break_two_escapes_a_while_true.cpl is the level that does
+// 83e_a_levelled_break_escapes_a_while_true.cpl is the level that does
 // escape.
 
 fn first_over n

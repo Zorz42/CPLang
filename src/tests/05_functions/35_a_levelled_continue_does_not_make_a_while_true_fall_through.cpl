@@ -1,0 +1,25 @@
+//OUT="7"
+
+// 33_a_continue_does_not_make_a_while_true_fall_through.cpl with the `cnt` one
+// loop further in and carrying a level. The `2` reaches past the `for` and back
+// to the top of the `while true` — it restarts that loop rather than leaving it,
+// so the code after the loop is still unreachable and no `ret` is needed there.
+//
+// This is the mirror of 83e_a_levelled_break_escapes_a_while_true.cpl:
+// the same shape, the same level, and the opposite answer, because `brk 2` exits
+// the outer loop and `cnt 2` does not. A check that resolved levels but then
+// treated both keywords as exits would reject this and demand an unreachable
+// return.
+
+fn f n
+    i = 0
+    while true
+        i++
+        for j 0..3
+            if i % 2 == 0
+                cnt 2
+        if i * i > n
+            ret i
+
+fn main
+    out "{f(30)}"

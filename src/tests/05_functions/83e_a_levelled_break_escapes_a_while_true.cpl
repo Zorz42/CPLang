@@ -1,0 +1,29 @@
+//ERR 20 3 20 6
+//MSG="This function does not return a value in all control paths"
+
+// 79e_a_break_makes_a_while_true_fall_through.cpl with the `brk` one loop
+// further in. The level is what makes it escape: the `2` reaches past the `for`
+// and out of the `while true`, so `f(0)` leaves the loop and would run off the
+// end of the body. A bare `brk` here would leave only the `for` and the
+// `while true` would still never fall through — that is
+// 32_a_break_from_an_inner_loop_does_not_escape_a_while_true.cpl, which has to
+// keep compiling.
+//
+// So the check cannot scan a loop's body for the keyword; it has to resolve each
+// `brk` to the loop it actually targets, and this pair is what separates the two.
+//
+// The body ends in `ret 1`, which is the second thing this case pins down: a
+// loop whose body always returns still has to be scanned for breaks. Deciding
+// the loop is terminal because its body is terminal would skip the scan and let
+// this through, and 35_a_levelled_continue_does_not_make_a_while_true_fall_through.cpl
+// is the same shape with `cnt 2`, which must not be scanned as an exit.
+
+fn f n
+    while true
+        for i 0..10
+            if i > n
+                brk 2
+        ret 1
+
+fn main
+    out "{f(0)}"

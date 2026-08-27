@@ -78,7 +78,7 @@ impl IRPass for CheckRefsPass {
     }
 }
 
-pub fn check_refs(ir: IR, autorefs: Vec<i32>) -> CompilerResult<IR> {
+pub fn check_references(ir: IR, autorefs: Vec<i32>) -> CompilerResult<IR> {
     let mut passer = CheckRefsPass {
         autorefs,
         error: None,

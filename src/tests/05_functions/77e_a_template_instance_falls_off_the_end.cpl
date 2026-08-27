@@ -1,0 +1,17 @@
+//ERR 11 3 11 20
+//MSG="This function does not return a value in all control paths"
+
+// The check runs over instances, after types are known, so a template is
+// checked once per instantiation. The body here is missing a return whatever
+// `T` turns out to be, and the i32 instance is rejected.
+//
+// The span covers the declaration's signature, `pick[T] x: T flag`, not the
+// `pick[i32](5 false)` that caused the instance to exist — the fix belongs in
+// the body, so that is where the error points.
+
+fn pick[T] x: T flag
+    if flag
+        ret x
+
+fn main
+    out "{pick[i32](5 false)}"

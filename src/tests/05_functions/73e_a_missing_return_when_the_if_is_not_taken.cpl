@@ -1,0 +1,22 @@
+//ERR 16 3 16 6
+//MSG="This function does not return a value in all control paths"
+
+// `f` returns i32 — deduced from `ret 1` — but only when the `if` is taken.
+// Called with -5 it would run off the end of the body, and codegen would emit a
+// C function with no `return` on that path, leaving the caller to read whatever
+// happened to be in the return register.
+//
+// This is the base case of the returns-on-all-paths check: an `if` with no
+// `else`. 26_if_else_returns_on_both_branches.cpl is the accepted form.
+//
+// The span is the signature — the name through the last argument — rather than
+// the point where control leaves the body, because there is no such point to
+// name: the defect is the absence of a statement, so the diagnostic points at
+// the function that is missing it. Every case in 73e-80e is reported this way.
+
+fn f n
+    if n > 0
+        ret 1
+
+fn main
+    out "{f(-5)}"

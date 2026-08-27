@@ -1,0 +1,18 @@
+//ERR 11 7 11 12
+//MSG="This function does not return a value in all control paths"
+
+// Methods are declared inside a struct and carry a `self` — see
+// 08_structs/12_method_declaration.cpl — but they reach the check as ordinary
+// instances, so the same rule applies and the span lands on the method's own
+// signature rather than on the struct.
+
+struct Box
+    v: i32
+
+    fn get n
+        if n > 0
+            ret self.v
+
+fn main
+    b = Box v 7
+    out "{b.get(-1)}"

@@ -1,0 +1,18 @@
+//ERR 11 3 11 9
+//MSG="This function does not return a value in all control paths"
+
+// Falling off the end is not only an i32 problem, and it gets worse as the
+// return type grows: without the check the caller would read a whole `P` that
+// was never built and then read a field out of it. Nothing about the rule is
+// tied to the return type being a primitive.
+
+struct P
+    x: i32
+
+fn make n
+    if n > 0
+        ret P x n
+
+fn main
+    p = make(-1)
+    out "{p.x}"

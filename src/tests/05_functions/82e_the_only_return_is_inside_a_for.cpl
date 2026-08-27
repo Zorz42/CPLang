@@ -1,0 +1,20 @@
+//ERR 14 3 14 6
+//MSG="This function does not return a value in all control paths"
+
+// The `for` counterpart of 81e_the_only_return_is_inside_a_while.cpl. `0..0` is
+// an empty range — see 04_control_flow/11_for_over_an_empty_range.cpl — so the
+// body never runs.
+//
+// A `for` reaches the check already lowered to `while $iter.has_next()`, so at
+// the IR level this is not a second case at all. It is worth writing anyway: at
+// the source level a reader has to be told that no `for` counts as returning
+// whatever its bounds look like, and `has_next()` is the condition someone would
+// be tempted to reason about if the exemption were ever widened past the literal
+// `true`. The check stays structural instead.
+
+fn f n
+    for i 0..n
+        ret i
+
+fn main
+    out "{f(0)}"

@@ -1,11 +1,11 @@
-//BUG="a non-void function may fall off the end through the branch that does not return"
-//ERR any
+//ERR 9 3 9 6
+//MSG="This function does not return a value in all control paths"
 
 // An `if/else` where only one side returns. The else branch does something and
 // then runs into the end of the body, so the check cannot stop at "the function
 // contains a `ret`" — it has to be per-path.
 //
-// 05_functions/26_if_else_returns_on_both_branches.cpl is the accepted form.
+// 26_if_else_returns_on_both_branches.cpl is the accepted form.
 
 fn f n
     if n > 0

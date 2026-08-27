@@ -281,10 +281,10 @@ fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String, code
                 let loop_label = ctx.curr_loop_label;
                 ctx.curr_loop_label += 1;
                 ctx.loop_stack.push(loop_label);
-                let mut code = format!("while({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new(), format!("loop_cnt{}:", loop_label)));
+                let mut code = format!("while({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new(), format!("loop_cnt{loop_label}:")));
                 ctx.loop_stack.pop();
                 if ctx.touched_loop_labels.contains(&loop_label) {
-                    code += &format!("loop_brk{}:\n", loop_label);
+                    code += &format!("loop_brk{loop_label}:\n");
                 }
                 code
             }
@@ -306,7 +306,7 @@ fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String, code
                     }
                     _ => unreachable!(),
                 };
-                format!("goto {}{};", label, loop_label)
+                format!("goto {label}{loop_label};")
             }
         };
         code += &s_code;

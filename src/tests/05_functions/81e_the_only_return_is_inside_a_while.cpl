@@ -1,0 +1,19 @@
+//ERR 13 3 13 6
+//MSG="This function does not return a value in all control paths"
+
+// The only `ret` is inside a `while`, and the condition is false on entry here,
+// so the loop body never runs and the function would fall off the end. A loop is
+// not a guarantee: unless its condition is the literal `true`, the code after it
+// is reachable and the function still needs a return there.
+//
+// This is the case that says the check may not ask whether the loop's *body*
+// returns — only whether the loop can be left. 28_a_loop_followed_by_a_return.cpl
+// is the accepted form, with a `ret` after the loop for the run that never enters
+// it, and 29_while_true_returns_from_inside.cpl is the one loop that does count.
+
+fn f n
+    while n > 0
+        ret 1
+
+fn main
+    out "{f(0)}"

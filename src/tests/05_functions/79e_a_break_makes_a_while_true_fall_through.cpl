@@ -1,0 +1,27 @@
+//ERR 16 3 16 6
+//MSG="This function does not return a value in all control paths"
+
+// The loop exemption has a limit. A `while true` is the one loop the check may
+// treat as never falling through — see 29_while_true_returns_from_inside.cpl —
+// but that only holds while nothing can leave it. The `brk` here is a second
+// exit, so the end of the body is reachable after all and `f(1000)` would run
+// off it.
+//
+// The exemption is therefore not "the condition is the literal `true`" but "the
+// condition is the literal `true` and no `brk` targets this loop".
+// 31_a_while_true_with_a_break_returns_after_the_loop.cpl is the accepted form —
+// the same function with a `ret -1` at the end — and
+// 32_a_break_from_an_inner_loop_does_not_escape_a_while_true.cpl is the `brk`
+// that belongs to some other loop and so does not count.
+
+fn f n
+    i = 0
+    while true
+        if i > 10
+            brk
+        if i * i > n
+            ret i
+        i++
+
+fn main
+    out "{f(1000)}"
