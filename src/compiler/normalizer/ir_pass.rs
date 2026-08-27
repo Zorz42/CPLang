@@ -71,6 +71,7 @@ pub trait IRPass {
                     IRStatement::Return { return_value } => IRStatement::Return {
                         return_value: return_value.map(|expr| self.pass_expression(expr)),
                     },
+                    IRStatement::Break { .. } | IRStatement::Continue { .. } => statement,
                 };
                 self.post_map_statement(statement)
             })

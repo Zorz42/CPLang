@@ -1,0 +1,21 @@
+//OUT="0 done"
+
+// A negative level cannot be written at all. The tokenizer emits `-` as its own
+// symbol and never folds it into the literal that follows, so `brk -1` is not
+// `brk` carrying a level of -1 — the level slot sees no integer, and the line
+// parses as a bare `brk` followed by `-1` as an expression statement
+// (03_operators/27_an_expression_statement_is_allowed.cpl), which the `brk` has
+// already jumped past. The loop leaves after one pass, exactly as
+// 29_break_one_is_the_default_level.cpl does. `cnt -1` splits the same way.
+//
+// So zero is the only invalid level the parser can ever see, and 63e/64e are
+// the whole of that story — there is no negative-level diagnostic to test.
+//
+// 65-67 are numbered after the error block: they belong beside the level cases
+// at 29-33, but renumbering 50e-64e to make room is not worth the churn.
+
+fn main
+    for i 0..3
+        out "{i} "
+        brk -1
+    out "done"

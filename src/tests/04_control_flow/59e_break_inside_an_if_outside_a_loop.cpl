@@ -1,4 +1,5 @@
-//ERR 8 8 8 11
+//ERR 9 8 9 11
+//MSG="Maximum possible depth for this break statement is 0."
 
 // An `if` is a block but not a loop, so nesting the `brk` inside one does not
 // give it a target. A check that looks for "am I inside a block" rather than

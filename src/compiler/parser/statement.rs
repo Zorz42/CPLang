@@ -135,3 +135,51 @@ pub fn parse_for_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
         pos,
     }))
 }
+
+pub fn parse_break_statement(_: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<ASTStatement>> {
+    if block.peek().0 != Token::Break {
+        return Ok(None);
+    }
+
+    let (_, mut pos) = block.get();
+
+    let depth = if let (Token::ConstInteger32(depth), pos2) = block.peek().clone() {
+        block.get();
+        pos += pos2;
+        if depth <= 0 {
+            return Err(CompilerError {
+                message: "Break depth has to be positive".to_owned(),
+                position: Some(pos2),
+            });
+        }
+        depth
+    } else {
+        1
+    };
+
+    Ok(Some(ASTStatement::Break { depth, pos }))
+}
+
+pub fn parse_continue_statement(_: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<ASTStatement>> {
+    if block.peek().0 != Token::Continue {
+        return Ok(None);
+    }
+
+    let (_, mut pos) = block.get();
+
+    let depth = if let (Token::ConstInteger32(depth), pos2) = block.peek().clone() {
+        block.get();
+        pos += pos2;
+        if depth <= 0 {
+            return Err(CompilerError {
+                message: "Continue depth has to be positive".to_owned(),
+                position: Some(pos2),
+            });
+        }
+        depth
+    } else {
+        1
+    };
+
+    Ok(Some(ASTStatement::Continue { depth, pos }))
+}

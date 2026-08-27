@@ -11,9 +11,6 @@
 // So the check cannot just scan the loop's body for the keyword; it has to
 // resolve each `brk` to the loop it actually targets. This is the case that
 // separates the two.
-//
-// Same caveat as 33: until `brk` compiles, this passes because the parser
-// rejects the keyword, not because the missing return was caught.
 
 fn f n
     while true

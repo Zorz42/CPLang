@@ -1,4 +1,5 @@
-//ERR 8 4 8 7
+//ERR 9 4 9 7
+//MSG="Maximum possible depth for this break statement is 0."
 
 // `helper` is called from inside a loop, but the loop is in the caller. A
 // `brk` binds to a loop lexically enclosing it in the same body, and there is

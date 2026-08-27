@@ -1,0 +1,18 @@
+//OUT="01 11 21 |"
+
+// Every other levelled case nests one `for` in another, or uses `while true`.
+// This one mixes them, which is where the two lowerings differ: a `for` becomes
+// `while has_next() { i = next(); body }`, so its advance sits at the *top* of
+// the body. `cnt 2` jumps to the end of that body, which lands before the
+// condition is re-tested and therefore before the next `next()` — the outer
+// loop advances exactly once, and `x` is never reached.
+
+fn main
+    for i 0..3
+        k = 0
+        while k < 3
+            k++
+            out "{i}{k} "
+            cnt 2
+        out "x"
+    out "|"

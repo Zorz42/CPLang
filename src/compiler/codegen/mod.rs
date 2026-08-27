@@ -3,10 +3,12 @@ use crate::compiler::normalizer::ir::{
     IRTypeLabel, IRVariableLabel,
 };
 use crate::compiler::parser::ast::PrimitiveType;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 /*
 Codegen converts IR into raw C code. Could be easily replaced with any other language.
  */
+
+type LoopLabel = usize;
 
 #[allow(clippy::type_complexity)]
 struct CodegenContext {
@@ -16,6 +18,9 @@ struct CodegenContext {
     c_structs: HashMap<(IRStructLabel, Vec<IRType>), usize>,
     curr_struct_label: usize,
     struct_declarations: String,
+    loop_stack: Vec<LoopLabel>,
+    touched_loop_labels: HashSet<LoopLabel>,
+    curr_loop_label: LoopLabel,
 }
 
 const OUTPUT_TEMPLATE: &str = r"
@@ -60,6 +65,9 @@ pub fn generate_code(ir: IR) -> String {
         c_structs: HashMap::new(),
         curr_struct_label: 0,
         struct_declarations: String::new(),
+        loop_stack: Vec::new(),
+        touched_loop_labels: HashSet::new(),
+        curr_loop_label: 0,
     };
 
     let mut global_variables = String::new();
@@ -254,23 +262,31 @@ fn gen_expression(ctx: &mut CodegenContext, expression: IRExpression) -> String 
     }
 }
 
-fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String) -> String {
+fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String, code_suffix: String) -> String {
     let mut code = String::new();
     code += "{\n";
     code += &code_prefix;
 
     for statement in block.statements {
         let s_code = match statement {
-            IRStatement::Block { block } => gen_block(ctx, block, String::new()),
+            IRStatement::Block { block } => gen_block(ctx, block, String::new(), String::new()),
             IRStatement::If { condition, block, else_block } => {
-                let mut code = format!("if({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new()));
+                let mut code = format!("if({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new(), String::new()));
                 if let Some(else_block) = else_block {
-                    code += &format!("else {}", gen_block(ctx, else_block, String::new()));
+                    code += &format!("else {}", gen_block(ctx, else_block, String::new(), String::new()));
                 }
                 code
             }
             IRStatement::While { condition, block } => {
-                format!("while({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new()))
+                let loop_label = ctx.curr_loop_label;
+                ctx.curr_loop_label += 1;
+                ctx.loop_stack.push(loop_label);
+                let mut code = format!("while({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new(), format!("loop_cnt{}:", loop_label)));
+                ctx.loop_stack.pop();
+                if ctx.touched_loop_labels.contains(&loop_label) {
+                    code += &format!("loop_brk{}:\n", loop_label);
+                }
+                code
             }
             IRStatement::Expression { expr } => format!("{};", gen_expression(ctx, expr)),
             IRStatement::Return { return_value } => return_value.map_or_else(
@@ -280,10 +296,24 @@ fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String) -> S
             IRStatement::Assignment { assign_to, value, pos: _ } => {
                 format!("{} = {};", gen_expression(ctx, assign_to), gen_expression(ctx, value))
             }
+            statement @ (IRStatement::Continue { depth, pos: _ } | IRStatement::Break { depth, pos: _ }) => {
+                let loop_label = ctx.loop_stack[ctx.loop_stack.len() - depth as usize];
+                let label = match statement {
+                    IRStatement::Continue { .. } => "loop_cnt",
+                    IRStatement::Break { .. } => {
+                        ctx.touched_loop_labels.insert(loop_label);
+                        "loop_brk"
+                    }
+                    _ => unreachable!(),
+                };
+                format!("goto {}{};", label, loop_label)
+            }
         };
         code += &s_code;
         code += "\n";
     }
+    code += &code_suffix;
+    code += "\n";
     while code.ends_with('\n') {
         code.pop();
     }
@@ -321,6 +351,6 @@ fn gen_function(ctx: &mut CodegenContext, func: IRInstance) -> String {
     if !vars_code.is_empty() {
         vars_code += "\n";
     }
-    code += &gen_block(ctx, func.block, vars_code);
+    code += &gen_block(ctx, func.block, vars_code, String::new());
     code
 }

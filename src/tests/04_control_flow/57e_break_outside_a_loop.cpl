@@ -1,16 +1,14 @@
-//ERR 15 4 15 7
+//ERR 13 4 13 7
+//MSG="Maximum possible depth for this break statement is 0."
 
-// There is no loop to leave, so the `brk` cannot mean anything.
+// There is no loop to leave, so the `brk` cannot mean anything. The message
+// names the deepest level that would have been legal here — zero — rather than
+// saying "not in a loop", so this and a level that merely overshoots read the
+// same way; 61e_break_level_deeper_than_the_loops.cpl is the same diagnostic
+// with a 1 in it.
 //
-// No //MSG on 57e-64e: the diagnostics do not exist yet, so their wording
-// cannot be quoted. Add one to each with the fix. The spans assume the error is
-// reported on the keyword itself, which is the only token the statement has to
-// point at; if the check reports somewhere else, these four numbers move.
-//
-// CAVEAT while `brk` and `cnt` are unimplemented: 57e-64e all pass today for
-// the wrong reason — the normalizer rejects the keyword as an unknown variable,
-// at exactly the span asserted here. They only start testing what they are for
-// once the keywords tokenize.
+// The span is the keyword alone: with no level written there is no other token
+// for the statement to cover.
 
 fn main
     brk

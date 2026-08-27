@@ -123,6 +123,14 @@ pub enum IRStatement {
     Return {
         return_value: Option<IRExpression>,
     },
+    Break {
+        depth: i32,
+        pos: FilePosition,
+    },
+    Continue {
+        depth: i32,
+        pos: FilePosition,
+    },
     Assignment {
         assign_to: IRExpression,
         value: IRExpression,

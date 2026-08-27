@@ -1,7 +1,8 @@
-//ERR 6 4 6 7
+//ERR 7 4 7 7
+//MSG="Maximum possible depth for this continue statement is 0."
 
 // The `cnt` half of 57e_break_outside_a_loop.cpl. Neither keyword is a
-// statement that stands on its own.
+// statement that stands on its own, and each names itself in the message.
 
 fn main
     cnt

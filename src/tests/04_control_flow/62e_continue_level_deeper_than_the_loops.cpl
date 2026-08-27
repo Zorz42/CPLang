@@ -1,8 +1,10 @@
-//ERR 9 12 9 15
+//ERR 11 12 11 17
+//MSG="Maximum possible depth for this continue statement is 1."
 
-// The `cnt` half of 61e_break_level_deeper_than_the_loops.cpl. Two loops are
-// written, but the second is an `if`, so the `cnt 2` still has only one loop
-// above it.
+// The `cnt` half of 61e_break_level_deeper_than_the_loops.cpl. Two blocks are
+// written, but the inner one is an `if`, so the `cnt 2` still has only one loop
+// above it — levels count loops, not blocks, as 33_break_two_counts_loops_not_blocks.cpl
+// shows from the passing side.
 
 fn main
     for i 0..3

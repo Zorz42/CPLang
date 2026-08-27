@@ -1,0 +1,17 @@
+//OUT="i=1"
+
+// 66's mirror: the inner loop is the `for` and the outer one is a plain
+// `while`. `brk 2` has to leave both. If it left only the `for`, `x` would
+// print and the `while` would run to i == 5, so the absence of any `x` is what
+// makes this case say something 28_break_leaves_only_the_innermost_loop.cpl
+// does not.
+
+fn main
+    i = 0
+    while i < 5
+        i++
+        for j 0..3
+            if j == 1
+                brk 2
+        out "x"
+    out "i={i}"

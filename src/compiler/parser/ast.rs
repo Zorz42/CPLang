@@ -66,6 +66,14 @@ pub enum ASTStatement {
         block: ASTBlock,
         pos: FilePosition,
     },
+    Break {
+        depth: i32,
+        pos: FilePosition,
+    },
+    Continue {
+        depth: i32,
+        pos: FilePosition,
+    },
 }
 
 #[derive(Clone)]

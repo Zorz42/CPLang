@@ -576,6 +576,8 @@ impl Lowerer {
                 expression: self.lower_expression(expression),
             },
             ASTStatement::For { iterator, element, block, pos } => self.gen_for_statement(iterator, element, block, pos),
+
+            ASTStatement::Continue { .. } | ASTStatement::Break { .. } => statement,
         }
     }
 

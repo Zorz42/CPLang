@@ -1,9 +1,10 @@
 use crate::compiler::error::{CompilerError, CompilerResult, FilePosition};
-use crate::compiler::normalizer::check_refs::check_refs;
+use crate::compiler::normalizer::control_flow_check::check_control_flow;
 use crate::compiler::normalizer::ir::{
     IR, IRBlock, IRConstant, IRExpression, IRInstance, IRInstanceLabel, IRStatement, IRStruct, IRStructLabel, IRType, IRTypeLabel, IRVariableLabel,
 };
 use crate::compiler::normalizer::process_void::process_void_variables;
+use crate::compiler::normalizer::ref_check::check_refs;
 use crate::compiler::normalizer::symbol_table::SymbolTable;
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionSignature, ASTStatement, ASTStructDeclaration, ASTType, Ast, PrimitiveType,
@@ -14,13 +15,14 @@ use std::collections::{HashMap, HashSet};
 use std::mem::swap;
 
 pub mod builtin_functions;
-mod check_refs;
+mod ref_check;
 mod function_cmp;
 pub mod ir;
 mod ir_debug;
 mod ir_pass;
 mod symbol_table;
 mod process_void;
+mod control_flow_check;
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     Normalizer::default().normalize_ast(ast)
@@ -164,6 +166,7 @@ impl Normalizer {
         }
 
         self.ir = check_refs(self.ir, autorefs)?;
+        self.ir = check_control_flow(self.ir)?;
         self.ir = process_void_variables(self.ir);
 
         Ok(self.ir)
@@ -588,7 +591,7 @@ impl Normalizer {
         self.symbol_table.push_scope();
 
         for statement in block.children {
-            match statement {
+            let statement = match statement {
                 ASTStatement::Assignment { assign_to, value, pos } => {
                     // check if lhs is a variable that should be implicitly created
                     fn get_lhs_variable(expr: &ASTExpression) -> Option<String> {
@@ -614,17 +617,17 @@ impl Normalizer {
                     let (value, type_label2) = self.normalize_expression(value)?;
                     self.type_resolver.hint_equal(type_label1, type_label2)?;
 
-                    res.statements.push(IRStatement::Assignment { assign_to, value, pos });
+                    IRStatement::Assignment { assign_to, value, pos }
                 }
 
                 ASTStatement::Block { block } => {
                     let block = self.normalize_block(block)?;
-                    res.statements.push(IRStatement::Block { block });
+                    IRStatement::Block { block }
                 }
                 ASTStatement::Expression { expression } => {
-                    res.statements.push(IRStatement::Expression {
+                    IRStatement::Expression {
                         expr: self.normalize_expression(expression)?.0,
-                    });
+                    }
                 }
                 ASTStatement::Return { return_value, pos: _ } => {
                     self.has_ret_statement = true;
@@ -636,7 +639,7 @@ impl Normalizer {
                         self.type_resolver.hint_is(self.curr_func_ret_type, PrimitiveType::Void)?;
                         IRStatement::Return { return_value: None }
                     };
-                    res.statements.push(st);
+                    st
                 }
                 ASTStatement::If { condition, block, else_block } => {
                     let (condition, type_label) = self.normalize_expression(condition)?;
@@ -647,19 +650,23 @@ impl Normalizer {
                     } else {
                         None
                     };
-                    res.statements.push(IRStatement::If { condition, block, else_block });
+                    IRStatement::If { condition, block, else_block }
                 }
                 ASTStatement::While { condition, block } => {
                     let (condition, type_label) = self.normalize_expression(condition)?;
                     self.type_resolver.hint_is(type_label, PrimitiveType::Bool)?;
                     let block = self.normalize_block(block)?;
-                    res.statements.push(IRStatement::While { condition, block });
+                    IRStatement::While { condition, block }
                 }
+
+                ASTStatement::Continue { depth, pos } => IRStatement::Continue { depth, pos },
+                ASTStatement::Break { depth, pos } => IRStatement::Break { depth, pos },
 
                 ASTStatement::SemiBlock { .. } => unreachable!("ASTStatement::SemiBlock should be eliminated by lowerer"),
                 ASTStatement::For { .. } => unreachable!("ASTStatement::For should be eliminated by lowerer"),
                 ASTStatement::Print { .. } => unreachable!("ASTStatement::Print should be eliminated by lowerer"),
-            }
+            };
+            res.statements.push(statement);
         }
 
         self.symbol_table.pop_scope();

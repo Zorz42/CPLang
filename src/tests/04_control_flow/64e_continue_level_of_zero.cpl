@@ -1,0 +1,10 @@
+//ERR 9 12 9 13
+//MSG="Continue depth has to be positive"
+
+// The `cnt` half of 63e_break_level_of_zero.cpl. The two keywords are parsed by
+// separate functions, so each rejects its own zero and each names itself in the
+// message; testing only one would leave the other's arm uncovered.
+
+fn main
+    for i 0..3
+        cnt 0
