@@ -1,0 +1,21 @@
+//BUG="a float literal whose integer part exceeds i32 is lexed as a field access"
+//OUT="2147483648"
+
+// Not in FEEDBACK.md. `tokenize_fragments` (src/compiler/tokenizer.rs) decides
+// whether a `.` is a decimal point with
+//
+//     if c == '.' && curr_token.parse::<i32>().is_ok() && !is_next_dot
+//
+// The `parse::<i32>()` is there to tell `1.5` from `a.b`, but it also caps
+// how large the integer part of a float literal may be. `2147483647.5` is a
+// float; `2147483648.5` is not — the `.` becomes a `Dot` token and the
+// literal is parsed as a field access, so the program fails with
+// "Unknown field 5".
+//
+// The value is representable: `x = 2147483647.5` then `x + 1.0` gives it. Only
+// writing it down fails. The check should accept any run of digits, not just
+// one that fits in i32.
+
+fn main
+    x = 2147483648.5
+    out "{i64 x}"

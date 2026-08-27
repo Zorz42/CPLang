@@ -1,0 +1,31 @@
+//BUG="an AutoRef nested directly inside another AutoRef is never resolved"
+//OUT="7"
+
+// Not in FEEDBACK.md, and not the same as 13-15: `grid[0][0]` parses fine, it
+// aborts the compiler in codegen with
+//
+//     unreachable!("IRExpression::AutoRef should not be emitted by normalizer")
+//
+// The lowerer turns `x[i]` into `AutoRef(operator[](AutoRef(x) i))`, so a
+// second index produces an AutoRef whose child is another AutoRef.
+// `IRPass::pass_expression` (src/compiler/normalizer/ir_pass.rs) calls
+// `pre_map_expression` once, at the top, and then dispatches on whatever came
+// back. `CheckRefsPass::pre_map_expression` replaces an AutoRef of depth 0
+// with its child unchanged — so the child, itself an AutoRef, is handed
+// straight to the `IRExpression::AutoRef` match arm, which recurses into *its*
+// child but never runs `pre_map_expression` on the node itself. The inner
+// AutoRef survives the pass and reaches codegen.
+//
+// Depth 0 is what a vector of vectors produces: `Vec.operator[]` returns `&T`
+// and the outer `operator[]` wants `&Vec`, so no reference has to be added.
+// `grid[0].x` is fine because a field access forces a dereference (depth -1).
+//
+// The fix is for `pass_expression` to re-enter when `pre_map_expression`
+// returns a different node kind, or for the pass to resolve the child first.
+
+fn main
+    grid = Vec[Vec[i32]]()
+    row = Vec[i32]()
+    row.push(7)
+    grid.push(row)
+    out "{grid[0][0]}"

@@ -1,0 +1,28 @@
+//BUG="a tuple index followed by .name is lexed as one identifier"
+//OUT="7"
+
+// Not in FEEDBACK.md. `tokenize_fragments` (src/compiler/tokenizer.rs) treats a
+// `.` as a decimal point whenever the token built so far parses as an i32:
+//
+//     if c == '.' && curr_token.parse::<i32>().is_ok() && !is_next_dot
+//
+// After `t.1` the current token is "1", so the `.` of `.v` is appended instead
+// of becoming a `Dot`, and the whole thing comes out as one identifier "1.v".
+// The error the user sees is "Unknown field 1.v", naming a field they never
+// wrote. `t.1.get()` fails the same way with "Function Method:1.get does not
+// exist", and `t.0.1` — an index into a nested tuple — is swallowed as the
+// float `0.1`.
+//
+// The guard is there to tell `1.5` from `a.b`, and `is_next_dot` already
+// handles the `0..10` range case. It needs the same treatment for a following
+// identifier: a `.` is only a decimal point when a digit follows it.
+//
+// `(t.1).v` compiles and prints 7, and `t.1[0]` works because `[` cannot be
+// swallowed into a token — so nothing but the lexer is in the way.
+
+struct S
+    v: i32
+
+fn main
+    t = 1, (S v 7)
+    out "{t.1.v}"

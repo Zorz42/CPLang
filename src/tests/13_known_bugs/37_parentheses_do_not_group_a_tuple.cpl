@@ -1,0 +1,30 @@
+//BUG="parentheses do not group a tuple, so a nested tuple type has no values"
+//OUT="ok"
+
+// Not in FEEDBACK.md. Parentheses leave no node in the AST — `parse_value`
+// returns whatever `parse_expression` built inside them — so by the time the
+// lowerer sees `1, (2, 3)` it has `Comma(1, Comma(2, 3))` and cannot tell it
+// from `1, 2, 3`. `flatten_commas` (src/compiler/lowerer/mod.rs) then recurses
+// into *both* sides:
+//
+//     Comma { e1, e2 } => [flatten_commas(e1), flatten_commas(e2)].concat()
+//
+// so every way of writing three comma-separated values collapses to one flat
+// 3-tuple. `(1, (2, 3)).1` is 2, not a pair.
+//
+// The type grammar disagrees. `parse_type` recurses through a parenthesis
+// block, so `i32, (i32, i32)` is a genuinely nested `Tuple[i32, Tuple[i32,
+// i32]]`, distinct from `i32, i32, i32`. It is accepted everywhere a type is:
+// as a parameter hint, as a struct field type, as a template argument. It
+// simply has no values — no expression can produce one — and this case fails
+// with "cannot be S<i32, S<i32, i32>> and S<i32, i32, i32> at the same time".
+//
+// Either the lowerer should stop flattening a parenthesised operand (so
+// `1, (2, 3)` is a pair whose second element is a pair), or `parse_type`
+// should flatten to match. Note that fixing the lowerer also needs
+// 36_a_field_of_a_struct_held_in_a_tuple.cpl fixed before a nested element can
+// actually be read as `t.1.0`.
+
+fn main
+    t: i32, (i32, i32) = 1, (2, 3)
+    out "ok"

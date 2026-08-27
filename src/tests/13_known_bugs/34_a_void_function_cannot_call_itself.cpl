@@ -1,0 +1,53 @@
+//BUG="a recursive call before the function's first ret cannot be normalized"
+//OUT="3 2 1 done"
+
+// Not in FEEDBACK.md. `normalize_function` only reuses an instance when
+// `check_instance_cache` finds one, and `flush_instance_cache` refuses to cache
+// an instance whose return type is not known yet. A function's return type is
+// pinned by its `ret` statements as the body is normalized, and — for a
+// function with no `ret` at all — not until the very last line of
+// `normalize_function`:
+//
+//     if !self.has_ret_statement {
+//         self.type_resolver.hint_is(self.curr_func_ret_type, PrimitiveType::Void)?;
+//     }
+//
+// So a recursive call that the normalizer reaches *before* the first `ret`
+// always misses the cache and normalizes the function again, until the depth
+// hits RECURSION_LIMIT and the compile fails with "This function is in the
+// 100-th recursive call in the normalization phase".
+//
+// A function that returns nothing has no `ret` to put first, so the plain
+// shape below cannot be compiled at all. Explicit argument types do not help;
+// neither does a trailing bare `ret`, because the recursive call is still
+// above it. The workaround is to give the function a base case that returns
+// early —
+//
+//     fn countdown n: i32
+//         if n <= 0
+//             ret
+//         out "{n} "
+//         countdown(n - 1)
+//
+// — which is why every recursion case in 05_functions passes: each one puts
+// its base-case `ret` above the recursive call. `fn f n { if n > 0 { x =
+// f(n - 1) } ret 0 }` fails the same way with a perfectly ordinary i32 return
+// type, so this is about statement order, not about void.
+//
+// 05_functions/55e is the case the limit exists for: `fn func { ret func() }`
+// really has no deducible return type. Here there is nothing to deduce —
+// `countdown` is monomorphic and returns void — and the diagnostic tells the
+// user to make a return type explicit that the language gives them no way to
+// write.
+//
+// 05_functions/30 establishes that a void function need not return at all, so
+// this shape is otherwise legal.
+
+fn countdown n: i32
+    if n > 0
+        out "{n} "
+        countdown(n - 1)
+
+fn main
+    countdown(3)
+    out "done"

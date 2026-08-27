@@ -1,0 +1,36 @@
+//ERR any
+//BUG="a field access is not checked against the struct it is applied to"
+
+// Not in FEEDBACK.md, and worse than 08_structs/58e. That case reads a field
+// name no struct declares, and `SymbolTable::get_field` returns None, so it is
+// caught with "Unknown field xa". A name that some *other* struct declares is
+// found, because `fields_name_map` is one global name-to-label map with no
+// notion of which struct a label belongs to, and `hint_is_field` never checks
+// that the struct actually has it — `set_field` just adds the label to the
+// type's `child_fields`.
+//
+// So `b.w` below type-checks, and the compiler exits 0 having written C that
+// gcc rejects:
+//
+//     m.c:92:15: error: no member named 'F0' in 'struct S4'
+//        92 |   var1 = var0.F0;
+//
+// The user is handed a gcc error naming generated identifiers, for a mistake
+// the compiler had every piece of information to catch. Writing the field
+// (`b.w = 5`) fails the same way, and so does an `if b.w`.
+//
+// 40_a_field_of_another_struct_on_a_template.cpl is the same defect when the
+// struct is a template, where it crashes the type resolver instead of reaching
+// gcc. The fix — checking `self.structs[struct_label].contains(&field_label)`
+// in `hint_is_field`, the way `hint_struct` already asserts it — closes both.
+
+struct A
+    w: i32
+
+struct B
+    v: i32
+
+fn main
+    b = B v 1
+    x: i32 = b.w
+    out "{x}"

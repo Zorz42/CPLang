@@ -1,0 +1,28 @@
+//ERR any
+//BUG="two fields with the same name abort the compiler instead of being rejected"
+
+// Not in FEEDBACK.md. Nothing checks that a struct's field names are distinct.
+// `SymbolTable::create_field` interns names, so both fields get the same
+// `IRFieldLabel` and `IRStruct.fields` ends up holding it twice, while
+// `TypeResolver::structs` stores the field labels in a `HashSet` and holds it
+// once. The first attempt to give the struct a type then trips
+//
+//     assert_eq!(field_type_labels.len(), self.structs[struct_label].len());
+//
+// in `hint_struct` (src/compiler/type_resolver/mod.rs) — left 2, right 1.
+//
+// Declaring the struct alone is fine because nothing normalizes an unused
+// struct's type; a single mention of `S` as a parameter type is enough, even
+// if the function is never called. The struct is also unusable by design:
+// `S x 1 x 2` is already rejected with "Field x assigned twice", so the
+// declaration should be rejected the same way rather than crashing later.
+
+struct S
+    x: i32
+    x: i32
+
+fn f s: S
+    ret s.x
+
+fn main
+    out "ok"

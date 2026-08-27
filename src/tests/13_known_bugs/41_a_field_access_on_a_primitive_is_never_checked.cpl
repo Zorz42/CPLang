@@ -1,0 +1,35 @@
+//ERR any
+//BUG="nothing checks that the base of a field access is a struct"
+
+// Not in FEEDBACK.md, and the gap left by 08_structs/59e. That case reaches an
+// error, but only by accident: it prints the field access, so `print`'s
+// overload set has to be resolved and the mistake surfaces as "Multiple
+// candidates found for this function call". No check on the field access
+// itself ever runs.
+//
+// `hint_is_field` (src/compiler/type_resolver/mod.rs) only records "this type
+// has a child field F". It never asks whether the type is a struct, and a
+// primitive that has picked up a child field is never flagged. So every shape
+// that does not happen to confuse an overload set is accepted:
+//
+//     b.v = 5          -- writing a field of an integer
+//     s: S = b.v       -- both sides fully typed
+//     take(b.v)        -- passed to a function that wants an S
+//     b.v              -- discarded
+//
+// all compile, and the compiler exits 0 having written C that gcc rejects with
+// "member reference base type 'int' is not a structure or union". On a char it
+// is stranger still: `c.v` comes out as `97.F0`, and gcc says "invalid suffix
+// 'F0' on floating constant". The user is shown an error about generated names
+// for a mistake in their own source.
+//
+// Found by fuzzing for programs the compiler accepts but gcc rejects, which
+// also turned up 39 — a different hole in the same check.
+
+struct S
+    v: i32
+
+fn main
+    b = 2
+    b.v = 5
+    out "ok"

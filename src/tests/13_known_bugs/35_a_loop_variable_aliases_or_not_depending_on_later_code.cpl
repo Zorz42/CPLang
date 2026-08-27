@@ -1,0 +1,49 @@
+//BUG="whether a for variable aliases the container depends on unrelated statements"
+//OUT="9 8"
+
+// Not in FEEDBACK.md. `for it items` lowers to `it = $iter.next()`, and
+// `_VecIter.next` returns `self.vec[self.i - 1]` — a reference into the
+// vector. Nothing pins `it` to a value or to a reference, so the AutoRef
+// around `next()`'s result is left for the type resolver, which settles it
+// from however the whole function happens to use `it`.
+//
+// The result is that the same write means two different things:
+//
+//   * In the first loop below, `it` is only ever used for field access, so it
+//     stays `&P` and `it.v = 9` writes through into the vector.
+//   * In the second loop, `read(it)` takes a `P` by value. That forces `it` to
+//     be a `P`, so `it.v = 8` now writes to a per-iteration copy and is
+//     silently discarded — even though the write is *above* the call that
+//     changed its meaning.
+//
+// So adding a line that only reads the loop variable retroactively turns an
+// earlier write into a no-op, with no diagnostic. Today this prints "9 9":
+// the second loop's write is lost.
+//
+// Which of the two is right is the language's call — `Vec.operator[]` returns
+// `&T` on purpose so that `v[0] = 7` works, which argues for the aliasing
+// reading used here. If the intended semantics is instead that `for` hands out
+// copies, the fix is the other way round and this case should expect "1 1"
+// with the first loop's write dropped too. What cannot stand is the two
+// disagreeing.
+
+struct P
+    v: i32
+
+fn read p: P
+    ret p.v
+
+fn main
+    items = Vec[P]()
+    items.push(P v 1)
+
+    for it items
+        it.v = 9
+    first = items[0].v
+
+    for it items
+        it.v = 8
+        z = read(it)
+    second = items[0].v
+
+    out "{first} {second}"

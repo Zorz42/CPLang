@@ -1,0 +1,36 @@
+//ERR any
+//BUG="a field access is not checked against the struct it is applied to"
+
+// The same missing check as 39, on a templated struct, where it takes down the
+// compiler instead of reaching gcc.
+//
+// `run_queue` (src/compiler/type_resolver/mod.rs) decides a struct type is
+// fully known with
+//
+//     self.get_num_known_fields(node) == self.structs_ord[struct_label].len()
+//
+// but `get_num_known_fields` counts every entry in the node's `child_fields`,
+// including ones put there by a field access the struct does not have. Here
+// `B` has one field, `v`, whose type is the unresolved template parameter `T`;
+// the bogus `w` is pinned to bool by the `if`. That makes the count 1 of 1, so
+// the branch runs, looks up the real field `v`, and
+//
+//     struct_fields.push(self.fetch_final_ir_type(type_label).unwrap());
+//
+// unwraps a None — "panicked at src/compiler/type_resolver/mod.rs:253".
+//
+// The count and the lookup disagree about which fields they are talking about.
+// Rejecting `g.w` up front, as 39 argues, removes the disagreement; guarding
+// the count so it only looks at the struct's own fields would too.
+
+struct A
+    w: i32
+
+struct B[T]
+    v: T
+
+g: B
+
+fn main
+    if g.w
+        out "x"

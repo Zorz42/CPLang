@@ -1,0 +1,25 @@
+//BUG="global variable initializers are never lowered"
+//OUT="3"
+
+// Not in FEEDBACK.md. `lower_ast` (src/compiler/lowerer/mod.rs) walks the
+// structs and the functions but never touches `ast.global_variables`, so a
+// global's initial value reaches the normalizer as raw AST. Anything that the
+// lowerer is supposed to remove then aborts the compiler on an
+// `unreachable!()` in `normalize_expression`:
+//
+//     b = a + 2   -> ASTExpression::BinaryOperation should be eliminated ...
+//     b = -1      -> ASTExpression::UnaryOperation should be eliminated ...
+//     b = 1, 2    -> ASTExpression::BinaryOperation should be eliminated ...
+//
+// A string is worse than a crash: `g = "abc"` normalizes without the
+// `_Str_from_raw` wrapper the lowerer would have added, so `g` is a raw
+// `_string` and every later use of it fails with "No candidate found".
+//
+// Only a bare literal survives, which is why 02_variables/12 passes. The fix
+// is to run `lower_expression` over each global's initial value.
+
+a = 1
+b = a + 2
+
+fn main
+    out "{b}"

@@ -1,0 +1,18 @@
+//BUG="global variable type hints are never lowered"
+//OUT="ok"
+
+// The type-hint half of 30. `lower_ast` never lowers `ASTGlobalVariable`, so a
+// global's type hint reaches `normalize_type` with `ASTType::Tuple` still in
+// it and aborts the compiler on
+//
+//     unreachable!("ASTType::Tuple should be eliminated by lowerer")
+//
+// A tuple is a valid type everywhere else — as a field type
+// (09_tuples/02), as a parameter type and as a local's hint — so a global is
+// the one place it crashes. The fix is to run `lower_type` over each global's
+// type hint, next to the fix for the initial value.
+
+p: i32, i32
+
+fn main
+    out "ok"

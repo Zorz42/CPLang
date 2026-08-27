@@ -1,0 +1,21 @@
+//BUG="an AutoRef nested directly inside another AutoRef is never resolved"
+//OUT="2"
+
+// Same cause as 28, reached through a method call instead of a second index.
+// `v[0].get()` lowers to a call whose receiver is `AutoRef(AutoRef(...))`,
+// the outer one resolves to depth 0 because `Vec.operator[]` already returns a
+// reference, and the inner one reaches codegen unresolved.
+//
+// This is the shape that matters most in practice: `v[i].size()`,
+// `v[i].push(x)` and every other method on a stored struct abort the compiler.
+
+struct Counter
+    n: i32
+
+    fn get
+        ret self.n
+
+fn main
+    v = Vec[Counter]()
+    v.push(Counter n 2)
+    out "{v[0].get()}"

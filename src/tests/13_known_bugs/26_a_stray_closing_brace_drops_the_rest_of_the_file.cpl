@@ -1,0 +1,24 @@
+//ERR any
+//BUG="a closing bracket with no opener silently truncates the file"
+
+// Not in FEEDBACK.md. `parse_blocks` (src/compiler/preprocessor.rs) returns as
+// soon as it sees `)`, `]` or `}` so that a recursive call can hand the
+// closer back to its caller. At the top level there is no caller: `preprocess`
+// calls `parse_blocks(&fragments, &mut 0)` and throws the index away without
+// checking that every fragment was consumed.
+//
+// So a closing bracket that never had an opener is not an error — it is the
+// end of the program. Everything after it is discarded in silence, and the
+// compiler exits 0 having built only the part above it. This case compiles
+// today and prints "reached"; `dropped_fn` never reaches the parser.
+//
+// An unclosed opener is reported (00_lexical/54e, 55e) and a mismatched pair
+// is reported (00_lexical/60e); only the unmatched closer gets through. The
+// fix is for `preprocess` to reject leftover fragments after `parse_blocks`
+// returns, pointing at the stray closer.
+
+fn main
+    out "reached"
+}
+fn dropped_fn
+    out "dropped"

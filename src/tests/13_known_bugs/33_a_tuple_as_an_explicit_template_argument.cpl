@@ -1,0 +1,23 @@
+//BUG="a call's explicit template arguments are never lowered"
+//OUT="1 2"
+
+// Not in FEEDBACK.md, and the other half of 09_tuples/11. That case covers a
+// tuple type nested in a template argument of a *signature*, which is lowered
+// because `lower_ast` walks every function's argument types. A tuple written
+// at a call site is not: `Lowerer::lower_expression` handles
+// `ASTExpressionKind::FunctionCall` with
+//
+//     call.arguments = self.lower_expressions(call.arguments);
+//
+// and leaves `call.template_arguments` alone. `StructInitialization` right
+// above it does lower its template arguments, so the omission looks
+// accidental. `MethodCall` has the same gap.
+//
+// So `Vec[i32, i32]()` and `make[i32, i32]()` abort the compiler on
+// `unreachable!("ASTType::Tuple should be eliminated by lowerer")`, while the
+// same vector spelled `v: Vec[i32, i32] = Vec()` compiles and runs.
+
+fn main
+    v = Vec[i32, i32]()
+    v.push((1, 2))
+    out "{v[0].0} {v[0].1}"

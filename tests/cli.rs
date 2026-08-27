@@ -6,13 +6,13 @@
 //! whole of the user-facing surface — what a Makefile or `cses-tests/run.py`
 //! sees — so they are worth testing directly.
 //!
-//! Every assertion here passes. An assertion for a bug that is known but not
-//! yet fixed is named `known_bug_…` with a message starting `KNOWN BUG`, in the
-//! same spirit as the `//BUG` cases in `src/tests/13_known_bugs/`; there are
-//! none at the moment. When such a bug is fixed the prefix comes off, the
-//! comment is rewritten to describe the guarantee rather than the defect, and
-//! the assertion is tightened past "it did not panic" where that is cheap —
-//! the last section of this file is the ones that have been through that.
+//! An assertion for a bug that is known but not yet fixed is named
+//! `known_bug_…` with a message starting `KNOWN BUG`, in the same spirit as the
+//! `//BUG` cases in `src/tests/13_known_bugs/`; they live in their own section
+//! below and are red on purpose. When such a bug is fixed the prefix comes off,
+//! the comment is rewritten to describe the guarantee rather than the defect,
+//! and the assertion is tightened past "it did not panic" where that is cheap —
+//! the section before it is the ones that have been through that.
 //!
 //! Note that `cargo test` stops at the first failing target, so while any
 //! `//BUG` case under `src/tests/` is red the binary's tests fail and this file
@@ -409,4 +409,105 @@ fn a_core_macro_can_be_used() {
     assert!(!panicked(&output), "using a core macro must not panic:\n{printed}");
     assert_eq!(output.status.code(), Some(0), "{printed}");
     assert!(scratch.output().exists(), "the compile succeeded, so it should have written output");
+}
+
+// ---------------------------------------------------------------------------
+// known bugs — red on purpose, see the module comment
+// ---------------------------------------------------------------------------
+
+/// A process killed by a signal has no exit code on unix; a stack overflow
+/// aborts, so this is how that shows up.
+fn aborted(output: &Output) -> bool {
+    output.status.code().is_none() || output.status.code() == Some(134)
+}
+
+#[test]
+fn known_bug_an_empty_format_expression_prints_a_diagnostic() {
+    // The same defect as `an_error_at_end_of_input_prints_a_diagnostic`, in the
+    // one shape its fix did not reach. That one works because the parser has
+    // already consumed a token, so `TokenBlock::get_last_pos` has a real
+    // position to point at. `out "{}"` hands `parse_format_string` an *empty*
+    // token block: nothing was ever consumed, `get_last_pos` is still
+    // `FilePosition::unknown()`, and the compiler builds
+    // `Some(FilePosition::unknown())`. `display_error` reaches its
+    // `unreachable!()` on exactly that value, so the user gets a good error
+    // message followed by a Rust panic, and the binary exits 101 instead of 1.
+    //
+    // `x = ()` fails the same way, for the same reason.
+    //
+    // The fix is either to give the error a real position — the braces are
+    // right there in `parse_format_string` — or to make `display_error` cope
+    // with the sentinel the way `src/tests/harness.rs::report` already has to.
+    let scratch = Scratch::new("emptyformat");
+    let (output, printed) = compile(&scratch, "fn main\n    out \"{}\"\n");
+
+    assert!(
+        !panicked(&output),
+        "KNOWN BUG — an empty format expression panics the error printer:\n{printed}"
+    );
+    assert_eq!(output.status.code(), Some(1), "{printed}");
+    assert!(printed.contains("-->"), "the error should point at the empty braces:\n{printed}");
+}
+
+#[test]
+fn known_bug_a_self_referential_struct_does_not_crash_the_compiler() {
+    // `IRType` is a value tree — `Struct(label, Vec<IRType>)` holds its fields
+    // by value — so a struct that names itself, even behind a reference,
+    // expands forever. `gen_struct_field_types` recurses into `normalize_type`
+    // for each field, which recurses back into `gen_struct_field_types`, and
+    // the 256 MB compiler thread runs out of stack.
+    //
+    // A stack overflow is not a panic: it aborts the process, which is why this
+    // cannot be a `.cpl` case — the abort would take the whole test binary
+    // down instead of being caught by the harness's `catch_unwind`.
+    //
+    // Note the struct here is never instantiated and `f` is never called.
+    // `compute_function_ordering` normalizes every declared signature up front,
+    // so naming `Node` as a parameter type is enough.
+    //
+    // 08_structs/68e shows the shape that *is* handled: a template that would
+    // expand forever is stopped by the normalizer's recursion limit and
+    // reported. A directly self-referential struct reaches no such limit.
+    // Whether the fix is to support it (a reference is a pointer, so it is
+    // representable in C) or to reject it, the compiler must not abort.
+    let scratch = Scratch::new("selfstruct");
+    let source = "struct Node\n    v: i32\n    next: &Node\n\nfn f n: Node\n    ret n.v\n\nfn main\n    out \"ok\"\n";
+    let (output, printed) = compile(&scratch, source);
+
+    assert!(
+        !aborted(&output),
+        "KNOWN BUG — a self-referential struct overflows the compiler's stack:\n{printed}"
+    );
+    assert!(!panicked(&output), "it should not panic either:\n{printed}");
+    assert!(
+        matches!(output.status.code(), Some(0 | 1)),
+        "KNOWN BUG — expected a clean compile or a reported error, got {:?}:\n{printed}",
+        output.status.code()
+    );
+}
+
+#[test]
+fn known_bug_crlf_line_endings_are_accepted() {
+    // Nothing in the pipeline treats `\r` as whitespace. `parse_indentation`
+    // splits on `\n` only, and the tokenizer has no rule for `\r`, so it falls
+    // through to `add_to_token` and becomes part of the identifier before it.
+    // Every line-final token in a file saved with Windows line endings is
+    // therefore a *different* token than it looks: `fn main\r\n` declares a
+    // function named "main\r", and the compile ends with "No main function
+    // found" pointing at nothing.
+    //
+    // This is written from Rust rather than as a `.cpl` case on purpose: a
+    // checked-in file with CRLF endings is at the mercy of git's autocrlf, and
+    // the bug is about the bytes, so the test writes them itself.
+    //
+    // The fix is to drop `\r` in the preprocessor, next to where tabs become
+    // spaces.
+    let scratch = Scratch::new("crlf");
+    let (output, printed) = compile(&scratch, "fn main\r\n    out \"ok\"\r\n");
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "KNOWN BUG — a file with CRLF line endings does not compile:\n{printed}"
+    );
 }

@@ -1,0 +1,24 @@
+//BUG="the right-hand side of a destructuring assignment is lowered twice"
+//OUT="hi 5"
+
+// Not in FEEDBACK.md. `lower_statement` (src/compiler/lowerer/mod.rs) lowers
+// both sides of an assignment, and only then notices that the left-hand side
+// is a struct/tuple pattern. It hands the *already lowered* value to
+// `gen_struct_destructuring` and lowers the statement it builds a second time.
+//
+// Lowering is not idempotent: a string literal becomes
+// `_Str_from_raw(<string>)`, and the inner node is still a raw string, so the
+// second pass wraps it again into `_Str_from_raw(_Str_from_raw(<string>))`.
+// `_Str_from_raw` takes a `_string`, not a `Str`, so the call has no
+// candidate and the program is rejected.
+//
+// `a, b = x, 5` is fine because a variable survives being lowered twice; only
+// a literal string on the right-hand side of a destructuring assignment
+// trips it. `P x a y b = P x "hi" y 5` fails the same way.
+//
+// The fix is to destructure before lowering the value, or to pass the
+// unlowered value into `gen_struct_destructuring`.
+
+fn main
+    a, b = "hi", 5
+    out "{a} {b}"

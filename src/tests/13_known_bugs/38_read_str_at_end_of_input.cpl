@@ -1,0 +1,34 @@
+//BUG="read_str loops forever when the input runs out"
+//OUT="[hello]"
+//IN="hello"
+
+// Not in FEEDBACK.md. `read_str` (src/core/io.cpl) is
+//
+//     res = Str()
+//     while c != ' ' && c != '\n'
+//         res.push(c)
+//         c = _builtin_getchar()
+//
+// and nothing in it looks for end of input. `_builtin_getchar` is C's
+// `getchar`, so at EOF it yields -1, which is neither a space nor a newline —
+// the loop never ends. It pushes -1 into the string forever, doubling the
+// vector until the 1 GB bump arena is exhausted, so the program hangs and then
+// dies rather than returning the word it already read.
+//
+// The input here is the word "hello" with no trailing newline, which is the
+// smallest way to reach it, but the same loop hangs whenever a program asks
+// for one more token than the input holds — a wrong loop bound turns into a
+// silent hang instead of a wrong answer, which is the worst way for a
+// competitive-programming submission to fail. There is also no way to write
+// "read words until EOF", because nothing in the library reports it.
+//
+// `read_i64` is fine: its digit loop ends on any non-digit, so at EOF it
+// returns 0. Only `read_str` spins.
+//
+// NOTE: until this is fixed the case costs a full run timeout (ten seconds by
+// default, see CPLANG_TEST_TIMEOUT_SECS) because the harness has to wait the
+// program out. That is the bug, not the harness.
+
+fn main
+    s = read_str()
+    out "[{s}]"
