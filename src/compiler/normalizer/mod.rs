@@ -645,11 +645,7 @@ impl Normalizer {
                     let (condition, type_label) = self.normalize_expression(condition)?;
                     self.type_resolver.hint_is(type_label, PrimitiveType::Bool)?;
                     let block = self.normalize_block(block)?;
-                    let else_block = if let Some(else_block) = else_block {
-                        Some(self.normalize_block(else_block)?)
-                    } else {
-                        None
-                    };
+                    let else_block = self.normalize_block(else_block)?;
                     IRStatement::If { condition, block, else_block }
                 }
                 ASTStatement::While { condition, block } => {

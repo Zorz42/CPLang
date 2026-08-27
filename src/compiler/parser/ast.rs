@@ -54,7 +54,7 @@ pub enum ASTStatement {
     If {
         condition: ASTExpression,
         block: ASTBlock,
-        else_block: Option<ASTBlock>,
+        else_block: ASTBlock,
     },
     While {
         condition: ASTExpression,

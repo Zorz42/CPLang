@@ -539,7 +539,7 @@ impl Lowerer {
             },
             ASTStatement::If { condition, block, else_block } => ASTStatement::If {
                 block: self.lower_block(block),
-                else_block: else_block.map(|x| self.lower_block(x)),
+                else_block: self.lower_block(else_block),
                 condition: self.lower_expression(condition),
             },
             ASTStatement::While { block, condition } => ASTStatement::While {

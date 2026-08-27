@@ -111,7 +111,7 @@ pub enum IRStatement {
     If {
         condition: IRExpression,
         block: IRBlock,
-        else_block: Option<IRBlock>,
+        else_block: IRBlock,
     },
     While {
         condition: IRExpression,

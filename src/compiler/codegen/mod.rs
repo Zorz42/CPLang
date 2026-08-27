@@ -272,7 +272,7 @@ fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String, code
             IRStatement::Block { block } => gen_block(ctx, block, String::new(), String::new()),
             IRStatement::If { condition, block, else_block } => {
                 let mut code = format!("if({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new(), String::new()));
-                if let Some(else_block) = else_block {
+                if !else_block.statements.is_empty() {
                     code += &format!("else {}", gen_block(ctx, else_block, String::new(), String::new()));
                 }
                 code

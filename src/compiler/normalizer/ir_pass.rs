@@ -58,7 +58,7 @@ pub trait IRPass {
                     IRStatement::If { condition, block, else_block } => IRStatement::If {
                         condition: self.pass_expression(condition),
                         block: self.pass_block(block),
-                        else_block: else_block.map(|block| self.pass_block(block)),
+                        else_block: self.pass_block(else_block),
                     },
                     IRStatement::While { condition, block } => IRStatement::While {
                         condition: self.pass_expression(condition),

@@ -1,5 +1,5 @@
 use crate::compiler::error::{CompilerError, CompilerResult};
-use crate::compiler::parser::ast::{ASTStatement, ASTStructDeclaration};
+use crate::compiler::parser::ast::{ASTBlock, ASTStatement, ASTStructDeclaration};
 use crate::compiler::parser::block::parse_block;
 use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::tokenizer::{Token, TokenBlock};
@@ -30,7 +30,7 @@ pub fn parse_if_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Token
     let else_block = if Token::Else == block.peek().0 {
         block.get();
         match block.get() {
-            (Token::BraceBlock(token_block), _) => Some(parse_block(structs, token_block)?),
+            (Token::BraceBlock(token_block), _) => parse_block(structs, token_block)?,
             (Token::End, _) => {
                 return Err(CompilerError {
                     message: "Expected another token after this one".to_string(),
@@ -45,7 +45,9 @@ pub fn parse_if_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Token
             }
         }
     } else {
-        None
+        ASTBlock {
+            children: Vec::new(),
+        }
     };
 
     Ok(Some(ASTStatement::If {
