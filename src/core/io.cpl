@@ -1,6 +1,9 @@
+fn is_whitespace c
+    ret c == ' ' || c == '\n'
+
 fn read_i64
     c = _builtin_getchar()
-    while c == ' ' || c == '\n'
+    while is_whitespace(c)
         c = _builtin_getchar()
     neg = false
     if c == '-'
@@ -20,10 +23,10 @@ fn read_i32
 
 fn read_str
     c = _builtin_getchar()
-    while c == ' ' || c == '\n'
+    while is_whitespace(c)
         c = _builtin_getchar()
     res = Str()
-    while c != ' ' && c != '\n'
+    while !is_whitespace(c) && c != -1
         res.push(c)
         c = _builtin_getchar()
     ret res
