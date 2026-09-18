@@ -1,0 +1,13 @@
+//OUT="[hello]"
+//IN="hello"
+
+// The input is the word "hello" with no trailing newline, so `read_str` hits
+// end of input mid-word. `_builtin_getchar` is C's `getchar`, which yields -1
+// there; the loop in `read_str` (src/core/io.cpl) has to stop on it and return
+// the word it already read. It used to spin on -1 forever, pushing it into the
+// string until the bump arena was exhausted, which made a program that asks for
+// one more token than the input holds hang instead of answering.
+
+fn main
+    s = read_str()
+    out "[{s}]"
