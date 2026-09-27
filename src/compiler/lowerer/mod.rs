@@ -1,5 +1,7 @@
 use crate::compiler::error::FilePosition;
-use crate::compiler::parser::ast::{ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType, ASTUnaryOperator, Ast};
+use crate::compiler::parser::ast::{
+    ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType, ASTUnaryOperator, Ast,
+};
 use std::collections::{HashMap, HashSet};
 // Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
@@ -344,30 +346,6 @@ impl Lowerer {
                 ASTExpression::new(ASTExpressionKind::Dereference(expression), pos)
             }
             ASTExpressionKind::BinaryOperation {
-                expression1: _,
-                operator: ASTOperator::Comma,
-                expression2: _,
-            } => {
-                fn flatten_commas(expr: ASTExpression) -> Vec<ASTExpression> {
-                    match expr.kind {
-                        ASTExpressionKind::BinaryOperation {
-                            expression1,
-                            operator: ASTOperator::Comma,
-                            expression2,
-                        } => {
-                            let vec1 = flatten_commas(*expression1);
-                            let vec2 = flatten_commas(*expression2);
-                            [vec1, vec2].concat()
-                        }
-                        _ => vec![expr],
-                    }
-                }
-
-                let vec = flatten_commas(expression);
-
-                self.lower_expression(ASTExpression::new(ASTExpressionKind::TupleInitialization(vec), pos))
-            }
-            ASTExpressionKind::BinaryOperation {
                 expression1,
                 operator: ASTOperator::DotDot,
                 expression2,
@@ -392,36 +370,31 @@ impl Lowerer {
 
                 let name = "operator".to_string()
                     + match operator {
-                    ASTOperator::Plus => "+",
-                    ASTOperator::Minus => "-",
-                    ASTOperator::Mul => "*",
-                    ASTOperator::Div => "/",
-                    ASTOperator::Mod => "%",
-                    ASTOperator::Equals => "==",
-                    ASTOperator::NotEquals => "!=",
-                    ASTOperator::Greater => ">",
-                    ASTOperator::Lesser => "<",
-                    ASTOperator::GreaterEq => ">=",
-                    ASTOperator::LesserEq => "<=",
-                    ASTOperator::And => "&&",
-                    ASTOperator::Or => "||",
-                    ASTOperator::PlusEquals => "+=",
-                    ASTOperator::MinusEquals => "-=",
-                    ASTOperator::MulEquals => "*=",
-                    ASTOperator::DivEquals => "/=",
-                    ASTOperator::ModEquals => "%=",
-                    ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
-                };
+                        ASTOperator::Plus => "+",
+                        ASTOperator::Minus => "-",
+                        ASTOperator::Mul => "*",
+                        ASTOperator::Div => "/",
+                        ASTOperator::Mod => "%",
+                        ASTOperator::Equals => "==",
+                        ASTOperator::NotEquals => "!=",
+                        ASTOperator::Greater => ">",
+                        ASTOperator::Lesser => "<",
+                        ASTOperator::GreaterEq => ">=",
+                        ASTOperator::LesserEq => "<=",
+                        ASTOperator::And => "&&",
+                        ASTOperator::Or => "||",
+                        ASTOperator::PlusEquals => "+=",
+                        ASTOperator::MinusEquals => "-=",
+                        ASTOperator::MulEquals => "*=",
+                        ASTOperator::DivEquals => "/=",
+                        ASTOperator::ModEquals => "%=",
+                        ASTOperator::Comma | ASTOperator::DotDot => unreachable!(),
+                    };
 
-                if let ASTOperator::PlusEquals
-                | ASTOperator::MinusEquals
-                | ASTOperator::MulEquals
-                | ASTOperator::DivEquals
-                | ASTOperator::ModEquals = operator {
+                if let ASTOperator::PlusEquals | ASTOperator::MinusEquals | ASTOperator::MulEquals | ASTOperator::DivEquals | ASTOperator::ModEquals = operator
+                {
                     let pos = expression1.pos;
-                    expression1 = ASTExpression::new(ASTExpressionKind::Reference(
-                        Box::new(expression1)
-                    ), pos);
+                    expression1 = ASTExpression::new(ASTExpressionKind::Reference(Box::new(expression1)), pos);
                 }
 
                 ASTExpression::new(
@@ -445,9 +418,7 @@ impl Lowerer {
 
                 if let ASTUnaryOperator::Increment | ASTUnaryOperator::Decrement = operator {
                     let pos = expression.pos;
-                    expression = ASTExpression::new(ASTExpressionKind::Reference(
-                        Box::new(expression)
-                    ), pos);
+                    expression = ASTExpression::new(ASTExpressionKind::Reference(Box::new(expression)), pos);
                 }
 
                 ASTExpression::new(

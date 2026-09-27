@@ -1,3 +1,4 @@
+use crate::FilePosition;
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::parser::ast::{ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStructDeclaration, ASTType, PrimitiveType};
 use crate::compiler::parser::function::parse_function_call;
@@ -38,19 +39,25 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                 let res = parse_value(structs, block)?;
                 let pos = res.pos;
 
-                ASTExpression::new(ASTExpressionKind::UnaryOperation {
-                    expression: Box::new(res),
-                    operator: ASTUnaryOperator::Minus,
-                }, pos)
+                ASTExpression::new(
+                    ASTExpressionKind::UnaryOperation {
+                        expression: Box::new(res),
+                        operator: ASTUnaryOperator::Minus,
+                    },
+                    pos,
+                )
             }
             (Token::Not, _) => {
                 let res = parse_value(structs, block)?;
                 let pos = res.pos;
 
-                ASTExpression::new(ASTExpressionKind::UnaryOperation {
-                    expression: Box::new(res),
-                    operator: ASTUnaryOperator::Not,
-                }, pos)
+                ASTExpression::new(
+                    ASTExpressionKind::UnaryOperation {
+                        expression: Box::new(res),
+                        operator: ASTUnaryOperator::Not,
+                    },
+                    pos,
+                )
             }
             (token @ (Token::I32 | Token::I64 | Token::F32 | Token::F64 | Token::Bool | Token::Char), pos) => {
                 let expr = parse_value(structs, block)?;
@@ -250,8 +257,13 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
         ],
         vec![ASTOperator::And],
         vec![ASTOperator::Or],
-        vec![ASTOperator::Comma],
-        vec![ASTOperator::PlusEquals, ASTOperator::MinusEquals, ASTOperator::MulEquals, ASTOperator::DivEquals, ASTOperator::ModEquals],
+        vec![
+            ASTOperator::PlusEquals,
+            ASTOperator::MinusEquals,
+            ASTOperator::MulEquals,
+            ASTOperator::DivEquals,
+            ASTOperator::ModEquals,
+        ],
         vec![ASTOperator::DotDot],
     ];
 
@@ -288,8 +300,17 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
         }
     }
 
-    assert_eq!(vals.len(), 1);
-    assert_eq!(ops.len(), 0);
+    for op in ops {
+        assert_eq!(op, ASTOperator::Comma);
+    }
 
-    Ok(vals.pop().unwrap())
+    if vals.len() == 1 {
+        Ok(vals.pop().unwrap())
+    } else {
+        let mut pos = FilePosition::unknown();
+        for val in &vals {
+            pos += val.pos;
+        }
+        Ok(ASTExpression::new(ASTExpressionKind::TupleInitialization(vals), pos))
+    }
 }
