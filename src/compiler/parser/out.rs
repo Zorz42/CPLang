@@ -10,7 +10,27 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
     let mut in_format = false;
     let mut format_pos = FilePosition::unknown();
     let string_len = string.len();
-    for (idx, pc) in string.into_iter().enumerate() {
+    let mut string_it = string.into_iter().enumerate().peekable();
+    while let Some((idx, pc)) = string_it.next() {
+        if pc.c == '{'
+            && let Some((_, pc2)) = string_it.peek()
+        {
+            if pc2.c == '{' {
+                string_it.next();
+                curr.push('{');
+                continue;
+            }
+        }
+        if pc.c == '}'
+            && let Some((_, pc2)) = string_it.peek()
+        {
+            if pc2.c == '}' {
+                string_it.next();
+                curr.push('}');
+                continue;
+            }
+        }
+
         if in_format {
             if pc.c == '}' {
                 in_format = false;
