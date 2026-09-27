@@ -61,8 +61,15 @@ pub fn parse_struct_declaration(block: &mut TokenBlock, file_idx: usize) -> Comp
         }
 
         match block.get() {
-            (Token::Identifier(name), _) => {
+            (Token::Identifier(name), pos) => {
                 let type_hint = parse_type_hint(&mut block)?;
+
+                if fields.iter().any(|(cname, _)| name == *cname) {
+                    return Err(CompilerError {
+                        message: format!("Field {name} declared twice"),
+                        position: Some(pos),
+                    });
+                }
 
                 fields.push((name.clone(), type_hint));
             }
