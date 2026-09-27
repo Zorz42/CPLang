@@ -169,7 +169,9 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
     while let Some(pos_char) = chars.next() {
         match &location {
             Location::Code => {
-                if pos_char.c == '"' {
+                if pos_char.c == 13 as char {
+                    // ignore carriage return
+                } else if pos_char.c == '"' {
                     location = Location::String;
                     string_quote_position = Some(pos_char.pos);
                     current_string = Vec::new();
@@ -245,7 +247,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                         return Err(CompilerError {
                             message: format!("Unrecognized escape character: {}", next_char.c),
                             position: Some(next_char.pos),
-                        })
+                        });
                     };
                     // remove the \
                     current_string.push(PosChar {
