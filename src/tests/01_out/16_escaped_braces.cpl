@@ -1,0 +1,8 @@
+//OUT="{}"
+
+// A doubled brace prints one brace, as in Rust and Python: `{{` is `{` and never
+// opens a format. 14_braces_printed_via_char.cpl is the way round it from
+// before this escape existed.
+
+fn main
+    out "{{}}"

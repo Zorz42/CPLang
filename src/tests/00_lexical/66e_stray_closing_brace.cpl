@@ -1,0 +1,13 @@
+//ERR 10 0 10 1
+//MSG="stray closing symbol"
+
+// A closer with no opener is an error. It used to be taken as the end of the
+// program: everything after it was dropped without a word, `dropped_fn` never
+// reached the parser, and the compile succeeded. 54e and 55e are an unclosed
+// opener, 60e a mismatched pair.
+
+fn main
+    out "reached"
+}
+fn dropped_fn
+    out "dropped"

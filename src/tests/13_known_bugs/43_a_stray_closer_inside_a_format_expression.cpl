@@ -1,0 +1,18 @@
+//ERR any
+//MSG="stray closing symbol"
+//BUG="a closer with no opener inside a format expression silently truncates it"
+
+// The stray closer that `preprocess` now reports (00_lexical/66e), in the one
+// place that fix does not reach. `parse_format_string`
+// (src/compiler/parser/out.rs) runs `parse_blocks(&string, &mut 0)` over the
+// text of the expression and throws away the index it stopped at, so a `)` or
+// `]` with no opener ends the expression and the rest is discarded. This
+// compiles and prints `5`: the ` + 1` never reaches the parser.
+//
+// Outside a format string, `y = (x)) + 1` is rejected with "stray closing
+// symbol". The fix is the same leftover-fragment check after this call to
+// `parse_blocks`.
+
+fn main
+    x = 5
+    out "{x) + 1}"

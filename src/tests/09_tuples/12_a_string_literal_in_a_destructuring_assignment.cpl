@@ -1,0 +1,14 @@
+//OUT="hi 5"
+
+// The right-hand side of a destructuring assignment is lowered once. It used to
+// be lowered again together with the assignments built from it, and a string
+// literal does not survive that: it came out as
+// `_Str_from_raw(_Str_from_raw(<string>))`, which has no candidate, and the
+// program was rejected. A variable is unchanged by a second lowering, which is
+// why this has to be a literal.
+//
+// 08_structs/42 is the same thing through a struct pattern.
+
+fn main
+    a, b = "hi", 5
+    out "{a} {b}"

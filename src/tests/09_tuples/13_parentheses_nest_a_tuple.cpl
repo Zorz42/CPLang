@@ -1,0 +1,14 @@
+//OUT="1 2 3"
+
+// Parentheses group a tuple: `1, (2, 3)` is a pair whose second element is a
+// pair, so it has the nested type `i32, (i32, i32)` and not `i32, i32, i32`.
+// Every comma used to be flattened into one tuple, parentheses or not, which
+// left a nested tuple type with no values that could have it.
+//
+// The inner pair is bound to a variable because `t.1.0` does not lex yet —
+// see 13_known_bugs/36.
+
+fn main
+    t: i32, (i32, i32) = 1, (2, 3)
+    inner = t.1
+    out "{t.0} {inner.0} {inner.1}"

@@ -1,0 +1,12 @@
+//OUT="hi 5"
+
+// The struct-pattern form of 09_tuples/12: a string literal on the right-hand
+// side of a destructuring assignment must be lowered exactly once.
+
+struct P
+    x
+    y: i32
+
+fn main
+    P x a y b = P x "hi" y 5
+    out "{a} {b}"

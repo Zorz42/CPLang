@@ -1,0 +1,20 @@
+//BUG="}} is taken as an escape inside a format expression, so a brace is lost"
+//OUT="5}"
+
+// `parse_format_string` (src/compiler/parser/out.rs) looks for `{{` and `}}`
+// before it looks at whether it is inside a `{…}`. Here the first `}` should
+// close the format and the `}}` after it should print one brace, as in Rust
+// and Python. Instead the first two `}` are read as an escape, and the `}` it
+// stands for is pushed onto the *expression* text, which becomes `x}`; the
+// third `}` then closes the format. The stray `}` in `x}` is dropped by the
+// defect in 43, so the program compiles and prints `5`, one brace short, with
+// no error.
+//
+// `"{{{x}}}"` prints `{5` for the same reason. `{{` has no such problem in
+// practice, because an expression never contains a `{`.
+//
+// The fix is to look for the escapes only while not inside a format.
+
+fn main
+    x = 5
+    out "{x}}}"

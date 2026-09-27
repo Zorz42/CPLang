@@ -117,12 +117,9 @@ fn compiles_a_program_and_succeeds() {
     assert!(c.contains("putchar"), "the generated C should print through putchar:\n{c}");
 }
 
-#[test]
-fn the_generated_program_runs_and_prints() {
-    let scratch = Scratch::new("run");
-    let (output, printed) = compile(&scratch, HELLO);
-    assert_eq!(output.status.code(), Some(0), "{printed}");
-
+/// Builds the C that a successful compile left in `scratch` with gcc, runs it,
+/// and returns what it printed.
+fn run_program(scratch: &Scratch) -> String {
     let exe = scratch.dir.join("program");
     let gcc = Command::new("gcc")
         .arg("-w")
@@ -134,7 +131,16 @@ fn the_generated_program_runs_and_prints() {
     assert!(gcc.status.success(), "gcc rejected the output:\n{}", String::from_utf8_lossy(&gcc.stderr));
 
     let run = Command::new(&exe).output().expect("could not run the compiled program");
-    assert_eq!(String::from_utf8_lossy(&run.stdout), "Hello");
+    String::from_utf8_lossy(&run.stdout).into_owned()
+}
+
+#[test]
+fn the_generated_program_runs_and_prints() {
+    let scratch = Scratch::new("run");
+    let (output, printed) = compile(&scratch, HELLO);
+    assert_eq!(output.status.code(), Some(0), "{printed}");
+
+    assert_eq!(run_program(&scratch), "Hello");
 }
 
 #[test]
@@ -411,6 +417,25 @@ fn a_core_macro_can_be_used() {
     assert!(scratch.output().exists(), "the compile succeeded, so it should have written output");
 }
 
+#[test]
+fn crlf_line_endings_are_accepted() {
+    // A file saved with Windows line endings compiles exactly like one without.
+    // The preprocessor drops `\r` outside strings; before it did, the `\r` was
+    // glued onto the last token of every line, so `fn main\r\n` declared a
+    // function named "main\r" and the compile ended with "No main function
+    // found". A `\r` inside a string is still an ordinary character — that is
+    // 00_lexical/26_carriage_return_inside_a_string.cpl.
+    //
+    // This is written from Rust rather than as a `.cpl` case on purpose: a
+    // checked-in file with CRLF endings is at the mercy of git's autocrlf, and
+    // the point is the bytes, so the test writes them itself.
+    let scratch = Scratch::new("crlf");
+    let (output, printed) = compile(&scratch, "fn main\r\n    out \"ok\"\r\n");
+
+    assert_eq!(output.status.code(), Some(0), "a file with CRLF line endings must compile:\n{printed}");
+    assert_eq!(run_program(&scratch), "ok");
+}
+
 // ---------------------------------------------------------------------------
 // known bugs — red on purpose, see the module comment
 // ---------------------------------------------------------------------------
@@ -483,31 +508,5 @@ fn known_bug_a_self_referential_struct_does_not_crash_the_compiler() {
         matches!(output.status.code(), Some(0 | 1)),
         "KNOWN BUG — expected a clean compile or a reported error, got {:?}:\n{printed}",
         output.status.code()
-    );
-}
-
-#[test]
-fn known_bug_crlf_line_endings_are_accepted() {
-    // Nothing in the pipeline treats `\r` as whitespace. `parse_indentation`
-    // splits on `\n` only, and the tokenizer has no rule for `\r`, so it falls
-    // through to `add_to_token` and becomes part of the identifier before it.
-    // Every line-final token in a file saved with Windows line endings is
-    // therefore a *different* token than it looks: `fn main\r\n` declares a
-    // function named "main\r", and the compile ends with "No main function
-    // found" pointing at nothing.
-    //
-    // This is written from Rust rather than as a `.cpl` case on purpose: a
-    // checked-in file with CRLF endings is at the mercy of git's autocrlf, and
-    // the bug is about the bytes, so the test writes them itself.
-    //
-    // The fix is to drop `\r` in the preprocessor, next to where tabs become
-    // spaces.
-    let scratch = Scratch::new("crlf");
-    let (output, printed) = compile(&scratch, "fn main\r\n    out \"ok\"\r\n");
-
-    assert_eq!(
-        output.status.code(),
-        Some(0),
-        "KNOWN BUG — a file with CRLF line endings does not compile:\n{printed}"
     );
 }
