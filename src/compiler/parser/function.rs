@@ -5,25 +5,28 @@ use crate::compiler::parser::expression::parse_expression;
 use crate::compiler::parser::template::parse_declaration_template;
 use crate::compiler::parser::typed::{parse_type, parse_type_hint};
 use crate::compiler::tokenizer::{Token, TokenBlock};
+use cplang::compiler::parser::ast::ASTType;
 
 pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> CompilerResult<Option<(ASTFunctionSignature, TokenBlock)>> {
-    match block.peek() {
-        (Token::Fn, _) => {
+    let pos = match block.peek() {
+        (Token::Fn, pos) => {
+            let pos = *pos;
             block.get();
+            pos
         }
-        (Token::Operator, _) => {}
+        (Token::Operator, pos) => *pos,
         _ => return Ok(None),
-    }
+    };
 
     let mut res_signature = ASTFunctionSignature {
         name: String::new(),
         args: Vec::new(),
+        ret_type: ASTType::Any(pos),
         template: Vec::new(),
         pos: FilePosition::unknown(),
         num_template_args: 0,
         file_idx,
     };
-    let res_block;
 
     match block.get() {
         (Token::Identifier(name), pos) => {
@@ -34,49 +37,49 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
             let (op, op_pos) = block.get();
             res_signature.name = "operator".to_string()
                 + match op {
-                Token::Plus => "+",
-                Token::Minus => "-",
-                Token::Star => "*",
-                Token::Slash => "/",
-                Token::Mod => "%",
-                Token::Equals => "==",
-                Token::NotEquals => "!=",
-                Token::LessThan => "<",
-                Token::LessThanOrEqual => "<=",
-                Token::GreaterThan => ">",
-                Token::GreaterThanOrEqual => ">=",
-                Token::And => "&&",
-                Token::Or => "||",
-                Token::Not => "!",
-                Token::PlusEquals => "+=",
-                Token::MinusEquals => "-=",
-                Token::MulEquals => "*=",
-                Token::DivEquals => "/=",
-                Token::ModEquals => "%=",
-                Token::Increment => "++",
-                Token::Decrement => "--",
-                Token::BracketBlock(block) => {
-                    if block.has_tokens() {
+                    Token::Plus => "+",
+                    Token::Minus => "-",
+                    Token::Star => "*",
+                    Token::Slash => "/",
+                    Token::Mod => "%",
+                    Token::Equals => "==",
+                    Token::NotEquals => "!=",
+                    Token::LessThan => "<",
+                    Token::LessThanOrEqual => "<=",
+                    Token::GreaterThan => ">",
+                    Token::GreaterThanOrEqual => ">=",
+                    Token::And => "&&",
+                    Token::Or => "||",
+                    Token::Not => "!",
+                    Token::PlusEquals => "+=",
+                    Token::MinusEquals => "-=",
+                    Token::MulEquals => "*=",
+                    Token::DivEquals => "/=",
+                    Token::ModEquals => "%=",
+                    Token::Increment => "++",
+                    Token::Decrement => "--",
+                    Token::BracketBlock(block) => {
+                        if block.has_tokens() {
+                            return Err(CompilerError {
+                                message: "There should be nothing between []".to_string(),
+                                position: Some(op_pos),
+                            });
+                        }
+                        "[]"
+                    }
+                    Token::End => {
                         return Err(CompilerError {
-                            message: "There should be nothing between []".to_string(),
+                            message: "Expected another token after this one".to_string(),
+                            position: Some(block.get_last_pos()),
+                        });
+                    }
+                    _ => {
+                        return Err(CompilerError {
+                            message: "Unexpected token".to_string(),
                             position: Some(op_pos),
                         });
                     }
-                    "[]"
-                }
-                Token::End => {
-                    return Err(CompilerError {
-                        message: "Expected another token after this one".to_string(),
-                        position: Some(block.get_last_pos()),
-                    });
-                }
-                _ => {
-                    return Err(CompilerError {
-                        message: "Unexpected token".to_string(),
-                        position: Some(op_pos),
-                    });
-                }
-            };
+                };
             res_signature.pos = pos + op_pos;
         }
         (Token::End, _) => {
@@ -103,37 +106,35 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
     res_signature.template = parse_declaration_template(block)?;
     res_signature.num_template_args = res_signature.template.len();
 
-    loop {
-        let (arg, arg_pos) = match block.get() {
-            (Token::BraceBlock(block), _pos) => {
-                res_block = block;
-                break;
-            }
-            (Token::Identifier(arg), pos) => {
-                res_signature.pos += pos;
-                (arg, pos)
-            }
-            (Token::End, _) => {
-                return Err(CompilerError {
-                    message: "Expected another token after this one".to_string(),
-                    position: Some(block.get_last_pos()),
-                });
-            }
-            (_, pos) => {
-                return Err(CompilerError {
-                    message: "Expected block or argument identifier after function signature".to_string(),
-                    position: Some(pos),
-                });
-            }
-        };
+    while let (Token::Identifier(_), _) = block.peek() {
+        let (Token::Identifier(arg), pos) = block.get() else { unreachable!() };
 
+        res_signature.pos += pos;
         let type_hint = parse_type_hint(block)?;
         res_signature.pos += type_hint.get_pos();
 
-        res_signature.args.push((arg, type_hint, arg_pos));
+        res_signature.args.push((arg.clone(), type_hint, pos));
     }
 
-    Ok(Some((res_signature, res_block)))
+    if let (Token::Arrow, _) = block.peek() {
+        block.get();
+        res_signature.ret_type = parse_type(block)?;
+    }
+
+    match block.get() {
+        (Token::BraceBlock(block), _pos) => {
+            let res_block = block;
+            Ok(Some((res_signature, res_block)))
+        }
+        (Token::End, _) => Err(CompilerError {
+            message: "Expected another token after this one".to_string(),
+            position: Some(block.get_last_pos()),
+        }),
+        (_, pos) => Err(CompilerError {
+            message: "Expected block, argument identifier or arrow here".to_string(),
+            position: Some(pos),
+        }),
+    }
 }
 
 pub fn parse_function_call(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> CompilerResult<Option<(ASTFunctionCall, FilePosition)>> {

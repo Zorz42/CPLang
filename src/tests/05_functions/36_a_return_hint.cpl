@@ -1,0 +1,9 @@
+//OUT="5"
+
+// A return hint is `->` and a type, written after the last argument.
+
+fn add a: i32 b: i32 -> i32
+    ret a + b
+
+fn main
+    out "{add(2 3)}"

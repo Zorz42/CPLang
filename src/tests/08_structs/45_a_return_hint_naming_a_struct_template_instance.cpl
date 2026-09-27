@@ -1,0 +1,11 @@
+//OUT="4"
+
+struct Box[T]
+    v: T
+
+fn boxed x: i32 -> Box[i32]
+    ret Box v x
+
+fn main
+    b = boxed(4)
+    out "{b.v}"

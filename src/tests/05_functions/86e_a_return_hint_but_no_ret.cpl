@@ -1,0 +1,12 @@
+//ERR 7 3 7 7
+//MSG="at the same time"
+
+// A function with no `ret` returns void, hint or not, so a non-void hint on
+// one is a type conflict, reported at the function name. Without the hint
+// this is an ordinary void function (30_a_void_function_need_not_return.cpl).
+
+fn func -> i32
+    out "no ret"
+
+fn main
+    out "{func()}"

@@ -1,0 +1,12 @@
+//ERR 7 11 7 12
+//MSG="Unknown type: A"
+
+// A return hint is resolved like an argument hint, so an unknown name is
+// reported at the name. 59e_type_hint_names_an_unknown_type.cpl is the argument
+// version.
+
+fn func -> A
+    ret 10
+
+fn main
+    out "{func()}"

@@ -65,6 +65,7 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
                 .into_iter()
                 .map(|(arg_name, arg_type, arg_pos)| (arg_name, lowerer.lower_type(arg_type), arg_pos))
                 .collect();
+            sign.ret_type = lowerer.lower_type(sign.ret_type);
             let block = lowerer.lower_block(block);
             (sign, block)
         })

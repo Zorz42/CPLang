@@ -1,0 +1,17 @@
+//OUT="4 6"
+
+// 24_operator_overloading_on_a_struct.cpl with a return hint: an operator
+// declaration takes one the same way a function does.
+
+struct Point
+    x: i32
+    y: i32
+
+operator+ a: Point b: Point -> Point
+    ret Point x a.x + b.x y a.y + b.y
+
+fn main
+    p = Point x 1 y 2
+    q = Point x 3 y 4
+    sum = p + q
+    out "{sum.x} {sum.y}"

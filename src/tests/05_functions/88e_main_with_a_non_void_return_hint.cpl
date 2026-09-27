@@ -1,0 +1,8 @@
+//ERR -1 -1 -1 -1
+//MSG="Main function should not return any value"
+
+// 61e_main_returning_a_value.cpl with the type in the signature: a hint does not
+// make a non-void main acceptable.
+
+fn main -> i32
+    ret 0

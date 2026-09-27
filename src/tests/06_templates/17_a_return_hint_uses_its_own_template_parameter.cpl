@@ -1,0 +1,15 @@
+//OUT="5"
+
+// Both functions call their template parameter T, and they are instantiated at
+// different types: `outer` at i32, `inner` at i64. The `T` in `inner`'s return
+// hint has to be `inner`'s own, not whichever T is in scope where `inner` is
+// called from.
+
+fn inner[T] a: T -> T
+    ret a
+
+fn outer[T] a: T
+    ret inner(5L)
+
+fn main
+    out "{outer(3)}"

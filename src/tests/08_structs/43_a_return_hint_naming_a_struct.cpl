@@ -1,0 +1,12 @@
+//OUT="0 0"
+
+struct Point
+    x: i32
+    y: i32
+
+fn origin -> Point
+    ret Point x 0 y 0
+
+fn main
+    p = origin()
+    out "{p.x} {p.y}"

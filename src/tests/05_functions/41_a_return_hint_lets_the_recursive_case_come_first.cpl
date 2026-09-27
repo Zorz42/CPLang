@@ -1,0 +1,15 @@
+//OUT="10"
+
+// The recursive case comes before the base case, so the call to `sum` is
+// normalized before any `ret` has said what `sum` returns. Without the hint
+// this is the ordering problem described in 40 and fails at the recursion
+// limit; 04_recursion.cpl gets away without one only because its base case
+// comes first.
+
+fn sum n: i32 -> i32
+    if n > 0
+        ret n + sum(n - 1)
+    ret 0
+
+fn main
+    out "{sum(4)}"

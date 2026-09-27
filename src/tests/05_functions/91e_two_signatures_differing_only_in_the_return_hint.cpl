@@ -1,0 +1,15 @@
+//ERR 10 3 10 14
+//MSG="Found two equivalent signatures for function func"
+
+// A call is resolved by its arguments alone, so two declarations that differ
+// only in the return hint could never be told apart.
+// 64e_two_identical_signatures.cpl is the same without hints.
+
+fn func x: i32 -> i32
+    ret 1
+
+fn func x: i32 -> i64
+    ret 2L
+
+fn main
+    out "{func(1)}"

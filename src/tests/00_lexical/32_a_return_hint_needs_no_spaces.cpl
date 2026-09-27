@@ -1,0 +1,10 @@
+//OUT="4"
+
+// `->` needs no space on either side, like the operators of
+// 24_no_space_needed_around_tokens.cpl.
+
+fn inc x:i32->i32
+    ret x+1
+
+fn main
+    out "{inc(3)}"

@@ -1,0 +1,12 @@
+//OUT="2 1"
+
+// A tuple type on both sides of the arrow: the argument's type has to end at
+// `->`, and the return type runs on to the body.
+
+fn swap p: i32, i32 -> i32, i32
+    a, b = p
+    ret b, a
+
+fn main
+    x, y = swap(1, 2)
+    out "{x} {y}"

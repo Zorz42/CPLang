@@ -1,0 +1,13 @@
+//OUT="7"
+
+// A method's signature is parsed like a function's, return hint included.
+
+struct Box
+    v: i32
+
+    fn get -> i32
+        ret self.v
+
+fn main
+    b = Box v 7
+    out "{b.get()}"

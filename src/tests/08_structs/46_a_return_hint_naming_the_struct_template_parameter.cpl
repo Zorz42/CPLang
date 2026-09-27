@@ -1,0 +1,14 @@
+//OUT="7"
+
+// A method of a struct template can name the struct's template parameter in its
+// return hint, just as it can in an argument hint.
+
+struct Box[T]
+    v: T
+
+    fn get -> T
+        ret self.v
+
+fn main
+    b = Box v 7
+    out "{b.get()}"

@@ -1,0 +1,10 @@
+//OUT="6"
+
+// The last argument has no hint of its own, so `->` directly follows an
+// argument name rather than a type.
+
+fn twice x -> i32
+    ret x * 2
+
+fn main
+    out "{twice(3)}"

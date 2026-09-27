@@ -1,0 +1,11 @@
+//ERR 6 15 6 16
+//MSG="Expected block, argument identifier or arrow here"
+
+// The hint comes after every argument, so an argument after it is rejected
+// rather than quietly added to the signature.
+
+fn func -> i32 x: i32
+    ret x
+
+fn main
+    out "{func(1)}"

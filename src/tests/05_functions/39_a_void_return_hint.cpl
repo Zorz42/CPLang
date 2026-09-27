@@ -1,0 +1,10 @@
+//OUT="hi"
+
+// `-> void` on a function with no `ret` agrees with what would be deduced
+// without it.
+
+fn greet -> void
+    out "hi"
+
+fn main
+    greet()

@@ -16,15 +16,15 @@ use std::collections::{HashMap, HashSet};
 use std::mem::swap;
 
 pub mod builtin_functions;
-mod reference_check;
+mod control_flow_check;
 mod function_cmp;
 pub mod ir;
 mod ir_debug;
 mod ir_pass;
-mod symbol_table;
 mod process_void;
-mod control_flow_check;
+mod reference_check;
 mod return_analysis;
+mod symbol_table;
 
 pub fn normalize_ast(ast: Ast) -> CompilerResult<IR> {
     Normalizer::default().normalize_ast(ast)
@@ -627,11 +627,9 @@ impl Normalizer {
                     let block = self.normalize_block(block)?;
                     IRStatement::Block { block }
                 }
-                ASTStatement::Expression { expression } => {
-                    IRStatement::Expression {
-                        expr: self.normalize_expression(expression)?.0,
-                    }
-                }
+                ASTStatement::Expression { expression } => IRStatement::Expression {
+                    expr: self.normalize_expression(expression)?.0,
+                },
                 ASTStatement::Return { return_value, pos: _ } => {
                     self.has_ret_statement = true;
                     if let Some(expr) = return_value {
@@ -800,6 +798,8 @@ impl Normalizer {
             self.template_types.insert(template_arg, template_types[idx]);
         }
 
+        let ret_type = self.normalize_type(sign.ret_type)?;
+        self.type_resolver.hint_equal(self.curr_func_ret_type, ret_type)?;
         let mut arguments = Vec::new();
         for ((arg, type_hint, _pos), arg_type) in sign.args.into_iter().zip(arg_types.clone()) {
             let hint_label = self.normalize_type(type_hint)?;

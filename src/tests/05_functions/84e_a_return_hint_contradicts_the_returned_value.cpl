@@ -1,0 +1,11 @@
+//ERR 6 3 6 7
+//MSG="at the same time"
+
+// The hint and the `ret` disagree: the same conflict as two `ret`s of different
+// types (53e_returning_two_different_types.cpl), reported at the function name.
+
+fn func -> i32
+    ret true
+
+fn main
+    out "{func()}"

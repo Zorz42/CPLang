@@ -1,0 +1,15 @@
+//ERR 11 4 11 5
+//MSG="Field x declared twice"
+
+// Field names in a struct are distinct, and the declaration itself is rejected,
+// even though nothing uses the struct. The duplicate used to go unnoticed until
+// something gave the struct a type, which then tripped an assert_eq! in
+// `hint_struct` and aborted the compiler. 55e_field_assigned_twice.cpl is the
+// same mistake in an instantiation.
+
+struct S
+    x: i32
+    x: i32
+
+fn main
+    out "ok"

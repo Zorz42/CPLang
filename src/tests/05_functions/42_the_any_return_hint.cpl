@@ -1,0 +1,10 @@
+//OUT="5"
+
+// `?` is the any type, as it is for an argument (16_the_any_type_hint.cpl), so
+// `-> ?` is the same as writing no hint.
+
+fn five -> ?
+    ret 5
+
+fn main
+    out "{five()}"

@@ -196,6 +196,7 @@ pub enum ASTExpressionKind {
 pub struct ASTFunctionSignature {
     pub name: String,
     pub args: Vec<(String, ASTType, FilePosition)>,
+    pub ret_type: ASTType,
     pub template: Vec<(String, FilePosition)>,
     // template can have extra hidden arguments
     pub num_template_args: usize,

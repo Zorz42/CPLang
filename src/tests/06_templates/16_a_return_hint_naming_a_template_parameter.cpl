@@ -1,0 +1,12 @@
+//OUT="7 5"
+
+// The hint names the template parameter, so each instance gets its own return
+// type: i32 for the first call, i64 for the second.
+
+fn larger[T] a: T b: T -> T
+    if a > b
+        ret a
+    ret b
+
+fn main
+    out "{larger(3 7)} {larger(5L 2L)}"

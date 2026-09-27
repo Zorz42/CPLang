@@ -1,0 +1,24 @@
+//OUT="3 2 1 done"
+
+// A recursive call reuses the instance being built only once that instance's
+// return type is known (`flush_instance_cache` in src/compiler/normalizer).
+// Without a hint the type is pinned by the `ret` statements as the body is
+// normalized, and for a function with no `ret` at all it is settled as void
+// only after the whole body. So a recursive call reached before any `ret`
+// normalizes the function again and again, until the compile fails with "This
+// function is in the 100-th recursive call in the normalization phase".
+//
+// A void function has no `ret` to put first, so recursing like this needs the
+// hint: with `-> void` the return type is known from the signature. The
+// alternative is a base case that returns early, above the recursive call,
+// which is what 04_recursion.cpl does. 41 is the same ordering with an i32
+// return type.
+
+fn countdown n: i32 -> void
+    if n > 0
+        out "{n} "
+        countdown(n - 1)
+
+fn main
+    countdown(3)
+    out "done"

@@ -1,0 +1,7 @@
+//OUT="42"
+
+fn answer -> i32
+    ret 42
+
+fn main
+    out "{answer()}"

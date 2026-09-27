@@ -1,0 +1,11 @@
+//ERR 6 3 6 7
+//MSG="at the same time"
+
+// `-> void` promises no value, so returning one contradicts it, as in
+// 54e_returning_a_value_and_nothing.cpl.
+
+fn func -> void
+    ret 1
+
+fn main
+    func()

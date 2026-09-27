@@ -1,0 +1,6 @@
+//OUT="ok"
+
+// main may carry a return hint as long as it says void. 88e is the other side.
+
+fn main -> void
+    out "ok"

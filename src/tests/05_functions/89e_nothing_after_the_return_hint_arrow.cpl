@@ -1,0 +1,11 @@
+//ERR 7 0 7 9
+//MSG="Unexpected token, expected one of"
+
+// `->` must be followed by a type; here the next thing is the body. The message
+// is the one every other type position gives.
+
+fn func ->
+    ret 1
+
+fn main
+    out "{func()}"
