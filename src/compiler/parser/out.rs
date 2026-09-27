@@ -14,21 +14,19 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
     while let Some((idx, pc)) = string_it.next() {
         if pc.c == '{'
             && let Some((_, pc2)) = string_it.peek()
+            && pc2.c == '{'
         {
-            if pc2.c == '{' {
-                string_it.next();
-                curr.push('{');
-                continue;
-            }
+            string_it.next();
+            curr.push('{');
+            continue;
         }
         if pc.c == '}'
             && let Some((_, pc2)) = string_it.peek()
+            && pc2.c == '}'
         {
-            if pc2.c == '}' {
-                string_it.next();
-                curr.push('}');
-                continue;
-            }
+            string_it.next();
+            curr.push('}');
+            continue;
         }
 
         if in_format {

@@ -489,10 +489,7 @@ impl Lowerer {
                             name,
                             fields,
                             template_arguments,
-                        } => {
-                            let statement = self.gen_struct_destructuring(*pos, value.clone(), name, fields, template_arguments);
-                            self.lower_statement(statement)
-                        }
+                        } => self.gen_struct_destructuring(*pos, value.clone(), name, fields, template_arguments),
                         _ => assignment,
                     },
                     _ => assignment,
