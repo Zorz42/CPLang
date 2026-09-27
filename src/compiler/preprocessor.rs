@@ -72,7 +72,14 @@ impl FragmentBlock {
 pub fn preprocess(input: &str, file_ident: usize) -> CompilerResult<FragmentBlock> {
     let pos_chars = add_file_positions(input, file_ident);
     let fragments = parse_strings_and_comments(&pos_chars)?;
-    let fragment_block = parse_blocks(&fragments, &mut 0)?;
+    let mut idx = 0;
+    let fragment_block = parse_blocks(&fragments, &mut idx)?;
+    if idx != fragments.len() {
+        return Err(CompilerError {
+            message: "stray closing symbol".to_owned(),
+            position: Some(fragments[idx].get_position()),
+        });
+    }
     let fragment_block = parse_indentation(&fragment_block)?;
     let fragment_block = newlines_to_spaces(fragment_block);
     Ok(fragment_block)
