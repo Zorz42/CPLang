@@ -129,7 +129,7 @@ impl Normalizer {
 
             let (sig, block) = vec.pop().unwrap();
 
-            // normalize the main function (which recursively normalizes every instance that is used within
+            // normalize the main function (which recursively normalizes every instance that is used within)
             // this is where vast majority of the work happens
             self.ir.main_function = self.normalize_function(sig, block, Vec::new(), Vec::new())?;
 
@@ -167,7 +167,7 @@ impl Normalizer {
             });
         }
 
-        self.ir = check_references(self.ir, autorefs)?;
+        self.ir = check_references(self.ir, autorefs, &mut self.symbol_table)?;
         self.ir = check_control_flow(self.ir)?;
         self.ir = process_void_variables(self.ir);
         analyze_return_statements(&self.ir)?;
@@ -416,8 +416,11 @@ impl Normalizer {
                 let (expression, type_label2) = self.normalize_expression(*expression)?;
 
                 self.type_resolver.hint_is_ref(type_label2, type_label)?;
+                self.relevant_types.push(type_label2);
                 IRExpression::Reference {
                     expression: Box::new(expression),
+                    occupant: None,
+                    type_label: type_label2,
                     pos,
                 }
             }
@@ -523,10 +526,12 @@ impl Normalizer {
                 let autoref_label = self.type_resolver.new_autoref_label(type_label, type_label1);
 
                 self.type_resolver.hint_autoref(type_label, type_label1)?;
+                self.relevant_types.push(type_label1);
 
                 IRExpression::AutoRef {
                     autoref_label,
                     expression: Box::new(expression),
+                    type_label: type_label1,
                 }
             }
 

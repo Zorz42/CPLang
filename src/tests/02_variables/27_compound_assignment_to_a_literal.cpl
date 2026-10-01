@@ -1,0 +1,9 @@
+//OUT="ok"
+
+// `a += b` lowers to `operator+=(&a, b)`. Taking a reference to a temporary
+// now spills it into a hidden variable, so a compound assignment to a literal
+// compiles and updates that copy. (A plain `3 = 1` is still rejected.)
+
+fn main
+    3 += 1
+    out "ok"

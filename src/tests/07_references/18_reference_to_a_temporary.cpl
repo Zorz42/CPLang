@@ -1,0 +1,14 @@
+//OUT="30 1 2"
+
+// `&(a + b)` spills the sum into a hidden variable. Writing through the
+// reference changes only that copy, never the operands.
+
+fn times_ten x
+    |x = |x * 10
+    ret |x
+
+fn main
+    a = 1
+    b = 2
+    r = times_ten(&(a + b))
+    out "{r} {a} {b}"

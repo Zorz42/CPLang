@@ -1,0 +1,10 @@
+//OUT="4"
+
+// The spilled temporary must outlive the expression that created it: the
+// reference is stored in `r` and used on later lines.
+
+fn main
+    r = &(1 + 2)
+    |r += 1
+    v = |r
+    out "{v}"

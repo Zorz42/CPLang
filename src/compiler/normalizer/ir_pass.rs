@@ -82,8 +82,13 @@ pub trait IRPass {
     fn pass_expression(&mut self, expression: IRExpression) -> IRExpression {
         let expression = self.pre_map_expression(expression);
         let expression = match expression {
-            IRExpression::AutoRef { autoref_label, expression } => IRExpression::AutoRef {
+            IRExpression::AutoRef {
                 autoref_label,
+                expression,
+                type_label,
+            } => IRExpression::AutoRef {
+                autoref_label,
+                type_label,
                 expression: Box::new(self.pass_expression(*expression)),
             },
             IRExpression::BuiltinFunctionCall(call) => IRExpression::BuiltinFunctionCall(self.pass_builtin_call(call)),
@@ -111,9 +116,16 @@ pub trait IRPass {
                 fields_type_labels,
                 field_values: field_values.into_iter().map(|expr| self.pass_expression(expr)).collect(),
             },
-            IRExpression::Reference { expression, pos } => IRExpression::Reference {
-                expression: Box::new(self.pass_expression(*expression)),
+            IRExpression::Reference {
+                expression,
                 pos,
+                occupant,
+                type_label,
+            } => IRExpression::Reference {
+                expression: Box::new(self.pass_expression(*expression)),
+                occupant,
+                pos,
+                type_label,
             },
             IRExpression::Variable { variable_label } => IRExpression::Variable { variable_label },
         };

@@ -106,7 +106,7 @@ fn gen_primitive_type(typ: PrimitiveType) -> String {
         PrimitiveType::Char => "char",
         PrimitiveType::Void => "void",
     }
-        .to_owned()
+    .to_owned()
 }
 
 fn gen_struct_name(label: usize) -> String {
@@ -256,7 +256,20 @@ fn gen_expression(ctx: &mut CodegenContext, expression: IRExpression) -> String 
             code += "}";
             code
         }
-        IRExpression::Reference { expression, pos: _ } => format!("(&{})", gen_expression(ctx, *expression)),
+        IRExpression::Reference {
+            expression,
+            pos: _,
+            occupant,
+            type_label: _,
+        } => {
+            let expr = gen_expression(ctx, *expression);
+            if let Some(occupant) = occupant {
+                let var_name = gen_variable_label(occupant);
+                format!("({var_name} = {expr}, &{var_name})")
+            } else {
+                format!("(&{})", expr)
+            }
+        }
         IRExpression::Variable { variable_label } => gen_variable_label(variable_label),
         IRExpression::AutoRef { .. } => unreachable!("IRExpression::AutoRef should not be emitted by normalizer"),
     }
@@ -281,7 +294,11 @@ fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String, code
                 let loop_label = ctx.curr_loop_label;
                 ctx.curr_loop_label += 1;
                 ctx.loop_stack.push(loop_label);
-                let mut code = format!("while({}){}", gen_expression(ctx, condition), gen_block(ctx, block, String::new(), format!("loop_cnt{loop_label}:")));
+                let mut code = format!(
+                    "while({}){}",
+                    gen_expression(ctx, condition),
+                    gen_block(ctx, block, String::new(), format!("loop_cnt{loop_label}:"))
+                );
                 ctx.loop_stack.pop();
                 if ctx.touched_loop_labels.contains(&loop_label) {
                     code += &format!("loop_brk{loop_label}:\n");

@@ -1,0 +1,12 @@
+//OUT="11"
+
+// `&10` spills the literal into a hidden variable; the callee reads the
+// spilled value through the reference and writes back into it.
+
+fn bump x
+    |x += 1
+    ret |x
+
+fn main
+    r = bump(&10)
+    out "{r}"

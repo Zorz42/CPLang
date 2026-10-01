@@ -87,6 +87,8 @@ pub enum IRExpression {
     },
     Reference {
         expression: Box<Self>,
+        occupant: Option<IRVariableLabel>,
+        type_label: IRTypeLabel,
         pos: FilePosition,
     },
     Variable {
@@ -94,6 +96,7 @@ pub enum IRExpression {
     },
     AutoRef {
         autoref_label: IRAutoRefLabel,
+        type_label: IRTypeLabel,
         expression: Box<Self>,
     },
 }

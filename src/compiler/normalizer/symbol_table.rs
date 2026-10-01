@@ -94,9 +94,14 @@ impl SymbolTable {
         self.structs_name_map.get(name).copied()
     }
 
-    pub fn new_variable(&mut self, name: &str) -> IRVariableLabel {
+    pub fn new_variable_label(&mut self) -> IRVariableLabel {
         let label = self.curr_variable_label;
         self.curr_variable_label += 1;
+        label
+    }
+
+    pub fn new_variable(&mut self, name: &str) -> IRVariableLabel {
+        let label = self.new_variable_label();
         let event = self.variable_name_map.get(name).map_or_else(
             || ScopeChange::AddedVariable(name.to_string()),
             |label| ScopeChange::OverridenVariable(name.to_string(), *label),
@@ -111,8 +116,7 @@ impl SymbolTable {
             self.global_variable_name_map.push(HashMap::new());
         }
 
-        let label = self.curr_variable_label;
-        self.curr_variable_label += 1;
+        let label = self.new_variable_label();
         self.global_variable_name_map[file_idx].insert(name.to_string(), label);
         label
     }
