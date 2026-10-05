@@ -7,7 +7,7 @@ struct Vec[T]
         ret &_builtin_index(self._vec i)
 
     fn operator[] i: i64
-        ret self[i32 i]
+        ret &self[i32 i]
 
     fn expand wanted_size
         while wanted_size > self._capacity
