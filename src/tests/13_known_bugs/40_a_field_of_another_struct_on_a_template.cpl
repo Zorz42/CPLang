@@ -1,8 +1,8 @@
 //ERR any
 //BUG="a field access is not checked against the struct it is applied to"
 
-// The same missing check as 39, on a templated struct, where it takes down the
-// compiler instead of reaching gcc.
+// The same mistake as 08_structs/72e, on a templated struct, where it takes
+// down the compiler before `gather_types` can reject it.
 //
 // `run_queue` (src/compiler/type_resolver/mod.rs) decides a struct type is
 // fully known with
@@ -20,7 +20,7 @@
 // unwraps a None — "panicked at src/compiler/type_resolver/mod.rs:253".
 //
 // The count and the lookup disagree about which fields they are talking about.
-// Rejecting `g.w` up front, as 39 argues, removes the disagreement; guarding
+// Rejecting `g.w` up front, in `hint_is_field`, removes the disagreement; guarding
 // the count so it only looks at the struct's own fields would too.
 
 struct A

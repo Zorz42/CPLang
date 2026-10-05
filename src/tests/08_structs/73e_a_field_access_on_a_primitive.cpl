@@ -1,0 +1,16 @@
+//ERR -1 -1 -1 -1
+//MSG="Field access on non-struct type."
+
+// A field of an integer. 59e reaches an error only because printing `a.x`
+// leaves `print`'s overload set ambiguous; here nothing else goes wrong, so the
+// check at the end of type resolution (`gather_types`) is what rejects it.
+// Before that check the compiler accepted this and wrote C that gcc rejected
+// with "member reference base type 'int' is not a structure or union".
+
+struct S
+    v: i32
+
+fn main
+    b = 2
+    b.v = 5
+    out "ok"

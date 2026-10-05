@@ -1,0 +1,20 @@
+//ERR -1 -1 -1 -1
+//MSG="Access of a non-existing field in struct."
+
+// `w` is a real field name, just not one of B's. Field names live in one global
+// map, so the lookup that catches 58e's unknown name finds `w` here; it takes
+// the check at the end of type resolution (`gather_types`) to see that B has no
+// such field. Before that check the compiler accepted this and wrote C that gcc
+// rejected with "no member named 'F0' in 'struct S4'". Writing the field
+// (`b.w = 5`) and testing it (`if b.w`) are the same mistake.
+
+struct A
+    w: i32
+
+struct B
+    v: i32
+
+fn main
+    b = B v 1
+    x: i32 = b.w
+    out "{x}"

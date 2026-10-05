@@ -605,6 +605,27 @@ impl TypeResolver {
             types.insert(type_label, typ);
         }
 
+        // check that accessed struct fields actually exist
+        for typ in 0..self.type_dsu.len() {
+            if self.type_dsu.get_repr(typ) != typ || self.type_dsu.get(typ).child_fields.is_empty() {
+                continue;
+            }
+            let Some(struct_label) = self.type_dsu.get(typ).known_struct else {
+                return Err(CompilerError {
+                    message: "Field access on non-struct type.".to_owned(),
+                    position: None,
+                });
+            };
+            for (field_label, _field_type) in self.type_dsu.get(typ).child_fields.to_vec() {
+                if !self.structs[struct_label].contains(&field_label) {
+                    return Err(CompilerError {
+                        message: "Access of a non-existing field in struct.".to_owned(),
+                        position: None,
+                    });
+                }
+            }
+        }
+
         Ok((types, autorefs))
     }
 
