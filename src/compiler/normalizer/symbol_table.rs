@@ -94,7 +94,7 @@ impl SymbolTable {
         self.structs_name_map.get(name).copied()
     }
 
-    pub fn new_variable_label(&mut self) -> IRVariableLabel {
+    pub const fn new_variable_label(&mut self) -> IRVariableLabel {
         let label = self.curr_variable_label;
         self.curr_variable_label += 1;
         label

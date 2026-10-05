@@ -1,0 +1,13 @@
+//OUT="3"
+
+// Same as 44, with the call being to a user function that returns a struct.
+
+fn three
+    v = Vec()
+    v.push(1)
+    v.push(2)
+    v.push(3)
+    ret v
+
+fn main
+    out "{three().size()}"

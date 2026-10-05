@@ -2,8 +2,6 @@
 //OUT="1 2 3 5 7 9 \n"
 
 // Reads n numbers, sorts them with a selection sort over a Vec, prints them.
-// The `+ 0` keeps the element a value rather than a reference into the vector;
-// see 12_stdlib/50e_assigning_one_element_to_another.cpl.
 
 fn main
     n = read_i32()
@@ -16,8 +14,8 @@ fn main
         for j i+1..n
             if v[j] < v[smallest]
                 smallest = j
-        tmp = v[i] + 0
-        v[i] = v[smallest] + 0
+        tmp = v[i]
+        v[i] = v[smallest]
         v[smallest] = tmp
 
     for x v

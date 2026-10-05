@@ -1,0 +1,7 @@
+//OUT="7"
+
+// The index operator applies to a call result directly.
+
+fn main
+    x = Vec[i32](3 7)[0]
+    out "{x}"

@@ -1,0 +1,7 @@
+//OUT="0"
+
+// Postfix operators apply to a call result directly, without naming it first.
+
+fn main
+    x = Str().size()
+    out "{x}"

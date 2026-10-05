@@ -1,0 +1,10 @@
+//OUT="7"
+
+// A second index on an element of a Vec of Vecs.
+
+fn main
+    grid = Vec[Vec[i32]]()
+    row = Vec[i32]()
+    row.push(7)
+    grid.push(row)
+    out "{grid[0][0]}"

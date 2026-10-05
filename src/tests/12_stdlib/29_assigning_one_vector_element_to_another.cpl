@@ -1,0 +1,11 @@
+//OUT="2 2"
+
+// v[i] = v[j] copies the element: the right-hand side is read as a value, and
+// the left-hand side is still assignable.
+
+fn main
+    v = Vec()
+    v.push(1)
+    v.push(2)
+    v[0] = v[1]
+    out "{v[0]} {v[1]}"

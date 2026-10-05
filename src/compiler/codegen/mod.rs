@@ -263,12 +263,13 @@ fn gen_expression(ctx: &mut CodegenContext, expression: IRExpression) -> String 
             type_label: _,
         } => {
             let expr = gen_expression(ctx, *expression);
-            if let Some(occupant) = occupant {
-                let var_name = gen_variable_label(occupant);
-                format!("({var_name} = {expr}, &{var_name})")
-            } else {
-                format!("(&{})", expr)
-            }
+            occupant.map_or_else(
+                || format!("(&{expr})"),
+                |occupant| {
+                    let var_name = gen_variable_label(occupant);
+                    format!("({var_name} = {expr}, &{var_name})")
+                },
+            )
         }
         IRExpression::Variable { variable_label } => gen_variable_label(variable_label),
         IRExpression::AutoRef { .. } => unreachable!("IRExpression::AutoRef should not be emitted by normalizer"),

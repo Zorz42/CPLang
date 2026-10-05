@@ -442,7 +442,7 @@ impl Lowerer {
             }
 
             ASTExpressionKind::Index { expression, arguments } => self.lower_expression(ASTExpression {
-                kind: ASTExpressionKind::AutoRef(Box::new(ASTExpression {
+                kind: ASTExpressionKind::Dereference(Box::new(ASTExpression {
                     kind: ASTExpressionKind::MethodCall {
                         expression,
                         call: ASTFunctionCall {
