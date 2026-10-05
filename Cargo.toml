@@ -2,6 +2,18 @@
 name = "cplang"
 version = "0.1.0"
 edition = "2024"
+# Not published; also exempts the crate from `clippy::cargo_common_metadata`.
+publish = false
+
+[workspace]
+members = [
+    "src/test_derive",
+    "src/call_counter_derive",
+    "src/compiler/type_resolver/rollback_derive",
+]
+
+[lints]
+workspace = true
 
 [dependencies]
 test_derive = { path = "src/test_derive" }
@@ -39,3 +51,98 @@ criterion = { version = "0.8", features = ["html_reports"] }
 [[bench]]
 name = "my_benchmark"
 harness = false
+
+# Shared by every crate in the workspace (each member opts in with
+# `[lints] workspace = true`). CI runs clippy with `-D warnings`, so every
+# `warn` here is effectively an error there.
+[workspace.lints.rust]
+unsafe_code = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+elided_lifetimes_in_paths = "warn"
+explicit_outlives_requirements = "warn"
+macro_use_extern_crate = "warn"
+meta_variable_misuse = "warn"
+redundant_lifetimes = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+unit_bindings = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
+unused_qualifications = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+
+# Group lints switched off on purpose.
+# `code += &format!(..)` reads better than `write!` plus an ignored `Result`.
+format_push_string = "allow"
+# Narrowing casts here are on labels, lengths and depths that realistically
+# never leave range, and `x as u32` reads better than `u32::try_from(x).expect(..)`.
+cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+# Taking ownership reads better in functions that consume their arguments,
+# even when the body happens to only borrow.
+needless_pass_by_value = "allow"
+similar_names = "allow"
+too_many_lines = "allow"
+# Transitive dependencies pull in duplicate versions we do not control.
+multiple_crate_versions = "allow"
+
+# Restriction lints: not on by default, but they fit this codebase.
+# Every suppression must be an `#[expect(..., reason = "...")]`.
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+# Leftover debugging.
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+# Hash iteration order varies between runs, which would make the generated C
+# (and the `.test_cache` keys derived from it) nondeterministic.
+iter_over_hash_type = "warn"
+# Assertion and error hygiene.
+assertions_on_result_states = "warn"
+get_unwrap = "warn"
+map_err_ignore = "warn"
+missing_assert_message = "warn"
+try_err = "warn"
+unused_result_ok = "warn"
+undocumented_unsafe_blocks = "warn"
+unnecessary_safety_comment = "warn"
+unnecessary_safety_doc = "warn"
+mem_forget = "warn"
+# Style and clarity.
+cfg_not_test = "warn"
+clone_on_ref_ptr = "warn"
+create_dir = "warn"
+deref_by_slicing = "warn"
+empty_drop = "warn"
+empty_enum_variants_with_brackets = "warn"
+empty_structs_with_brackets = "warn"
+filetype_is_file = "warn"
+fn_to_numeric_cast_any = "warn"
+if_then_some_else_none = "warn"
+infinite_loop = "warn"
+lossy_float_literal = "warn"
+mixed_read_write_in_expression = "warn"
+mutex_atomic = "warn"
+needless_raw_strings = "warn"
+pathbuf_init_then_push = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+redundant_type_annotations = "warn"
+renamed_function_params = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+return_and_then = "warn"
+same_name_method = "warn"
+semicolon_outside_block = "warn"
+str_to_string = "warn"
+string_lit_chars_any = "warn"
+unnecessary_self_imports = "warn"
+unseparated_literal_suffix = "warn"
+verbose_file_reads = "warn"

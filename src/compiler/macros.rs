@@ -24,13 +24,13 @@ pub fn insert_macros(tokens: Vec<(Token, FilePosition)>) -> CompilerResult<Vec<(
             (Token::Identifier(name), pos) => (name, pos),
             (Token::End, _) => {
                 return Err(CompilerError {
-                    message: "Expected another token after this one".to_string(),
+                    message: "Expected another token after this one".to_owned(),
                     position: Some(token_block.get_last_pos()),
                 });
             }
             (_, pos) => {
                 return Err(CompilerError {
-                    message: "Expected identifier".to_string(),
+                    message: "Expected identifier".to_owned(),
                     position: Some(pos),
                 });
             }
@@ -48,7 +48,7 @@ pub fn insert_macros(tokens: Vec<(Token, FilePosition)>) -> CompilerResult<Vec<(
                 }
                 (_, pos) => {
                     return Err(CompilerError {
-                        message: "Expected identifier or brace block".to_string(),
+                        message: "Expected identifier or brace block".to_owned(),
                         position: Some(pos),
                     });
                 }
@@ -57,7 +57,7 @@ pub fn insert_macros(tokens: Vec<(Token, FilePosition)>) -> CompilerResult<Vec<(
 
         if macros.contains_key(&macro_name) {
             return Err(CompilerError {
-                message: "Macro redefinition not allowed".to_string(),
+                message: "Macro redefinition not allowed".to_owned(),
                 position: Some(name_pos),
             });
         }
@@ -77,7 +77,11 @@ pub fn insert_macros(tokens: Vec<(Token, FilePosition)>) -> CompilerResult<Vec<(
 }
 
 fn gen_macro(macro_declaration: &MacroDeclaration, arguments: Vec<TokenBlock>) -> Vec<(Token, FilePosition)> {
-    assert_eq!(macro_declaration.arguments.len(), arguments.len());
+    assert_eq!(
+        macro_declaration.arguments.len(),
+        arguments.len(),
+        "macro called with the wrong number of arguments"
+    );
 
     gen_block(&macro_declaration.arguments, macro_declaration.block.clone(), &arguments)
 }

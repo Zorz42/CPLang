@@ -22,7 +22,7 @@ fn discover_cases(tests_dir: &Path) -> Vec<(String, String)> {
         if !dir_path.is_dir() {
             continue;
         }
-        let dir_name = dir_path.file_name().unwrap().to_str().expect("test directory name is not UTF-8").to_string();
+        let dir_name = dir_path.file_name().unwrap().to_str().expect("test directory name is not UTF-8").to_owned();
 
         let files = std::fs::read_dir(&dir_path).unwrap_or_else(|e| panic!("could not read {}: {e}", dir_path.display()));
         for file in files {
@@ -36,10 +36,9 @@ fn discover_cases(tests_dir: &Path) -> Vec<(String, String)> {
 
             assert!(
                 is_usable_name(&dir_name) && is_usable_name(stem),
-                "test path `{}/{file_name}` must consist of letters, digits and underscores",
-                dir_name
+                "test path `{dir_name}/{file_name}` must consist of letters, digits and underscores"
             );
-            cases.push((dir_name.clone(), stem.to_string()));
+            cases.push((dir_name.clone(), stem.to_owned()));
         }
     }
 
@@ -53,6 +52,11 @@ fn discover_cases(tests_dir: &Path) -> Vec<(String, String)> {
 /// read; it exists so cargo records the files as inputs of this crate and
 /// rebuilds when one is added, changed or removed. Without it a new test file
 /// silently does not run until something else forces a recompile.
+///
+/// # Panics
+///
+/// Panics, failing the build, if `src/tests/` cannot be read, holds no cases,
+/// or holds a case whose path is not a valid identifier.
 #[proc_macro]
 pub fn generate_tests(_item: TokenStream) -> TokenStream {
     // Resolve relative to the crate being compiled rather than the working
@@ -65,7 +69,7 @@ pub fn generate_tests(_item: TokenStream) -> TokenStream {
 
     let mut code = String::new();
     code.push_str("/// Forces cargo to treat the test files as inputs of this crate.\n");
-    code.push_str("#[allow(dead_code)]\n");
+    code.push_str("#[expect(dead_code, reason = \"only read by cargo\")]\n");
     code.push_str("const TEST_FILE_CONTENTS: &[&[u8]] = &[\n");
     for (dir, stem) in &cases {
         code.push_str(&format!("    include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/src/tests/{dir}/{stem}.cpl\")),\n"));

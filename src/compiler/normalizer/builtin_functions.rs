@@ -208,7 +208,7 @@ impl Normalizer {
             GETCHAR_LABEL => {
                 let char_type = self.type_resolver.new_type_label(FilePosition::unknown());
                 self.type_resolver.hint_is(char_type, PrimitiveType::Char)?;
-                Ok((IRBuiltinFunctionCall::Getchar {}, char_type))
+                Ok((IRBuiltinFunctionCall::Getchar, char_type))
             }
 
             PUTCHAR_LABEL => {
@@ -318,7 +318,7 @@ impl IRBuiltinFunctionCall {
         match self {
             Self::Index { .. } | Self::IndexStr { .. } => ValuePhysicality::Physical,
             Self::Alloc { .. }
-            | Self::Getchar { .. }
+            | Self::Getchar
             | Self::Putchar { .. }
             | Self::Cast { .. }
             | Self::And { .. }

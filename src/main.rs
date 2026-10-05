@@ -15,7 +15,7 @@ struct Args<'a> {
 }
 
 fn print_usage(program_name: &str) {
-    eprintln!("Usage: {} <input_file> -o <output_file>", program_name);
+    eprintln!("Usage: {program_name} <input_file> -o <output_file>");
 }
 
 /// Parses everything after the program name. The error is a message to show
@@ -34,7 +34,7 @@ fn parse_args(args: &[String]) -> Result<Args<'_>, String> {
             }
             arg => {
                 if input_file.is_some() {
-                    return Err(format!("Unexpected argument '{}'", arg));
+                    return Err(format!("Unexpected argument '{arg}'"));
                 }
                 input_file = Some(arg);
                 i += 1;
@@ -44,18 +44,18 @@ fn parse_args(args: &[String]) -> Result<Args<'_>, String> {
 
     match (input_file, output_file) {
         (Some(input), Some(output)) => Ok(Args { input, output }),
-        (None, _) => Err("Missing input file".to_string()),
-        (_, None) => Err("Missing output file option (-o)".to_string()),
+        (None, _) => Err("Missing input file".to_owned()),
+        (_, None) => Err("Missing output file option (-o)".to_owned()),
     }
 }
 
 fn run(args: &[String]) -> ExitCode {
-    let program_name = args.first().map(|s| s.as_str()).unwrap_or("cplang");
+    let program_name = args.first().map_or("cplang", String::as_str);
 
     let args = match parse_args(args.get(1..).unwrap_or_default()) {
         Ok(args) => args,
         Err(message) => {
-            eprintln!("Error: {}", message);
+            eprintln!("Error: {message}");
             print_usage(program_name);
             return ExitCode::FAILURE;
         }
@@ -86,7 +86,7 @@ fn remove_stale_output(output_path: &str) {
     match std::fs::remove_file(output_path) {
         Ok(()) => {}
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-        Err(e) => eprintln!("Error removing stale output file '{}': {}", output_path, e),
+        Err(e) => eprintln!("Error removing stale output file '{output_path}': {e}"),
     }
 }
 
@@ -101,7 +101,7 @@ fn report_error(err: &CompilerError, input_path: &str) {
 
     match std::fs::read_to_string(input_path) {
         Ok(content) => display_error(err, input_path, &content),
-        Err(e) => eprintln!("Error reading input file '{}': {}", input_path, e),
+        Err(e) => eprintln!("Error reading input file '{input_path}': {e}"),
     }
 }
 

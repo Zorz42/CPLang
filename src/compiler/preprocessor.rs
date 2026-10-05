@@ -202,13 +202,13 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                     let (mut c, pos) = match chars.next() {
                         None => {
                             return Err(CompilerError {
-                                message: "Expected character after quote, not EOF".to_string(),
+                                message: "Expected character after quote, not EOF".to_owned(),
                                 position: Some(pos_char.pos),
                             });
                         }
                         Some(PosChar { c: '\n', pos: _ }) => {
                             return Err(CompilerError {
-                                message: "Expected character after quote, not newline".to_string(),
+                                message: "Expected character after quote, not newline".to_owned(),
                                 position: Some(pos_char.pos),
                             });
                         }
@@ -219,7 +219,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                             Some(ch) => c = ch,
                             None => {
                                 return Err(CompilerError {
-                                    message: "Unrecognized escape character".to_string(),
+                                    message: "Unrecognized escape character".to_owned(),
                                     position: Some(pos),
                                 });
                             }
@@ -228,7 +228,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
                     let nxt = chars.next();
                     if !matches!(nxt, Some(PosChar { pos: _, c: '\'' })) {
                         return Err(CompilerError {
-                            message: "Expected quote".to_string(),
+                            message: "Expected quote".to_owned(),
                             position: Some(pos),
                         });
                     }
@@ -303,7 +303,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
             let end_pos = input.last().unwrap().pos;
 
             return Err(CompilerError {
-                message: "Unclosed string literal".to_string(),
+                message: "Unclosed string literal".to_owned(),
                 position: Some(start_pos + end_pos),
             });
         }
@@ -312,7 +312,7 @@ pub fn parse_strings_and_comments(input: &Vec<PosChar>) -> CompilerResult<Vec<Fr
             let end_pos = input.last().unwrap().pos;
 
             return Err(CompilerError {
-                message: "Unclosed multiline comment".to_string(),
+                message: "Unclosed multiline comment".to_owned(),
                 position: Some(start_pos + end_pos),
             });
         }

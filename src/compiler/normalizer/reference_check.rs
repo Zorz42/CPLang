@@ -45,7 +45,7 @@ impl IRPass for CheckRefsPass<'_> {
                 let is_phys = is_expression_physical(&assign_to);
                 if is_phys == ValuePhysicality::Temporary {
                     self.report_error(CompilerError {
-                        message: "Left hand side is non-assignable.".to_string(),
+                        message: "Left hand side is non-assignable.".to_owned(),
                         position: Some(pos),
                     });
                 }

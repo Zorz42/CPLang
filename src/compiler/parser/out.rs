@@ -56,7 +56,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
 
                 if token_block.has_tokens() {
                     return Err(CompilerError {
-                        message: "There are multiple expressions in one format string".to_string(),
+                        message: "There are multiple expressions in one format string".to_owned(),
                         position: Some(format_pos + end_pos),
                     });
                 }
@@ -85,7 +85,7 @@ fn parse_format_string(structs: &Vec<ASTStructDeclaration>, string: Vec<PosChar>
             last_pos: (pos.first_pos.0, pos.first_pos.1 + string_len + 1),
         };
         return Err(CompilerError {
-            message: "Expected } to close format string".to_string(),
+            message: "Expected } to close format string".to_owned(),
             position: Some(format_pos + end_pos),
         });
     }
@@ -104,7 +104,7 @@ pub fn parse_out_statement(structs: &Vec<ASTStructDeclaration>, block: &mut Toke
                 values: parse_format_string(structs, string, pos)?,
             })),
             _ => Err(CompilerError {
-                message: "Expected string after out keyword".to_string(),
+                message: "Expected string after out keyword".to_owned(),
                 position: Some(print_pos),
             }),
         }

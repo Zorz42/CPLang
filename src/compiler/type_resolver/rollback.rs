@@ -57,7 +57,12 @@ impl<T: Rollback> RollbackVec<T> {
         self.prev_state.reserve(n);
     }*/
 
+    /// # Safety
+    ///
+    /// `idx` must be in bounds.
+    #[expect(unsafe_code, reason = "lets `Dsu::get_repr` skip the bounds check")]
     pub unsafe fn get_unchecked(&self, idx: usize) -> &T {
+        // SAFETY: the caller guarantees `idx` is in bounds.
         unsafe { self.vec.get_unchecked(idx) }
     }
 

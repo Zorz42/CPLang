@@ -91,7 +91,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
             (Token::ParenthesisBlock(mut block), _) => parse_expression(structs, &mut block)?,
             (Token::End, _) => {
                 return Err(CompilerError {
-                    message: "Expected another token after this one".to_string(),
+                    message: "Expected another token after this one".to_owned(),
                     position: Some(block.get_last_pos()),
                 });
             }
@@ -137,7 +137,7 @@ fn parse_value(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBlock) -> C
                         ),
                         (Token::End, _) => {
                             return Err(CompilerError {
-                                message: "Expected another token after this one".to_string(),
+                                message: "Expected another token after this one".to_owned(),
                                 position: Some(block.get_last_pos()),
                             });
                         }
@@ -301,7 +301,7 @@ pub fn parse_expression(structs: &Vec<ASTStructDeclaration>, block: &mut TokenBl
     }
 
     for op in ops {
-        assert_eq!(op, ASTOperator::Comma);
+        assert_eq!(op, ASTOperator::Comma, "only commas are left once every other operator is folded");
     }
 
     if vals.len() == 1 {

@@ -34,14 +34,13 @@ pub fn display_error(error: &CompilerError, input_path: &str, input: &str) {
         println!("  --> {file_name}:{}:{}", position.first_pos.0 + 1, position.first_pos.1 + 1);
         println!();
 
-        let source = &gain_input_sources(input.to_string())[position.file_ident];
+        let source = &gain_input_sources(input.to_owned())[position.file_ident];
         let lines: Vec<&str> = source.lines().collect();
 
         let padded_line_start = line_start.saturating_sub(2);
         let padded_line_end = (line_end + 2).min(lines.len() - 1);
 
-        // this lint only makes things less readable
-        #[allow(clippy::needless_range_loop)]
+        #[expect(clippy::needless_range_loop, reason = "the line number is printed, not just used to index")]
         for line in padded_line_start..=padded_line_end {
             // first, print line number and leave space after that for longer line numbers
             let spacing = " ".repeat((padded_line_end + 1).to_string().len() - (line + 1).to_string().len());

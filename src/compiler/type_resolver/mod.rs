@@ -52,16 +52,16 @@ pub struct TypeNode {
 
 impl AddAssign for TypeNode {
     fn add_assign(&mut self, mut rhs: Self) {
-        assert_eq!(self.known_struct, rhs.known_struct);
+        assert_eq!(self.known_struct, rhs.known_struct, "merged nodes must agree on the struct");
         if !rhs.child_fields.is_empty() {
             swap(&mut self.child_fields, &mut rhs.child_fields);
         }
-        assert!(rhs.child_fields.is_empty());
-        assert_eq!(self.typ, rhs.typ);
+        assert!(rhs.child_fields.is_empty(), "only one of the merged nodes may have fields");
+        assert_eq!(self.typ, rhs.typ, "merged nodes must agree on the type");
         if !rhs.ref_map.is_empty() {
             swap(&mut rhs.ref_map, &mut self.ref_map);
         }
-        assert!(rhs.ref_map.is_empty());
+        assert!(rhs.ref_map.is_empty(), "only one of the merged nodes may have references");
     }
 }
 
@@ -129,7 +129,7 @@ impl TypeResolver {
 
     #[count_calls]
     pub fn new_type_label(&mut self, pos: FilePosition) -> IRTypeLabel {
-        let res = self.dsu.len() as IRTypeLabel;
+        let res = self.dsu.len();
         self.dsu.add();
         self.type_dsu.add();
         self.type_dsu.get(res).ref_map.insert((res, 0), res);
@@ -149,7 +149,7 @@ impl TypeResolver {
     }
 
     pub fn new_autoref_label(&mut self, label1: IRTypeLabel, label2: IRTypeLabel) -> IRAutoRefLabel {
-        let res = self.auto_ref_pairs.len() as IRAutoRefLabel;
+        let res = self.auto_ref_pairs.len();
         self.auto_ref_pairs.push((label1, label2));
         res
     }
@@ -277,11 +277,10 @@ impl TypeResolver {
         let mut typ2 = self.type_dsu.get(label2).typ.clone();
 
         if typ1.is_none() {
-            typ1 = typ2.clone();
+            typ1.clone_from(&typ2);
         } else if typ2.is_none() {
-            typ2 = typ1.clone();
+            typ2.clone_from(&typ1);
         } else if typ1 != typ2 {
-            #[allow(clippy::unnecessary_unwrap)]
             return Err(CompilerError {
                 message: format!("This expression cannot be {:?} and {:?} at the same time.", typ1.unwrap(), typ2.unwrap()),
                 position: Some(*self.type_positions.get(label1)),
@@ -310,7 +309,7 @@ impl TypeResolver {
             && s1 != s2
         {
             return Err(CompilerError {
-                message: "This type cannot be two different struct types at the same time.".to_string(),
+                message: "This type cannot be two different struct types at the same time.".to_owned(),
                 position: Some(*self.type_positions.get(label1)),
             });
         }
@@ -357,7 +356,7 @@ impl TypeResolver {
 
             if self.type_dsu.get(label1).known_struct != known_struct {
                 return Err(CompilerError {
-                    message: "This type cannot be two different struct types at the same time.".to_string(),
+                    message: "This type cannot be two different struct types at the same time.".to_owned(),
                     position: Some(*self.type_positions.get(label1)),
                 });
             }
@@ -512,12 +511,12 @@ impl TypeResolver {
     pub fn hint_struct(&mut self, struct_type_label: IRTypeLabel, struct_label: IRStructLabel, field_type_labels: Vec<IRTypeLabel>) -> CompilerResult<()> {
         #[cfg(feature = "trace")]
         println!("hint_struct({struct_type_label}, {struct_label}, {field_type_labels:?})");
-        assert_eq!(field_type_labels.len(), self.structs[struct_label].len());
+        assert_eq!(field_type_labels.len(), self.structs[struct_label].len(), "one type per field of the struct");
 
         if let Some(curr_struct_label) = self.type_dsu.get(struct_type_label).known_struct {
             if curr_struct_label != struct_label {
                 return Err(CompilerError {
-                    message: "This type cannot be two different struct types at the same time.".to_string(),
+                    message: "This type cannot be two different struct types at the same time.".to_owned(),
                     position: Some(*self.type_positions.get(struct_type_label)),
                 });
             }
@@ -526,7 +525,7 @@ impl TypeResolver {
         }
 
         for (field_label, field_type) in self.structs_ord[struct_label].clone().into_iter().zip(field_type_labels) {
-            assert!(self.structs[struct_label].contains(&field_label));
+            assert!(self.structs[struct_label].contains(&field_label), "field belongs to the struct");
 
             self.set_field(field_type, field_label, struct_type_label)?;
         }
@@ -598,7 +597,7 @@ impl TypeResolver {
         for type_label in needed_types {
             let Some(typ) = self.fetch_final_ir_type(type_label) else {
                 return Err(CompilerError {
-                    message: "Could not deduce this expression's type".to_string(),
+                    message: "Could not deduce this expression's type".to_owned(),
                     position: Some(*self.type_positions.get(type_label)),
                 });
             };

@@ -30,7 +30,10 @@ impl<T: AddAssign + Default + Rollback> Dsu<T> {
     }
 
     #[count_calls(3)]
+    #[expect(unsafe_code, reason = "the hottest loop of the type resolver")]
     pub fn get_repr(&mut self, mut a: usize) -> usize {
+        // SAFETY: `a` starts as a label handed out by `add`, and every
+        // non-negative parent is a label too, so it is always in bounds.
         while let x = unsafe { *self.parent.get_unchecked(a) }
             && x >= 0
         {

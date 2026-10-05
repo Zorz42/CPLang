@@ -35,7 +35,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
         }
         (Token::Operator, pos) => {
             let (op, op_pos) = block.get();
-            res_signature.name = "operator".to_string()
+            res_signature.name = "operator".to_owned()
                 + match op {
                     Token::Plus => "+",
                     Token::Minus => "-",
@@ -61,7 +61,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
                     Token::BracketBlock(block) => {
                         if block.has_tokens() {
                             return Err(CompilerError {
-                                message: "There should be nothing between []".to_string(),
+                                message: "There should be nothing between []".to_owned(),
                                 position: Some(op_pos),
                             });
                         }
@@ -69,13 +69,13 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
                     }
                     Token::End => {
                         return Err(CompilerError {
-                            message: "Expected another token after this one".to_string(),
+                            message: "Expected another token after this one".to_owned(),
                             position: Some(block.get_last_pos()),
                         });
                     }
                     _ => {
                         return Err(CompilerError {
-                            message: "Unexpected token".to_string(),
+                            message: "Unexpected token".to_owned(),
                             position: Some(op_pos),
                         });
                     }
@@ -84,13 +84,13 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
         }
         (Token::End, _) => {
             return Err(CompilerError {
-                message: "Expected another token after this one".to_string(),
+                message: "Expected another token after this one".to_owned(),
                 position: Some(block.get_last_pos()),
             });
         }
         (_, pos) => {
             return Err(CompilerError {
-                message: "Unexpected token".to_string(),
+                message: "Unexpected token".to_owned(),
                 position: Some(pos),
             });
         }
@@ -98,7 +98,7 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
 
     if is_builtin_identifier(&res_signature.name) {
         return Err(CompilerError {
-            message: "You cannot declare a builtin function".to_string(),
+            message: "You cannot declare a builtin function".to_owned(),
             position: Some(res_signature.pos),
         });
     }
@@ -127,11 +127,11 @@ pub fn parse_function_declaration(block: &mut TokenBlock, file_idx: usize) -> Co
             Ok(Some((res_signature, res_block)))
         }
         (Token::End, _) => Err(CompilerError {
-            message: "Expected another token after this one".to_string(),
+            message: "Expected another token after this one".to_owned(),
             position: Some(block.get_last_pos()),
         }),
         (_, pos) => Err(CompilerError {
-            message: "Expected block, argument identifier or arrow here".to_string(),
+            message: "Expected block, argument identifier or arrow here".to_owned(),
             position: Some(pos),
         }),
     }

@@ -1,18 +1,3 @@
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::nursery)]
-#![warn(clippy::cargo)]
-// most of the time i like it if there are no references,
-// since the code looks prettier, especially in functions that consume arguments
-#![allow(clippy::needless_pass_by_value)]
-#![allow(clippy::similar_names)]
-#![allow(clippy::cast_possible_truncation)]
-#![allow(clippy::cast_possible_wrap)]
-#![allow(clippy::too_many_lines)]
-#![allow(clippy::assigning_clones)]
-#![allow(clippy::format_push_string)]
-#![allow(clippy::cast_sign_loss)]
-
 use crate::compiler::codegen::generate_code;
 use crate::compiler::error::{CompilerError, CompilerResult};
 use crate::compiler::lowerer::lower_ast;
@@ -46,11 +31,11 @@ less different types of nodes and explicit types and indexes instead of string/n
 pub fn gain_input_sources(input_content: String) -> [String; 6] {
     [
         input_content,
-        include_str!("../core/operators.cpl").to_string(),
-        include_str!("../core/range.cpl").to_string(),
-        include_str!("../core/io.cpl").to_string(),
-        include_str!("../core/vector.cpl").to_string(),
-        include_str!("../core/string.cpl").to_string(),
+        include_str!("../core/operators.cpl").to_owned(),
+        include_str!("../core/range.cpl").to_owned(),
+        include_str!("../core/io.cpl").to_owned(),
+        include_str!("../core/vector.cpl").to_owned(),
+        include_str!("../core/string.cpl").to_owned(),
     ]
 }
 
@@ -99,8 +84,8 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     // Run compilation in a thread with a large stack size to handle deep recursion
     const STACK_SIZE: usize = 256 * 1024 * 1024; // 256MB
 
-    let input_file = input_file.to_string();
-    let output_file = output_file.to_string();
+    let input_file = input_file.to_owned();
+    let output_file = output_file.to_owned();
 
     let worker = std::thread::Builder::new()
         .stack_size(STACK_SIZE)

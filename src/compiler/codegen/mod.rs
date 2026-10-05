@@ -10,7 +10,6 @@ Codegen converts IR into raw C code. Could be easily replaced with any other lan
 
 type LoopLabel = usize;
 
-#[allow(clippy::type_complexity)]
 struct CodegenContext {
     types: HashMap<IRTypeLabel, IRType>,
     var_types: Vec<IRTypeLabel>,
@@ -23,7 +22,7 @@ struct CodegenContext {
     curr_loop_label: LoopLabel,
 }
 
-const OUTPUT_TEMPLATE: &str = r"
+const OUTPUT_TEMPLATE: &str = "
 #include<sys/mman.h>
 #include<stdint.h>
 #include<stdio.h>
@@ -175,7 +174,7 @@ fn gen_builtin_call(ctx: &mut CodegenContext, call: IRBuiltinFunctionCall) -> St
         }
         IRBuiltinFunctionCall::Index { arr, idx } => format!("({})[{}]", gen_expression(ctx, *arr), gen_expression(ctx, *idx)),
         IRBuiltinFunctionCall::IndexStr { string, idx } => format!("({})[{}]", gen_expression(ctx, *string), gen_expression(ctx, *idx)),
-        IRBuiltinFunctionCall::Getchar {} => "getchar()".to_string(),
+        IRBuiltinFunctionCall::Getchar => "getchar()".to_owned(),
         IRBuiltinFunctionCall::Putchar { arg } => format!("putchar({})", gen_expression(ctx, *arg)),
         IRBuiltinFunctionCall::Cast { arg, to_type } => format!("({})({})", gen_primitive_type(to_type), gen_expression(ctx, *arg)),
         IRBuiltinFunctionCall::Add { arg1, arg2 } => gen_op(ctx, *arg1, *arg2, "+"),
@@ -214,7 +213,7 @@ fn gen_expression(ctx: &mut CodegenContext, expression: IRExpression) -> String 
             }
             IRConstant::Int(x) => format!("{x}"),
             IRConstant::Float(x) => format!("{x}"),
-            IRConstant::Bool(x) => (if x { "1" } else { "0" }).to_string(),
+            IRConstant::Bool(x) => (if x { "1" } else { "0" }).to_owned(),
             IRConstant::Char(x) => (x as i32).to_string(),
         },
         IRExpression::InstanceCall {
@@ -307,10 +306,9 @@ fn gen_block(ctx: &mut CodegenContext, block: IRBlock, code_prefix: String, code
                 code
             }
             IRStatement::Expression { expr } => format!("{};", gen_expression(ctx, expr)),
-            IRStatement::Return { return_value } => return_value.map_or_else(
-                || "return;".to_string(),
-                |return_value| format!("return {};", gen_expression(ctx, return_value)),
-            ),
+            IRStatement::Return { return_value } => {
+                return_value.map_or_else(|| "return;".to_owned(), |return_value| format!("return {};", gen_expression(ctx, return_value)))
+            }
             IRStatement::Assignment { assign_to, value, pos: _ } => {
                 format!("{} = {};", gen_expression(ctx, assign_to), gen_expression(ctx, value))
             }

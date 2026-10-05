@@ -103,7 +103,7 @@ fn unescape(value: &str) -> Result<String, String> {
             Some('\\') => res.push('\\'),
             Some('"') => res.push('"'),
             Some(other) => return Err(format!("unknown escape sequence '\\{other}'")),
-            None => return Err("trailing backslash".to_string()),
+            None => return Err("trailing backslash".to_owned()),
         }
     }
     Ok(res)
@@ -127,16 +127,16 @@ fn parse_err_position(rest: &str) -> Result<ExpectedPosition, String> {
     if parts.len() != 4 {
         return Err(format!("//ERR takes 4 integers (line col line col) or `any`, got {}", parts.len()));
     }
-    let mut nums = [0i64; 4];
+    let mut nums = [0_i64; 4];
     for (slot, part) in nums.iter_mut().zip(parts) {
-        *slot = part.parse().map_err(|_| format!("//ERR: `{part}` is not an integer"))?;
+        *slot = part.parse().map_err(|e| format!("//ERR: `{part}` is not an integer: {e}"))?;
     }
 
     if nums == [-1, -1, -1, -1] {
         return Ok(ExpectedPosition::Absent);
     }
     if nums.iter().any(|n| *n < 0) {
-        return Err("//ERR: a position is either all four values or all -1".to_string());
+        return Err("//ERR: a position is either all four values or all -1".to_owned());
     }
     Ok(ExpectedPosition::Exact(FilePosition {
         file_ident: 0,
@@ -157,7 +157,7 @@ fn parse_header(source: &str) -> Result<Expectation, String> {
         let line = line.trim_end();
         if let Some(rest) = line.strip_prefix("//BUG=") {
             if bug.is_some() {
-                return Err("duplicate //BUG directive".to_string());
+                return Err("duplicate //BUG directive".to_owned());
             }
             bug = Some(parse_quoted("//BUG", rest)?);
         } else if let Some(rest) = line.strip_prefix("//OUT=") {
@@ -166,12 +166,12 @@ fn parse_header(source: &str) -> Result<Expectation, String> {
             stdin.push_str(&parse_quoted("//IN", rest)?);
         } else if let Some(rest) = line.strip_prefix("//ERR") {
             if error.is_some() {
-                return Err("duplicate //ERR directive".to_string());
+                return Err("duplicate //ERR directive".to_owned());
             }
             error = Some(parse_err_position(rest)?);
         } else if let Some(rest) = line.strip_prefix("//MSG=") {
             if message.is_some() {
-                return Err("duplicate //MSG directive".to_string());
+                return Err("duplicate //MSG directive".to_owned());
             }
             message = Some(parse_quoted("//MSG", rest)?);
         }
@@ -179,11 +179,11 @@ fn parse_header(source: &str) -> Result<Expectation, String> {
     }
 
     match (output, error) {
-        (Some(_), Some(_)) => Err("a test cannot expect both //OUT and //ERR".to_string()),
-        (None, None) => Err("missing expectation: the header needs a //OUT=\"…\" or //ERR line".to_string()),
+        (Some(_), Some(_)) => Err("a test cannot expect both //OUT and //ERR".to_owned()),
+        (None, None) => Err("missing expectation: the header needs a //OUT=\"…\" or //ERR line".to_owned()),
         (Some(output), None) => {
             if message.is_some() {
-                return Err("//MSG only applies to //ERR tests".to_string());
+                return Err("//MSG only applies to //ERR tests".to_owned());
             }
             Ok(Expectation {
                 stdin,
@@ -193,7 +193,7 @@ fn parse_header(source: &str) -> Result<Expectation, String> {
         }
         (None, Some(position)) => {
             if !stdin.is_empty() {
-                return Err("//IN only applies to //OUT tests".to_string());
+                return Err("//IN only applies to //OUT tests".to_owned());
             }
             Ok(Expectation {
                 stdin,
@@ -262,6 +262,9 @@ fn cc_identity() -> &'static str {
 /// Compiles the generated C and returns the executable, reusing a cached
 /// build when the same source has been compiled by the same compiler before.
 fn compile_c(c_file: &Path) -> PathBuf {
+    /// Tells apart the staging files of builds running at the same time.
+    static STAGING_COUNTER: AtomicU64 = AtomicU64::new(0);
+
     let cache_dir = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/.test_cache"));
     std::fs::create_dir_all(cache_dir).expect("could not create .test_cache");
 
@@ -279,7 +282,6 @@ fn compile_c(c_file: &Path) -> PathBuf {
     // threads can reach here at once with byte-identical C — different cases
     // often compile to the same program — so they must not share a staging
     // file, and neither may ever observe a half-written binary.
-    static STAGING_COUNTER: AtomicU64 = AtomicU64::new(0);
     let staging = exec_file.with_extension(format!("{}_{}.partial", std::process::id(), STAGING_COUNTER.fetch_add(1, Ordering::Relaxed)));
     let output = Command::new("gcc")
         .args(CC_FLAGS)
@@ -473,7 +475,6 @@ fn check_error(case: &Case, expected_position: &ExpectedPosition, expected_messa
     let show = |p: FilePosition| format!("{} {} {} {}", p.first_pos.0, p.first_pos.1, p.last_pos.0, p.last_pos.1);
 
     match (expected_position, error.position) {
-        (ExpectedPosition::Unchecked, _) => {}
         (ExpectedPosition::Exact(expected), Some(actual)) if *expected != actual => {
             report(&error, case);
             panic!(
@@ -491,7 +492,7 @@ fn check_error(case: &Case, expected_position: &ExpectedPosition, expected_messa
             report(&error, case);
             panic!("{label}: expected an error without a position, but it is reported at {}", show(actual));
         }
-        (ExpectedPosition::Exact(_), Some(_)) | (ExpectedPosition::Absent, None) => {}
+        (ExpectedPosition::Unchecked, _) | (ExpectedPosition::Exact(_), Some(_)) | (ExpectedPosition::Absent, None) => {}
     }
 
     if let Some(expected) = expected_message {
@@ -521,9 +522,9 @@ pub fn run_test(test_file: &str) {
 
     // The generated tests pass absolute paths; failure messages read better
     // with the part that is the same for every case cut off.
-    let label = test_file.split_once("src/tests/").map_or(test_file, |(_, rest)| rest).to_string();
+    let label = test_file.split_once("src/tests/").map_or(test_file, |(_, rest)| rest).to_owned();
     let case = Case {
-        path: test_file.to_string(),
+        path: test_file.to_owned(),
         label,
         source,
     };
@@ -580,8 +581,8 @@ mod header_tests {
 
     #[test]
     fn rejects_unknown_escapes() {
-        assert!(unescape(r"\q").is_err());
-        assert!(unescape(r"trailing\").is_err());
+        unescape(r"\q").unwrap_err();
+        unescape(r"trailing\").unwrap_err();
     }
 
     #[test]
@@ -631,7 +632,7 @@ mod header_tests {
         use cplang::{CompilerError, FilePosition};
 
         let positioned = CompilerError {
-            message: "boom".to_string(),
+            message: "boom".to_owned(),
             position: Some(FilePosition {
                 file_ident: 0,
                 first_pos: (1, 2),
@@ -641,7 +642,7 @@ mod header_tests {
         assert_eq!(format!("{positioned:?}"), "CompilerError { message: \"boom\", position: Some(()) }");
 
         let bare = CompilerError {
-            message: "boom".to_string(),
+            message: "boom".to_owned(),
             position: None,
         };
         assert_eq!(format!("{bare:?}"), "CompilerError { message: \"boom\", position: None }");

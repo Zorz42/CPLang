@@ -41,6 +41,7 @@ pub use enabled::*;
 
 /// No-op unless the crate is built with `--features count_calls`.
 #[cfg(not(feature = "count_calls"))]
+#[expect(clippy::missing_const_for_fn, reason = "must have the same signature as the real one")]
 pub fn print_counts() {}
 
 #[cfg(feature = "count_calls")]
@@ -106,7 +107,7 @@ mod enabled {
     impl IdHasher {
         const MULTIPLIER: u64 = 0x517c_c1b7_2722_0a95;
 
-        fn add(&mut self, value: u64) {
+        const fn add(&mut self, value: u64) {
             self.0 = (self.0.rotate_left(5) ^ value).wrapping_mul(Self::MULTIPLIER);
         }
     }
@@ -118,12 +119,12 @@ mod enabled {
             }
         }
 
-        fn write_u32(&mut self, value: u32) {
-            self.add(u64::from(value));
+        fn write_u32(&mut self, i: u32) {
+            self.add(u64::from(i));
         }
 
-        fn write_usize(&mut self, value: usize) {
-            self.add(value as u64);
+        fn write_usize(&mut self, i: usize) {
+            self.add(i as u64);
         }
 
         fn finish(&self) -> u64 {
@@ -155,6 +156,7 @@ mod enabled {
             }
 
             let mut global = traces();
+            #[expect(clippy::iter_over_hash_type, reason = "adding counts up is independent of the order")]
             for (path, count) in self.0.drain() {
                 *global.entry(path).or_default() += count;
             }
@@ -171,26 +173,27 @@ mod enabled {
         ENTRIES
             .get_or_init(|| Mutex::new(Vec::new()))
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     fn traces() -> MutexGuard<'static, TraceMap> {
         TRACES
             .get_or_init(|| Mutex::new(TraceMap::default()))
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Registers a counter and returns the id used to refer to it in call
     /// paths. Called once per instrumented site by the macros.
     #[doc(hidden)]
     pub fn register(name: &'static str, counter: &'static AtomicU64) -> u32 {
-        let mut entries = entries();
-
-        let index = entries.iter().position(|entry| std::ptr::eq(entry.counter, counter)).unwrap_or_else(|| {
-            entries.push(Entry { name, counter });
-            entries.len() - 1
-        });
+        let index = {
+            let mut entries = entries();
+            entries.iter().position(|entry| std::ptr::eq(entry.counter, counter)).unwrap_or_else(|| {
+                entries.push(Entry { name, counter });
+                entries.len() - 1
+            })
+        };
 
         u32::try_from(index).expect("at most u32::MAX instrumented functions")
     }
@@ -198,6 +201,9 @@ mod enabled {
     /// The frame pointer of the frame this is compiled into, which is why it
     /// must never become a call of its own.
     #[cfg(all(unix, any(target_arch = "aarch64", target_arch = "x86_64")))]
+    #[expect(clippy::inline_always, reason = "must read the frame pointer of the frame it is compiled into")]
+    #[expect(clippy::semicolon_outside_block, reason = "only one of the `cfg`-gated statements survives")]
+    #[expect(unsafe_code, reason = "reading a register takes inline assembly")]
     #[inline(always)]
     fn frame_pointer() -> usize {
         let frame_pointer: usize;
@@ -237,6 +243,8 @@ mod enabled {
     /// function, which makes address 0 that function's caller, and
     /// [`record_site`] keeps a frame of its own, which makes address 0 the
     /// function holding the `count_call!`.
+    #[expect(clippy::inline_always, reason = "must be compiled into the frame its caller expects, see above")]
+    #[expect(unsafe_code, reason = "walking the stack reads raw frame records")]
     #[inline(always)]
     fn capture(frames: &mut [usize; MAX_CALLERS], wanted: usize) -> usize {
         let mut frame = frame_pointer();
@@ -293,6 +301,7 @@ mod enabled {
     /// Compiled into the annotated function itself, so that the first caller it
     /// finds is the function that made the call.
     #[doc(hidden)]
+    #[expect(clippy::inline_always, reason = "must be compiled into the annotated function, see above")]
     #[inline(always)]
     pub fn record_callers(id: u32, depth: usize) {
         let mut frames = [0; MAX_CALLERS];
@@ -319,7 +328,7 @@ mod enabled {
         /// Calls whose recorded path ended here, either because the call had no
         /// further caller or because the configured depth was reached.
         direct: u64,
-        callers: BTreeMap<u32, TraceNode>,
+        callers: BTreeMap<u32, Self>,
     }
 
     impl TraceNode {
@@ -347,7 +356,7 @@ mod enabled {
         };
 
         let mut out = String::with_capacity(symbol.len());
-        let mut depth = 0usize;
+        let mut depth = 0_usize;
         // Where the path that is currently being written started, so that a
         // `::` inside type arguments can drop everything in front of it.
         let mut segment = 0;
@@ -378,7 +387,7 @@ mod enabled {
     /// arguments of `Dsu<a::b::Node>::get` and the like.
     fn segments(name: &str) -> Vec<&str> {
         let mut segments = Vec::new();
-        let mut depth = 0usize;
+        let mut depth = 0_usize;
         let mut start = 0;
 
         let bytes = name.as_bytes();
@@ -541,6 +550,8 @@ mod enabled {
 
             let mut names = Names::default();
             let mut callers: BTreeMap<u32, TraceNode> = BTreeMap::new();
+            // Name ids follow this order, but nothing printed depends on them.
+            #[expect(clippy::iter_over_hash_type, reason = "the tree is ordered by `BTreeMap` and printed sorted")]
             for (path, count) in traces().iter() {
                 let path_names: Vec<u32> = path.callers().iter().map(|address| names.intern(*address)).collect();
                 callers.entry(path.id).or_default().insert(&path_names, *count);
@@ -611,18 +622,15 @@ mod enabled {
         println!("Function call counts:");
         let mut in_tree = false;
         for (row, count) in rows.iter().zip(&counts) {
-            match row.share {
-                Some(share) => {
-                    in_tree = true;
-                    println!("  {count:>width$} {share:>5.1}%  {}", row.label);
+            if let Some(share) = row.share {
+                in_tree = true;
+                println!("  {count:>width$} {share:>5.1}%  {}", row.label);
+            } else {
+                // Set a finished tree apart from the next function.
+                if std::mem::take(&mut in_tree) {
+                    println!();
                 }
-                None => {
-                    // Set a finished tree apart from the next function.
-                    if std::mem::take(&mut in_tree) {
-                        println!();
-                    }
-                    println!("  {count:>width$}         {}", row.label);
-                }
+                println!("  {count:>width$}         {}", row.label);
             }
         }
     }
@@ -643,7 +651,7 @@ mod enabled {
         let mut out = Vec::new();
         for (id, name, _) in &report.totals {
             if let Some(root) = report.callers.get(id) {
-                walk(root, &report.names, &mut vec![(*name).to_owned()], &mut out);
+                walk(root, &report.names, &mut vec![name.clone()], &mut out);
             }
         }
         out
@@ -730,6 +738,7 @@ mod enabled {
                     .iter()
                     .any(|entry| entry.name == "inline counter" && entry.counter.load(Ordering::Relaxed) == 3)
             );
+            drop(registered);
         }
 
         #[test]

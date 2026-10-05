@@ -30,7 +30,7 @@ and had to be reverted.
 cargo test                     # whole suite
 cargo test test_08_structs     # one directory
 cargo test -- --nocapture      # see compiler output / KNOWN BUG notes
-cargo clippy --all-targets --all-features -- -D warnings   # CI denies warnings
+cargo clippy --workspace --all-targets --all-features -- -D warnings   # CI denies warnings
 ```
 
 CI (`.github/workflows`) runs build, `cargo test --all`, and clippy on Linux and

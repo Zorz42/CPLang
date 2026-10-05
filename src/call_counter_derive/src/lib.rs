@@ -143,7 +143,7 @@ pub fn count_calls(args: TokenStream, item: TokenStream) -> TokenStream {
     };
     let original_body = &function.block;
 
-    function.block = Box::new(syn::parse_quote!({
+    *function.block = syn::parse_quote!({
         // This entire block is removed before code generation unless the
         // application's `count_calls` feature is enabled.
         #[cfg(feature = "count_calls")]
@@ -153,7 +153,7 @@ pub fn count_calls(args: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #original_body
-    }));
+    });
 
     quote!(#function).into()
 }

@@ -39,7 +39,7 @@ impl Add for FilePosition {
         if rhs == Self::unknown() {
             return self;
         }
-        assert_eq!(self.file_ident, rhs.file_ident);
+        assert_eq!(self.file_ident, rhs.file_ident, "cannot join positions in different files");
         Self {
             file_ident: self.file_ident,
             first_pos: <(usize, usize)>::min(self.first_pos, rhs.first_pos),

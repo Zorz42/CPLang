@@ -37,7 +37,7 @@ pub enum ValuePhysicality {
 }
 
 #[derive(Default)]
-#[allow(clippy::type_complexity)]
+#[expect(clippy::type_complexity, reason = "the overload tables are keyed by name and arity")]
 struct Normalizer {
     ir: IR,
     type_resolver: TypeResolver,
@@ -90,14 +90,18 @@ impl Normalizer {
         self.type_resolver = TypeResolver::new(resolver_structs);
 
         // check that there is one main function with zero arguments and find it
-        let main_name = "main".to_string();
-        for (key, val) in &self.functions_name_map {
-            if key.0 == main_name && key.1 != 0 {
-                return Err(CompilerError {
-                    message: "main function cannot have arguments".to_string(),
-                    position: Some(val[0].0.args[0].2),
-                });
-            }
+        // Report the earliest offender, so the error does not depend on hash order.
+        let main_with_arguments = self
+            .functions_name_map
+            .iter()
+            .filter(|(key, _)| key.0 == "main" && key.1 != 0)
+            .map(|(_, val)| val[0].0.args[0].2)
+            .min_by_key(|pos| (pos.file_ident, pos.first_pos));
+        if let Some(position) = main_with_arguments {
+            return Err(CompilerError {
+                message: "main function cannot have arguments".to_owned(),
+                position: Some(position),
+            });
         }
 
         self.compute_function_ordering()?;
@@ -119,10 +123,10 @@ impl Normalizer {
             }
         }
 
-        if let Some(mut vec) = self.functions_name_map.get(&("main".to_string(), 0)).cloned() {
+        if let Some(mut vec) = self.functions_name_map.get(&("main".to_owned(), 0)).cloned() {
             if vec.len() != 1 {
                 return Err(CompilerError {
-                    message: "Multiple main functions found".to_string(),
+                    message: "Multiple main functions found".to_owned(),
                     position: None,
                 });
             }
@@ -148,7 +152,7 @@ impl Normalizer {
             self.ir.instances[self.ir.main_function].block.statements.append(&mut main_block);
         } else {
             return Err(CompilerError {
-                message: "No main function found".to_string(),
+                message: "No main function found".to_owned(),
                 position: None,
             });
         }
@@ -162,7 +166,7 @@ impl Normalizer {
         let main_ret = self.ir.types[&main_ret].clone();
         if main_ret != IRType::Primitive(PrimitiveType::Void) {
             return Err(CompilerError {
-                message: "Main function should not return any value".to_string(),
+                message: "Main function should not return any value".to_owned(),
                 position: None,
             });
         }
@@ -237,7 +241,7 @@ impl Normalizer {
 
         if template_arg_labels.len() > struct_template_names.len() {
             return Err(CompilerError {
-                message: "Too many template arguments".to_string(),
+                message: "Too many template arguments".to_owned(),
                 position: Some(template_arg_labels[struct_template_names.len()].1),
             });
         }
@@ -266,7 +270,7 @@ impl Normalizer {
         template_arguments: &[IRTypeLabel],
         pos: FilePosition,
     ) -> CompilerResult<(ASTFunctionSignature, ASTBlock)> {
-        let Some(candidates) = self.functions_name_map.get(&(function_name.to_string(), function_arguments.len())) else {
+        let Some(candidates) = self.functions_name_map.get(&(function_name.to_owned(), function_arguments.len())) else {
             return Err(CompilerError {
                 message: format!("Function {function_name} does not exist."),
                 position: Some(pos),
@@ -281,7 +285,7 @@ impl Normalizer {
             {
                 println!("===============");
                 println!("Trying to match {function_arguments:?} {sign:?}");
-            }
+            };
 
             if template_arguments.len() > sign.template.len() {
                 #[cfg(feature = "trace")]
@@ -318,7 +322,7 @@ impl Normalizer {
             {
                 println!("Matching: {ok}");
                 println!("===============");
-            }
+            };
             if ok {
                 matching.insert(i);
             }
@@ -326,7 +330,7 @@ impl Normalizer {
 
         // eliminate more general functions
         let mut to_remove = HashSet::new();
-        for (u, v) in &self.functions_specific_ordering[&(function_name.to_string(), function_arguments.len())] {
+        for (u, v) in &self.functions_specific_ordering[&(function_name.to_owned(), function_arguments.len())] {
             if matching.contains(u) {
                 to_remove.insert(*v);
             }
@@ -336,23 +340,20 @@ impl Normalizer {
 
         if matching.is_empty() {
             return Err(CompilerError {
-                message: "No candidate found for this function call".to_string(),
+                message: "No candidate found for this function call".to_owned(),
                 position: Some(pos),
             });
         }
 
         if matching.len() != 1 {
             return Err(CompilerError {
-                message: "Multiple candidates found for this function call".to_string(),
+                message: "Multiple candidates found for this function call".to_owned(),
                 position: Some(pos),
             });
         }
 
-        let mut idx = 0;
-        for i in matching {
-            idx = i;
-        }
-        Ok(self.functions_name_map[&(function_name.to_string(), function_arguments.len())][idx].clone())
+        let idx = matching.into_iter().next().expect("exactly one candidate is left");
+        Ok(self.functions_name_map[&(function_name.to_owned(), function_arguments.len())][idx].clone())
     }
 
     // `want_phys` is meant for autorefs, if you get an autoref and want it to be a physical value.
@@ -568,7 +569,7 @@ impl Normalizer {
                     // identifier is a template value
                     if !template_args.is_empty() {
                         return Err(CompilerError {
-                            message: "Template value cannot have template arguments".to_string(),
+                            message: "Template value cannot have template arguments".to_owned(),
                             position: Some(pos),
                         });
                     }
@@ -739,7 +740,7 @@ impl Normalizer {
         mut template_types: Vec<IRTypeLabel>,
     ) -> CompilerResult<IRInstanceLabel> {
         const RECURSION_LIMIT: i32 = 100;
-        assert_eq!(arg_types.len(), sign.args.len());
+        assert_eq!(arg_types.len(), sign.args.len(), "instantiated with the wrong number of arguments");
 
         //println!("Normalize {}", self.depth);
         //println!("Size {}", self.type_resolver.new_type_label(FilePosition::unknown()));
@@ -824,7 +825,7 @@ impl Normalizer {
         });
 
         self.ir.instances[instance_label].block = self.normalize_block(block)?;
-        self.ir.instances[instance_label].variables = self.curr_func_vars.clone();
+        self.ir.instances[instance_label].variables.clone_from(&self.curr_func_vars);
 
         if !self.has_ret_statement {
             self.type_resolver.hint_is(self.curr_func_ret_type, PrimitiveType::Void)?;

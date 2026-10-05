@@ -15,13 +15,13 @@ pub fn parse_declaration_template(block: &mut TokenBlock) -> CompilerResult<Vec<
                 }
                 (Token::End, _) => {
                     return Err(CompilerError {
-                        message: "Expected another token after this one".to_string(),
+                        message: "Expected another token after this one".to_owned(),
                         position: Some(block.get_last_pos()),
                     });
                 }
                 (_, token_pos) => {
                     return Err(CompilerError {
-                        message: "Unexpected token, expected identifier".to_string(),
+                        message: "Unexpected token, expected identifier".to_owned(),
                         position: Some(token_pos),
                     });
                 }

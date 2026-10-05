@@ -19,7 +19,7 @@ pub fn parse_struct_declaration(block: &mut TokenBlock, file_idx: usize) -> Comp
         (Token::Identifier(name), _) => name,
         (Token::End, _) => {
             return Err(CompilerError {
-                message: "Expected another token after this one".to_string(),
+                message: "Expected another token after this one".to_owned(),
                 position: Some(block.get_last_pos()),
             });
         }
@@ -37,7 +37,7 @@ pub fn parse_struct_declaration(block: &mut TokenBlock, file_idx: usize) -> Comp
         (Token::BraceBlock(block), _) => block,
         (Token::End, _) => {
             return Err(CompilerError {
-                message: "Expected another token after this one".to_string(),
+                message: "Expected another token after this one".to_owned(),
                 position: Some(block.get_last_pos()),
             });
         }
@@ -75,7 +75,7 @@ pub fn parse_struct_declaration(block: &mut TokenBlock, file_idx: usize) -> Comp
             }
             (Token::End, _) => {
                 return Err(CompilerError {
-                    message: "Expected another token after this one".to_string(),
+                    message: "Expected another token after this one".to_owned(),
                     position: Some(block.get_last_pos()),
                 });
             }
@@ -124,7 +124,7 @@ pub fn parse_struct_instantiation(
             }
             (Token::End, _) => {
                 return Err(CompilerError {
-                    message: "Expected another token after this one".to_string(),
+                    message: "Expected another token after this one".to_owned(),
                     position: Some(block.get_last_pos()),
                 });
             }

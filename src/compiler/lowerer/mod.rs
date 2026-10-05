@@ -2,11 +2,12 @@ use crate::compiler::error::FilePosition;
 use crate::compiler::parser::ast::{
     ASTBlock, ASTExpression, ASTExpressionKind, ASTFunctionCall, ASTOperator, ASTStatement, ASTStructDeclaration, ASTType, ASTUnaryOperator, Ast,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 // Lowerer simplifies AST so that it doesn't contain any syntax sugar.
 
 struct Lowerer {
-    used_tuples: HashSet<usize>,
+    /// Ordered, so the tuple structs are declared in the same order every run.
+    used_tuples: BTreeSet<usize>,
     struct_fields: HashMap<String, Vec<String>>,
     tmp_index: usize,
 }
@@ -17,7 +18,7 @@ fn gen_tuple_name(tuple_size: usize) -> String {
 
 pub fn lower_ast(mut ast: Ast) -> Ast {
     let mut lowerer = Lowerer {
-        used_tuples: HashSet::new(),
+        used_tuples: BTreeSet::new(),
         struct_fields: HashMap::new(),
         tmp_index: 0,
     };
@@ -50,7 +51,7 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
             sign.template.append(&mut struct_template);
             let typ = ASTType::Reference(Box::new(ASTType::Identifier(structure.name.clone(), sign.pos, struct_template_types)), sign.pos);
             let typ = lowerer.lower_type(typ);
-            sign.args.insert(0, ("self".to_string(), typ, sign.pos));
+            sign.args.insert(0, ("self".to_owned(), typ, sign.pos));
 
             ast.functions.push((sign, block));
         }
@@ -204,7 +205,7 @@ impl Lowerer {
                             ASTExpressionKind::MethodCall {
                                 expression: Box::new(ASTExpression::new(ASTExpressionKind::Variable(element_name), pos)),
                                 call: ASTFunctionCall {
-                                    name: "iter".to_string(),
+                                    name: "iter".to_owned(),
                                     arguments: Vec::new(),
                                     template_arguments: Vec::new(),
                                 },
@@ -218,7 +219,7 @@ impl Lowerer {
                             ASTExpressionKind::MethodCall {
                                 expression: Box::new(ASTExpression::new(ASTExpressionKind::Variable(iter_name.clone()), pos)),
                                 call: ASTFunctionCall {
-                                    name: "has_next".to_string(),
+                                    name: "has_next".to_owned(),
                                     arguments: Vec::new(),
                                     template_arguments: Vec::new(),
                                 },
@@ -233,7 +234,7 @@ impl Lowerer {
                                         ASTExpressionKind::MethodCall {
                                             expression: Box::new(ASTExpression::new(ASTExpressionKind::Variable(iter_name), pos)),
                                             call: ASTFunctionCall {
-                                                name: "next".to_string(),
+                                                name: "next".to_owned(),
                                                 arguments: Vec::new(),
                                                 template_arguments: Vec::new(),
                                             },
@@ -354,7 +355,7 @@ impl Lowerer {
                 // turn a..b into Range from a to b
                 self.lower_expression(ASTExpression::new(
                     ASTExpressionKind::StructInitialization {
-                        name: "Range".to_string(),
+                        name: "Range".to_owned(),
                         fields: vec![*expression1, *expression2],
                         template_arguments: Vec::new(),
                     },
@@ -369,7 +370,7 @@ impl Lowerer {
                 let mut expression1 = self.lower_expression(*expression1);
                 let expression2 = self.lower_expression(*expression2);
 
-                let name = "operator".to_string()
+                let name = "operator".to_owned()
                     + match operator {
                         ASTOperator::Plus => "+",
                         ASTOperator::Minus => "-",

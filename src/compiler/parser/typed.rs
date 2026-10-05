@@ -33,13 +33,13 @@ pub fn parse_type(block: &mut TokenBlock) -> CompilerResult<ASTType> {
             (Token::ParenthesisBlock(mut block), _) => parse_type(&mut block)?,
             (Token::End, _) => {
                 return Err(CompilerError {
-                    message: "Expected another token after this one".to_string(),
+                    message: "Expected another token after this one".to_owned(),
                     position: Some(block.get_last_pos()),
                 });
             }
             (_, pos) => {
                 return Err(CompilerError {
-                    message: ERR_MESSAGE.to_string(),
+                    message: ERR_MESSAGE.to_owned(),
                     position: Some(pos),
                 });
             }

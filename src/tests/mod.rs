@@ -8,7 +8,7 @@
 mod harness;
 
 #[cfg(test)]
-#[allow(clippy::module_inception)]
+#[expect(clippy::module_inception, reason = "the generated tests need a module of their own")]
 mod tests {
     use super::harness::run_test;
     use test_derive::generate_tests;

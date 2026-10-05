@@ -38,4 +38,4 @@ jobs:
 
       # Clippy must have zero warnings
       - name: Clippy (deny warnings)
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings

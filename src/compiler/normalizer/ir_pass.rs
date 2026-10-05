@@ -146,7 +146,7 @@ pub trait IRPass {
                 string: Box::new(self.pass_expression(*string)),
                 idx: Box::new(self.pass_expression(*idx)),
             },
-            IRBuiltinFunctionCall::Getchar {} => call,
+            IRBuiltinFunctionCall::Getchar => call,
             IRBuiltinFunctionCall::Putchar { arg } => IRBuiltinFunctionCall::Putchar {
                 arg: Box::new(self.pass_expression(*arg)),
             },

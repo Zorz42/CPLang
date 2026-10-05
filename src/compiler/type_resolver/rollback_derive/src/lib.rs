@@ -2,6 +2,12 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
+/// Derives `Rollback` for a struct by saving and restoring every field.
+///
+/// # Panics
+///
+/// Panics, failing the build, if used on anything but a struct with named
+/// fields.
 #[proc_macro_derive(Rollback)]
 pub fn derive_rollback(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

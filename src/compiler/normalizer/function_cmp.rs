@@ -32,7 +32,7 @@ impl Normalizer {
         {
             println!("===============");
             println!("Comparing");
-        }
+        };
 
         let state = self.type_resolver.save_state();
 
@@ -43,7 +43,7 @@ impl Normalizer {
                 {
                     println!("Verdict: false");
                     println!("===============");
-                }
+                };
 
                 return false;
             }
@@ -55,7 +55,7 @@ impl Normalizer {
         {
             println!("Verdict: {res}");
             println!("===============");
-        }
+        };
         res
     }
 }

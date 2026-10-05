@@ -103,11 +103,11 @@ impl SymbolTable {
     pub fn new_variable(&mut self, name: &str) -> IRVariableLabel {
         let label = self.new_variable_label();
         let event = self.variable_name_map.get(name).map_or_else(
-            || ScopeChange::AddedVariable(name.to_string()),
-            |label| ScopeChange::OverridenVariable(name.to_string(), *label),
+            || ScopeChange::AddedVariable(name.to_owned()),
+            |label| ScopeChange::OverridenVariable(name.to_owned(), *label),
         );
         self.scopes.last_mut().unwrap().push(event);
-        self.variable_name_map.insert(name.to_string(), label);
+        self.variable_name_map.insert(name.to_owned(), label);
         label
     }
 
@@ -117,7 +117,7 @@ impl SymbolTable {
         }
 
         let label = self.new_variable_label();
-        self.global_variable_name_map[file_idx].insert(name.to_string(), label);
+        self.global_variable_name_map[file_idx].insert(name.to_owned(), label);
         label
     }
 
