@@ -248,6 +248,15 @@ impl TypeResolver {
                 && self.get_num_known_fields(node) >= self.structs_ord[struct_label].len()
                 && self.type_dsu.get(node).typ.is_none()
             {
+                for (field_label, _field_type) in self.type_dsu.get(node).child_fields.to_vec() {
+                    if !self.structs_ord[struct_label].contains(&field_label) {
+                        return Err(CompilerError {
+                            message: "Access of a non-existing field in struct.".to_owned(),
+                            position: None,
+                        });
+                    }
+                }
+
                 let mut struct_fields = Vec::new();
                 for field_label in self.structs_ord[struct_label].clone() {
                     let type_label = self.type_dsu.get(node).child_fields[&field_label];

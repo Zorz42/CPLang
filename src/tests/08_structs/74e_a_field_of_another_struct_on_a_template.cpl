@@ -1,0 +1,21 @@
+//ERR -1 -1 -1 -1
+//MSG="Access of a non-existing field in struct."
+
+// 72e on a templated struct. B's only field `v` is the unresolved `T`, while
+// the bogus `w` is pinned to bool by the `if`, so B's node had as many known
+// fields as B has fields before `gather_types` ever ran. The type resolver
+// then built the struct type from `v`, unwrapped its unknown type and panicked
+// (src/compiler/type_resolver/mod.rs). Now `run_queue` rejects a field the
+// struct does not have before building the type.
+
+struct A
+    w: i32
+
+struct B[T]
+    v: T
+
+g: B
+
+fn main
+    if g.w
+        out "x"
