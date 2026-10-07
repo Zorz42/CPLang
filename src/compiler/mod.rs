@@ -88,6 +88,7 @@ pub fn compile(input_file: &str, output_file: &str) -> CompilerResult<()> {
     let output_file = output_file.to_owned();
 
     let worker = std::thread::Builder::new()
+        .name("cplang_main_thread".to_owned())
         .stack_size(STACK_SIZE)
         .spawn(move || {
             #[cfg(feature = "measure")]

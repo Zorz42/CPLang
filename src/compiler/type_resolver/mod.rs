@@ -245,7 +245,8 @@ impl TypeResolver {
             if let Some(struct_label) = self.type_dsu.get(node).known_struct
                 && self.ref_is_fixed(node)
                 && self.dsu.get(node).ref_depth == 0
-                && self.get_num_known_fields(node) == self.structs_ord[struct_label].len()
+                && self.get_num_known_fields(node) >= self.structs_ord[struct_label].len()
+                && self.type_dsu.get(node).typ.is_none()
             {
                 let mut struct_fields = Vec::new();
                 for field_label in self.structs_ord[struct_label].clone() {
