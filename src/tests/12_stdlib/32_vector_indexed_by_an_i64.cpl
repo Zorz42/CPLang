@@ -1,0 +1,13 @@
+//OUT="20"
+
+// Vec has an operator[] for i64 as well as i32. Since `x[i]` lowers to
+// `*x.operator[](i)`, every overload must return a reference; the i64 one in
+// src/core/vector.cpl used to return the element by value, and `v[i]` with an
+// i64 `i` failed with "No candidate found for this function call".
+
+fn main
+    v = Vec()
+    v.push(10)
+    v.push(20)
+    i = 1L
+    out "{v[i]}"

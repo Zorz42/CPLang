@@ -28,11 +28,30 @@ pub fn lower_ast(mut ast: Ast) -> Ast {
         lowerer.struct_fields.insert(structure.name.clone(), fields);
     }
 
-    for structure in &mut ast.structs {
-        for (_, typ) in &mut structure.fields {
-            *typ = lowerer.lower_type(typ.clone());
-        }
-    }
+    // lower type hints in structs
+    ast.structs = ast
+        .structs
+        .into_iter()
+        .map(|mut structure| {
+            structure.fields = structure
+                .fields
+                .into_iter()
+                .map(|(name, typ)| (name, lowerer.lower_type(typ)))
+                .collect::<Vec<_>>();
+            structure
+        })
+        .collect::<Vec<_>>();
+
+    // lower type hints and initial values in global variables
+    ast.global_variables = ast
+        .global_variables
+        .into_iter()
+        .map(|mut global_variable| {
+            global_variable.type_hint = lowerer.lower_type(global_variable.type_hint);
+            global_variable.initial_value = global_variable.initial_value.map(|initial_value| lowerer.lower_expression(initial_value));
+            global_variable
+        })
+        .collect::<Vec<_>>();
 
     for structure in &ast.structs {
         for (sign, block) in &structure.methods {
@@ -308,6 +327,7 @@ impl Lowerer {
             }
             ASTExpressionKind::FunctionCall(mut call) => {
                 call.arguments = self.lower_expressions(call.arguments);
+                call.template_arguments = call.template_arguments.into_iter().map(|arg| self.lower_type(arg)).collect::<Vec<_>>();
                 ASTExpression::new(ASTExpressionKind::FunctionCall(call), pos)
             }
             ASTExpressionKind::StructInitialization {

@@ -1,0 +1,14 @@
+//OUT="1 2"
+
+// The call-site half of 09_tuples/11: a tuple type written as an explicit
+// template argument of a call, not of a signature. The lowerer used to leave a
+// call's template arguments alone, so `Vec[i32, i32]()` aborted the compiler on
+//
+//     unreachable!("ASTType::Tuple should be eliminated by lowerer")
+//
+// while `v: Vec[i32, i32] = Vec()` compiled. This stays as a regression test.
+
+fn main
+    v = Vec[i32, i32]()
+    v.push((1, 2))
+    out "{v[0].0} {v[0].1}"

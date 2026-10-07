@@ -1,0 +1,14 @@
+//OUT="ok"
+
+// A tuple is a valid type for a global, as it is for a field (09_tuples/02), a
+// parameter and a local. Global type hints used to skip the lowerer, so the
+// tuple reached the normalizer and aborted the compiler on
+//
+//     unreachable!("ASTType::Tuple should be eliminated by lowerer")
+//
+// This stays as a regression test for lowering a global's type hint.
+
+p: i32, i32
+
+fn main
+    out "ok"
