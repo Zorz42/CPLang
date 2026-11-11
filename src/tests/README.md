@@ -65,8 +65,7 @@ A failing `//BUG` case is reported as `KNOWN BUG — <reason>`, and compiler
 panics are caught so one bug cannot bury the rest of the report. If such a case
 starts passing, the harness prints a note saying the bug looks fixed and the
 marker should come off. Every one of them explains in its header what goes
-wrong, why, and where in the compiler — most quote the section of `FEEDBACK.md`
-they come from.
+wrong, why, and where in the compiler.
 
 A `//OUT` case is also given a deadline: ten seconds, overridable with
 `CPLANG_TEST_TIMEOUT_SECS`. A miscompilation that makes a program loop forever

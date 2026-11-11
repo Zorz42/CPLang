@@ -2,21 +2,22 @@
 
 Notes from a full read of the compiler (`src/compiler/**`), the core library
 (`src/core/*.cpl`), the CLI and the tooling, followed by probing with real
-programs and a mutation fuzzer over the existing cases.
+programs, a mutation fuzzer over the existing cases, and a sweep of
+generated expression shapes.
 
 Nothing outside the tests was changed. The bugs are recorded as red tests —
-28 new cases in `src/tests/13_known_bugs/` (44–71) and three `known_bug_…`
+29 new cases in `src/tests/13_known_bugs/` (44–72) and three `known_bug_…`
 tests in `tests/cli.rs` — and each of them explains its own defect. This file
 is about the *designs* behind them, and the cleanups noticed along the way.
 
 ```sh
 cargo test known_bug -- --nocapture   # the .cpl bug list
-cargo test --test cli known_bug       # the three CLI ones
+cargo test --test cli known_bug       # the CLI ones
 ```
 
 ## 1. What the red tests cover
 
-25 distinct defects. Cases that share a line share a root cause.
+26 distinct defects. Cases that share a line share a root cause.
 
 | cases | defect | where |
 |---|---|---|
@@ -43,6 +44,7 @@ cargo test --test cli known_bug       # the three CLI ones
 | 69 | a method cannot call itself — nor can two methods call each other in a cycle | `normalizer` |
 | 70 | a template function cannot call itself without explicit template arguments | `normalizer` |
 | 71e | a format error's span ends in the wrong column after an escape | `parser/out.rs` |
+| 72e | a dereferenced plain value stored in a tuple or struct panics the type resolver | `type_resolver` |
 | cli ×2 | `-o` naming the input file deletes or overwrites the source | `main.rs`, `compiler/mod.rs` |
 | cli ×1 | a failed compile unlinks whatever `-o` names, including `/dev/null` as root | `main.rs` |
 
@@ -198,6 +200,13 @@ stores the same address every iteration.
   normalized (66e). Normalize the right-hand side first.
 - `ASTStatement::Expression` drops its type label, so nothing ever asks the
   resolver whether the type exists (68e). Add it to `relevant_types`.
+- Dereferencing a value that is not a reference is not an error in itself.
+  The resolver records a reference depth of -1 and waits for someone to ask
+  for the type: nobody does for a statement (68e), a struct literal trips
+  over it with an `unwrap` (72e), and elsewhere it surfaces as "Could not
+  deduce this expression's type" or "No candidate found", sometimes pointing
+  into `src/core`. A depth that is fixed and negative is a contradiction when
+  it arises, in `merge_ref`, and that is where it should be reported.
 - Parameter and template names are not checked for duplicates (67e); struct
   fields are.
 - A global's initialiser is normalized with no scope at all (30), and parsed
@@ -361,10 +370,18 @@ usual large win for input-heavy problems.
   `-funsigned-char` is a cheap way to test the other `char`.
 - **A fuzzer is cheap here.** Mutating the existing cases (delete, duplicate
   or swap a line; replace a token) and flagging any compile that panics,
-  overflows its stack, or succeeds with C that gcc rejects found 62, 68e and
-  the many spellings of the unknown-position panic in 25,000 runs, a few
-  minutes. "The compiler said yes and gcc said no" is a bug with no oracle
-  needed.
+  overflows its stack, or succeeds with C that gcc rejects found 62, 68e,
+  72e and the many spellings of the unknown-position panic, at a few minutes
+  per 25,000 runs. "The compiler said yes and gcc said no" is a bug with no
+  oracle needed.
+- **So is enumeration.** 43,000 programs built from a dozen operands
+  (variables, references, call results, tuples), every pair of `&`, `|`,
+  field, index and method-call wrappers, and sixteen statement shapes
+  produced 258 failures — all of them 51, 68e or 72e. That is some evidence
+  those three are the whole story for references and temporaries, and it
+  would make a good regression check once they are fixed.
+- Rebuilding the 533 green cases at `-O2` and under UBSan changed nothing,
+  so the undefined behaviour listed above is confined to the red cases.
 - `cses-tests/run.py` runs solutions with no timeout, so one that loops
   hangs the script, and needs `requests`, which nothing declares.
 - Stale references: `CLAUDE.md` lists `print` among the core files (it was

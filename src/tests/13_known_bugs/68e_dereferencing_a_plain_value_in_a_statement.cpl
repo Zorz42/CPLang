@@ -22,9 +22,10 @@
 // every write through a reference. `| "text"` and `|f()` on a function that
 // returns a value fail the same way.
 //
-// The fix is to keep the label of an expression statement among the types
-// that must resolve. There is no `//MSG` because the diagnostic does not
-// exist yet.
+// One fix is to keep the label of an expression statement among the types
+// that must resolve. The better one is in the resolver, where 72e needs it
+// too: a reference depth that is fixed and negative should be an error when
+// it arises. There is no `//MSG` because the diagnostic does not exist yet.
 
 fn main
     x = 5

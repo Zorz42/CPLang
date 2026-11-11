@@ -1,0 +1,35 @@
+//BUG="a struct field with a negative reference depth panics the type resolver"
+//ERR any
+
+// `|a` dereferences an i32. The type resolver has no error for that; it
+// records the result as "an i32 with a reference depth of -1" and carries on
+// (68e is what that leads to when the value is thrown away).
+//
+// Putting the value into a tuple — or any struct literal — makes the resolver
+// finish the struct's type. `run_queue` (src/compiler/type_resolver/mod.rs)
+// does that as soon as every field counts as known, and "known" is
+// `check_is_type_known`: the field has a base type and its depth is fixed.
+// Both hold for -1. It then assembles the struct with
+//
+//     struct_fields.push(self.fetch_final_ir_type(type_label).unwrap());
+//
+// and `fetch_final_ir_type` returns `None` for a negative depth, because
+// there is no such type. The compiler panics:
+//
+//     called `Option::unwrap()` on a `None` value
+//
+// Without the tuple the same slip is at least an error, though not one that
+// says what is wrong: `b = |a` reports "Could not deduce this expression's
+// type", and 07_references/52e gets "No candidate found for this function
+// call" from the `out` that uses the value.
+//
+// A reference depth that is fixed and negative is a contradiction the moment
+// it arises, in `merge_ref`. Reporting it there — "this is not a reference"
+// — fixes this panic, gives 68e its error, and replaces both of the
+// misleading messages above. There is no `//MSG` because that diagnostic does
+// not exist yet.
+
+fn main
+    a = 5
+    t = |a, 1
+    out "ok"
