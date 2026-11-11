@@ -1,0 +1,28 @@
+//BUG="a destructuring assignment is only taken apart one level deep"
+//OUT="1 2 3"
+
+// `lower_statement` (src/compiler/lowerer/mod.rs) rewrites an assignment
+// whose left side is a tuple or struct literal into
+//
+//     $tmp = <value>
+//     (a, b) = $tmp.0
+//     c = $tmp.1
+//
+// via `gen_struct_destructuring`. The statements it generates are returned
+// as they are — `lower_statements` only flattens them into the block — so
+// the first of them, whose left side is again a tuple, is never
+// destructured in turn. The normalizer then treats `(a, b)` as a value to be
+// built from the existing variables `a` and `b`, and the compile fails with
+// "Variable with name a not found."
+//
+// Nested tuples are otherwise supported as values and as types
+// (09_tuples/13_parentheses_nest_a_tuple.cpl), and a pattern that mirrors
+// the value is the obvious way to take one apart — a pair of coordinates
+// and a weight, say.
+//
+// The fix is to apply the destructuring rewrite to the assignments it
+// generates, without lowering their already-lowered right-hand sides again.
+
+fn main
+    (a, b), c = (1, 2), 3
+    out "{a} {b} {c}"

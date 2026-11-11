@@ -1,0 +1,22 @@
+//BUG="a float literal too large for f64 becomes the identifier `inf` in the generated C"
+//ERR any
+
+// `string_to_token` (src/compiler/tokenizer.rs) accepts whatever
+// `parse::<f64>()` accepts, and for a value beyond the range of f64 that is
+// `Ok(inf)` rather than an error. Codegen then prints the constant with
+// `format!("{x}")`, which for infinity is the bare word `inf`:
+//
+//     var0 = inf;
+//
+// gcc rejects that with "'inf' undeclared". The compiler itself reports
+// success, so the failure surfaces one tool later, in generated code.
+//
+// An integer literal that does not fit is refused (00_lexical/62e); a float
+// literal that does not fit should be refused too, and this case expects an
+// error for it. There is no `//MSG` because no such diagnostic exists yet.
+// Should the language instead decide that the literal means infinity, the
+// expectation here changes, but the generated C still has to compile.
+
+fn main
+    x = 1.0e400
+    out "ok"

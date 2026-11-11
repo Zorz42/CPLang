@@ -1,0 +1,27 @@
+//BUG="a global's initial value cannot mention another global"
+//OUT="3"
+
+// `normalize_ast` (src/compiler/normalizer/mod.rs) normalizes the initial
+// value of every global before it enters any function. A name is looked up
+// in `SymbolTable::variable_name_map`, and the globals of a file are only
+// copied into that map by `push_function`, on the way into a function body.
+// At the top level the map is still empty, so the `a` in `a + 2` is unknown
+// and the compile fails with "Variable with name a not found." — about a
+// variable declared on the line above.
+//
+// An initial value that names no other global works: a literal, `1 + 2`,
+// `-1`, a string, a struct literal (02_variables/12 and 20). This case used
+// to fail earlier than it does now — the lowerer skipped global initializers
+// altogether, so any operator in one hit an `unreachable!()` in the
+// normalizer. That half is fixed; the lookup is what is left.
+//
+// Inside a function the same expression is fine, because the function's
+// scope starts out holding the globals. The initial values are executed at
+// the top of `main` anyway, so the fix is to normalize them in a scope that
+// has the globals declared so far.
+
+a = 1
+b = a + 2
+
+fn main
+    out "{b}"

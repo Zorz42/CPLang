@@ -1,0 +1,23 @@
+//BUG="a comment line can silently move the statement below it into another block"
+//OUT="done"
+
+// The worst shape of the defect in 44 and 45, because nothing is reported.
+// The comment sits at the end of the `if` body, indented 8. Its newline is
+// swallowed (`Location::SingleLineComment` in src/compiler/preprocessor.rs),
+// so its 8 spaces are glued in front of the 4 of the next line, and
+// `out "done"` is read as indented 12: a block nested inside the `if` body.
+//
+// The program compiles, and prints nothing at all — `out "done"` now runs
+// only when `x == 2`. The mirror image is just as quiet: a comment indented 4
+// in front of a statement indented 4 that follows a loop pulls the statement
+// into the loop body.
+//
+// Nothing about the source suggests any of this; the comment is where anyone
+// would put it.
+
+fn main
+    x = 1
+    if x == 2
+        out "two "
+        // nothing else to do for this case
+    out "done"

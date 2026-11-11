@@ -1,0 +1,29 @@
+//BUG="the end of a format's error span is computed from the unescaped string"
+//ERR 28 11 28 16
+//MSG="There are multiple expressions in one format string"
+
+// The error is right; where it points is not. The span should cover the
+// whole format, `{1 2}` — columns 11 to 16 of the `out` line, the same shape
+// 01_out/52e_multiple_expressions_in_one_format.cpl asserts.
+//
+// `parse_format_string` (src/compiler/parser/out.rs) takes the start of the
+// span from the position the `{` really has, but computes the end by hand:
+//
+//     first column of the string + index of the `}` in the string + 2
+//
+// The index counts characters of the string *after* escapes were resolved,
+// where `\n` is one character, while in the source it is two. Each escape
+// before the format therefore pulls the end one column to the left: this
+// reports columns 11 to 15 and leaves the closing brace out of the
+// highlight. With a few more escapes the computed end falls in front of the
+// `{`, and the highlight covers characters that are not part of the format.
+//
+// A string that spans lines is worse, because the same arithmetic assumes
+// the format is on the line the string starts on.
+//
+// The `}` has a position of its own, just as the `{` does — `pc.pos` in the
+// loop — and the span should end there. The "Expected } to close format
+// string" error computes its end the same way and needs the same change.
+
+fn main
+    out "\n{1 2}"

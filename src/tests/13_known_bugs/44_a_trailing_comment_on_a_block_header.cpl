@@ -1,0 +1,29 @@
+//BUG="a line comment swallows the newline that ends it, gluing the next line onto its own"
+//OUT="yes done"
+
+// `parse_strings_and_comments` (src/compiler/preprocessor.rs) leaves
+// `Location::SingleLineComment` when it meets the '\n', but it never pushes
+// that '\n' as a fragment. The line break is what `parse_indentation` splits
+// lines on, so the line holding the comment and the line after it reach it as
+// ONE line:
+//
+//     if x == 1 <comment gone>        out "yes "
+//
+// The `out` is no longer on a deeper-indented line of its own, there is no
+// block, and the compile fails with "Expected block after if condition". A
+// comment after `while`, `for`, `else`, `fn` or `struct` breaks the same way.
+//
+// 00_lexical/00_line_comments.cpl has a trailing comment and passes, but only
+// by luck: there the glued-on line is another comment at column 0, and the
+// comment line above `out` merely adds four spaces to `out`'s indentation,
+// which nests it one block deeper without changing what it does. 45 and 46 are
+// the same defect where that luck runs out.
+//
+// The fix is to emit the newline when a line comment ends — the comment
+// should remove its own text and nothing else.
+
+fn main
+    x = 1
+    if x == 1 // the common case
+        out "yes "
+    out "done"

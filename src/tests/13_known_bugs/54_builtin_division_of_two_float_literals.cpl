@@ -1,0 +1,24 @@
+//BUG="float literals reach a builtin as C integer constants, so 1.0 / 2.0 is 0"
+//OUT="0.500000000"
+
+// The defect of 52 at ordinary magnitudes. Codegen prints a float constant
+// with `format!("{x}")` (src/compiler/codegen/mod.rs), which drops the
+// fractional part of a whole number: 1.0 is emitted as `1` and 2.0 as `2`.
+// The builtin is emitted inline as a C operator, so the generated expression
+// is
+//
+//     (1 / 2)
+//
+// — integer division. This prints 0.000000000.
+//
+// `1.0 / 2.0` written with the operator is unaffected, but only by accident:
+// `operator/` is a function, its parameters are declared `double`, and
+// passing the integer constants converts them before the division happens.
+// The builtins are the one place a literal meets a C operator directly,
+// which is where 11_builtins/17 already uses float literals for comparisons
+// (where the missing `.0` does not change the answer).
+//
+// 55 is the same loss of type for i64 literals.
+
+fn main
+    out "{_builtin_div[f64](1.0 2.0)}"

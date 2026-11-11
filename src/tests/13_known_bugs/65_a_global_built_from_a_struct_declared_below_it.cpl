@@ -1,0 +1,31 @@
+//BUG="a global initializer is parsed before the structs declared after it are known"
+//OUT="1 2"
+
+// `Point x 1 y 2` is only a struct literal if the parser knows that `Point`
+// names a struct; otherwise `Point` is a variable and the expression ends
+// there. `parse_tokens` (src/compiler/parser/mod.rs) sets the bodies of
+// functions and methods aside and parses them once every struct has been
+// collected, which is why a function may use a struct declared further down
+// the file. A global's initial value gets no such treatment: it is parsed on
+// the spot, against the structs seen so far.
+//
+// So with the declaration below the global, `origin = Point` is taken as the
+// whole statement, `x` as the next global, and the compile fails at the `1`
+// with "Unexpected token, expected one of: fn, struct, identifier".
+//
+// Swapping the two declarations makes it compile
+// (02_variables/20_a_global_of_a_struct_type.cpl). Nothing else at the top
+// level depends on order — functions may be called before they are declared
+// (05_functions/03) and structs may refer to each other (08_structs/19).
+//
+// The fix is to defer global initializers the same way function bodies are
+// deferred, or to collect the struct names in a pass of their own.
+
+origin = Point x 1 y 2
+
+struct Point
+    x: i32
+    y: i32
+
+fn main
+    out "{origin.x} {origin.y}"

@@ -1,0 +1,23 @@
+//BUG="a tab inside a string literal is turned into four spaces"
+//OUT="a\tb"
+
+// The string below holds a real tab character between `a` and `b`.
+//
+// `parse_strings_and_comments` (src/compiler/preprocessor.rs) starts by
+// running `tabs_to_spaces` over the whole file, before it has worked out what
+// is a string and what is code. Expanding tabs is right for indentation
+// (00_lexical/12_tabs_count_as_four_spaces.cpl) and wrong inside quotes: the
+// program prints `a    b`, four spaces, and the tab the source asked for is
+// gone without a diagnostic.
+//
+// A character literal holding a tab does not survive either — it becomes
+// four spaces between the quotes and is rejected with "Expected quote". And
+// since `\t` is not a recognised escape (00_lexical/65e), `char 9` is the
+// only way left to produce a tab at all, which matters for any problem whose
+// output is tab-separated.
+//
+// The fix is to expand tabs only where indentation is measured, in
+// `parse_indentation`, and leave the characters of the file alone.
+
+fn main
+    out "a	b"

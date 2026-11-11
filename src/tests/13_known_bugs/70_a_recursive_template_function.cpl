@@ -1,0 +1,38 @@
+//BUG="a template function that calls itself never finds its own instance in the cache"
+//OUT="3"
+
+// The instance cache that makes recursion possible
+// (`check_instance_cache` in src/compiler/normalizer/mod.rs) compares the
+// template types of a call as well as its argument types. When a call does
+// not spell its template arguments out, `normalize_function` fills them in
+// with brand-new type labels — and consults the cache straight away, before
+// those labels have been tied to anything. A new label is equal to nothing,
+// so the comparison with the instance that is being built fails, and the
+// recursive call starts another instance, whose body makes the same call.
+// The compile ends with
+//
+//     This function is in the 100-th recursive call in the normalization phase.
+//
+// The return hint rules out the documented cause of that message
+// (05_functions/40 and 41). Two things make the function below compile, and
+// both show the recursion itself is fine:
+//
+//   * dropping `[T]` and the hint on `x`, which leaves an ordinary generic
+//     function with no template list;
+//   * writing the recursive call as `count[T](x n - 1)`, because an explicit
+//     template argument is unified with the parameter before the lookup.
+//
+// Neither is available to a method of a templated struct: the struct's
+// parameters are appended to the method's template list by the lowerer and
+// cannot be written at the call (see 69).
+//
+// The fix is the one 69 needs: deduce the template types from the arguments
+// before looking the instance up.
+
+fn count[T] x: T n: i32 -> i32
+    if n == 0
+        ret 0
+    ret 1 + count(x n - 1)
+
+fn main
+    out "{count(5 3)}"

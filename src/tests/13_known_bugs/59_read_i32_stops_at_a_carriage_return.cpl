@@ -1,0 +1,25 @@
+//BUG="read_i32 returns 0 when a carriage return or a tab comes before the number"
+//IN="1 2 \r\n3\r\n"
+//OUT="1 2 3"
+
+// The gap of 58, in the number readers. `read_i64` (src/core/io.cpl) skips
+// whitespace with `is_whitespace`, which knows only ' ' and '\n'. The first
+// line here ends in a space and then "\r\n": the space ends the 2, and the
+// next call starts on the '\r'. That is not whitespace as far as the loop is
+// concerned, it is not '-', and it is not a digit, so `read_i64` returns 0
+// without having read anything. This prints "1 2 0".
+//
+// A lone "\r\n" after a number happens to work, because the '\r' is consumed
+// as the character that ends the number — which is why CRLF input looks
+// fine until a line has a trailing space or the file has a blank line
+// ("1\r\n\r\n2" reads 1 and 0). Tabs fail the same way: "1 \t2" reads 1
+// and 0.
+//
+// The wrong value is silent: 0 is a perfectly good number, and every later
+// read is shifted by one.
+
+fn main
+    a = read_i32()
+    b = read_i32()
+    c = read_i32()
+    out "{a} {b} {c}"

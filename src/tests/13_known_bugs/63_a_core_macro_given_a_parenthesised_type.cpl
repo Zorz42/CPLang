@@ -1,0 +1,32 @@
+//BUG="a bracketed argument to a core macro panics the compiler when positions are merged"
+//OUT="b"
+
+// 10_macros/11_calling_a_core_library_macro.cpl, with one of the types in
+// parentheses — which is an ordinary way to write a type
+// (12_stdlib/24_a_parenthesised_type_hint.cpl).
+//
+// `gen_block` (src/compiler/macros.rs) substitutes an argument by giving
+// each of its tokens the position of the parameter in the macro body. That
+// is what made the plain call in 10_macros/11 work: afterwards every token
+// claims to be in src/core/operators.cpl. But it only relabels the top-level
+// tokens of the argument. `(char)` is one token, a parenthesis block, and
+// the `char` inside it keeps its position in the user's file.
+//
+// `parse_type` unwraps the parentheses and returns the inner type with that
+// position, `parse_function_declaration` adds it to the signature's position
+// from the core file, and `FilePosition::add` (src/compiler/error.rs)
+// asserts:
+//
+//     assertion `left == right` failed: cannot join positions in different files
+//
+// Any block passed to a core macro — `(…)`, `[…]` or `{…}` — carries the
+// same mix. The assert is the wrong tool here: joining two positions is
+// done to draw a nicer error span, and a span that cannot be drawn is no
+// reason to abort a compile that has no error in it.
+
+_def_operator +; _builtin_add; (char); char; char;
+
+fn main
+    a = 'a'
+    one = char 1
+    out "{a + one}"

@@ -1,0 +1,22 @@
+//BUG="a comment line adds its own indentation to the line below it"
+//OUT="other"
+
+// The same defect as 44, seen from the other side. A line comment eats the
+// newline that ends it (`Location::SingleLineComment` in
+// src/compiler/preprocessor.rs), so a line that holds nothing but a comment
+// does not disappear: its leading spaces stay behind and are glued in front of
+// the next line. Here that is 4 + 4 = 8 spaces before `else`, which puts the
+// `else` inside the body of the `if` it belongs to, and the compile fails with
+// "Unexpected token" pointing at `else`.
+//
+// Commenting the branches of an if/else like this is about as ordinary as
+// code gets. Moving the comment to column 0 is the only spelling that works
+// today, because then it has no indentation to leak.
+
+fn main
+    x = 2
+    if x == 1
+        out "one"
+    // anything else
+    else
+        out "other"

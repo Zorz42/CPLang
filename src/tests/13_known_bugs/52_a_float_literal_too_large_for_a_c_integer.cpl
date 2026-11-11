@@ -1,0 +1,28 @@
+//BUG="a float constant is written into the C without a decimal point or exponent"
+//OUT="1"
+
+// `gen_expression` (src/compiler/codegen/mod.rs) emits a float constant with
+// `format!("{x}")`. Rust's `Display` for f64 never uses an exponent and
+// prints a whole number without a fractional part, so 1.0e30 goes into the
+// generated C as
+//
+//     1000000000000000019884624838656
+//
+// which to a C compiler is an *integer* constant, and one too large for any
+// integer type. gcc truncates it — the warning that says so is exactly what
+// drivers silence with `-w` — and both variables below end up holding
+// unrelated garbage. This prints 0: 1e30 is not greater than 1e29.
+//
+// Any whole-valued float literal of 2^64 or more is affected, so a "big
+// enough" sentinel like 1.0e30 or 1.0e100 silently is not. Smaller ones
+// survive only because the integer constant happens to convert back to the
+// same double when it is stored — 54 is what happens when it is used before
+// it is stored.
+//
+// The fix is to always print a float constant as a float: keep a `.0` or an
+// exponent, e.g. `{x:?}` or `{x:e}`.
+
+fn main
+    big = 1.0e30
+    small = 1.0e29
+    out "{big > small}"

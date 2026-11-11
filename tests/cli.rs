@@ -510,3 +510,102 @@ fn known_bug_a_self_referential_struct_does_not_crash_the_compiler() {
         output.status.code()
     );
 }
+
+/// Everything the binary printed, on both streams, without colour codes.
+fn all_output(output: &Output) -> String {
+    strip_ansi(&format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    ))
+}
+
+#[test]
+fn known_bug_a_failed_compile_keeps_a_source_file_named_as_the_output() {
+    // `cplang prog.cpl -o prog.cpl` — the output name completed or typed one
+    // extension short of `.c`. Nothing compares the two paths. When the
+    // compile then fails, `remove_stale_output` (src/main.rs) deletes "the
+    // stale output", which is the program the user was working on, and the
+    // error it reports about that program can no longer be shown because
+    // `report_error` reads the file back to draw the snippet.
+    //
+    // gcc refuses this outright ("input file 'x.c' is the same as output
+    // file"). The fix is the same check before anything is read or written:
+    // compare the canonical paths and stop with a usage error.
+    let scratch = Scratch::new("sameinoutfail");
+    let source = "fn maine\n    0\n";
+    let input = scratch.input(source);
+    let output = cplang(&[&input, Path::new("-o"), &input]);
+    let printed = all_output(&output);
+
+    assert!(
+        input.exists(),
+        "KNOWN BUG — naming the source file as the output deletes it when the compile fails:\n{printed}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&input).expect("the source file should still be readable"),
+        source,
+        "the source file must be left exactly as it was:\n{printed}"
+    );
+    assert_eq!(output.status.code(), Some(1), "it should be refused as a usage error:\n{printed}");
+}
+
+#[test]
+fn known_bug_a_successful_compile_keeps_a_source_file_named_as_the_output() {
+    // The other half of the case above: when the program is correct, the
+    // generated C is written over the source it was generated from
+    // (`std::fs::write` in `compile_internal`, src/compiler/mod.rs), and the
+    // binary exits 0. The source is gone and nothing was reported.
+    //
+    // It is a separate test because it is a separate write: making
+    // `remove_stale_output` more careful fixes the test above and leaves this
+    // one red.
+    let scratch = Scratch::new("sameinoutok");
+    let input = scratch.input(HELLO);
+    let output = cplang(&[&input, Path::new("-o"), &input]);
+    let printed = all_output(&output);
+
+    assert_eq!(
+        std::fs::read_to_string(&input).expect("the source file should still be readable"),
+        HELLO,
+        "KNOWN BUG — naming the source file as the output overwrites it with the generated C:\n{printed}"
+    );
+    assert_eq!(output.status.code(), Some(1), "it should be refused as a usage error:\n{printed}");
+}
+
+#[cfg(unix)]
+#[test]
+fn known_bug_a_failed_compile_leaves_an_output_that_is_not_a_regular_file() {
+    // `-o /dev/null` is the usual way to ask a compiler "does this compile?"
+    // without keeping the result. When the answer is no, `remove_stale_output`
+    // (src/main.rs) calls `remove_file` on whatever `-o` named. For an
+    // ordinary user that fails and adds a second, unrelated error to the
+    // output:
+    //
+    //     Error removing stale output file '/dev/null': Permission denied (os error 13)
+    //
+    // For root — which is what a container or a CI job usually runs as — it
+    // succeeds, and the machine has no /dev/null any more.
+    //
+    // This test must not gamble with the real one, so a named pipe stands in
+    // for the device: it is the same kind of thing, a path that is not a
+    // regular file and that the compiler did not create. Nothing ever opens
+    // it, so nothing can block on it.
+    //
+    // The cleanup exists so that a failed run "never leaves a `.c` behind".
+    // It should only ever remove a regular file.
+    let scratch = Scratch::new("specialoutput");
+    let input = scratch.input("fn maine\n    0\n");
+    let pipe = scratch.dir.join("not_a_c_file");
+    let made = Command::new("mkfifo").arg(&pipe).status().expect("could not run mkfifo");
+    assert!(made.success(), "mkfifo could not create {}", pipe.display());
+
+    let output = cplang(&[&input, Path::new("-o"), &pipe]);
+    let printed = all_output(&output);
+
+    assert_eq!(output.status.code(), Some(1), "the compile itself should fail normally:\n{printed}");
+    assert!(
+        std::fs::symlink_metadata(&pipe).is_ok(),
+        "KNOWN BUG — a failed compile unlinked an output path that is not a regular file:\n{printed}"
+    );
+}

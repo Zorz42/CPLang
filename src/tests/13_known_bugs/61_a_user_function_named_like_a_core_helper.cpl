@@ -1,0 +1,26 @@
+//BUG="the core library's private helper is_whitespace collides with a user function of that name"
+//OUT="1 0"
+
+// The user's file is compiled together with src/core/*.cpl as one program
+// with one namespace. Everything the core library uses internally is hidden
+// behind a leading underscore — `_Str_from_raw`, `_VecIter`, the `_def_…`
+// macros — except one: `fn is_whitespace c` in src/core/io.cpl, a helper for
+// the `read_*` functions that is not part of what the library offers.
+//
+// It has one untyped argument, which is the signature anyone would write for
+// their own. Declaring one fails the compile with
+//
+//     Found two equivalent signatures for function is_whitespace
+//       --> src/core/io.cpl:1:4
+//
+// an error that points into a file the user does not have, about a function
+// they never called.
+//
+// The fix is to give the helper the same underscore the other internals
+// have.
+
+fn is_whitespace c
+    ret c == ' ' || c == '_'
+
+fn main
+    out "{is_whitespace('_')} {is_whitespace('x')}"

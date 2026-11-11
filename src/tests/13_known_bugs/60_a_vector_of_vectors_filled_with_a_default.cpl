@@ -1,0 +1,25 @@
+//BUG="Vec(n, default) pushes the same vector n times, so every row shares one buffer"
+//OUT="7 0"
+
+// `fn Vec[T] size: i32 default: T` (src/core/vector.cpl) fills the vector
+// with `vec.push(default)` in a loop. Pushing copies the value, and copying a
+// `Vec` copies its three fields — size, capacity and the pointer `_vec` —
+// not the elements behind the pointer. So when the default is itself a
+// vector, every row of the result points at the same storage.
+//
+// `Vec(2 Vec(2 0))` is the natural way to write a 2 x 2 grid of zeros, and
+// it is the only short one. Writing grid[0][0] also changes grid[1][0]:
+// this prints "7 7". A dp table, an adjacency matrix or a visited grid built
+// this way is silently one row repeated.
+//
+// The rows only stop being the same row when one of them is pushed to and
+// reallocates, which makes the aliasing come and go with the sizes involved.
+//
+// It is the constructor's job to give each slot its own value: copy the
+// default's elements for each row (a `clone`), or take something that builds
+// a fresh default per slot.
+
+fn main
+    grid = Vec(2 Vec(2 0))
+    grid[0][0] = 7
+    out "{grid[0][0]} {grid[1][0]}"

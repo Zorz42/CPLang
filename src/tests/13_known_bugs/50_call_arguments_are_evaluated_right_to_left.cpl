@@ -1,0 +1,27 @@
+//BUG="the arguments of a call are evaluated in whatever order the C compiler picks"
+//OUT="12"
+
+// The defect of 49 without an operator in the way, and without any input.
+// `next()` hands out 1, 2, 3, … so the order the two arguments are evaluated
+// in is visible in the result: left to right gives pair(1, 2) = 12.
+//
+// Codegen (`IRExpression::InstanceCall` in src/compiler/codegen/mod.rs)
+// writes the arguments inline in a C call, C does not define their order, and
+// gcc on x86-64 evaluates the last one first. This prints 21. With clang the
+// same C prints 12.
+//
+// The elements of a tuple or the fields of a struct (`a, b = next(), next()`)
+// come out in source order with gcc today, but nothing guarantees it: they
+// are a C compound literal, whose initialisers are just as unordered.
+
+counter = 0
+
+fn next
+    counter += 1
+    ret counter
+
+fn pair a: i32 b: i32
+    ret a * 10 + b
+
+fn main
+    out "{pair(next() next())}"

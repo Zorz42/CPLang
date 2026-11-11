@@ -1,0 +1,38 @@
+//BUG="a user macro is expanded inside the core library too"
+//OUT="7"
+
+// `insert_macros` (src/compiler/macros.rs) runs once over the tokens of the
+// whole program — the user's file followed by src/core/*.cpl — with a single
+// table of macros. A macro name is substituted wherever it appears as an
+// identifier, so a macro in the user's file is also expanded inside the core
+// library, in code the user cannot see.
+//
+// `res` is a local variable in `read_i64`, `read_str` and `_Str_from_raw`.
+// With the macro below, those become `7 = 0L`, `7 = Str()` and so on, built
+// from tokens that carry positions in the user's file but sit in the middle
+// of core code. The parser merges the positions of neighbouring tokens,
+// `FilePosition::add` (src/compiler/error.rs) asserts that both come from
+// the same file, and the compiler dies:
+//
+//     assertion `left == right` failed: cannot join positions in different files
+//
+// Which names are affected is whatever the core library happens to use
+// today: `res`, `c`, `i`, `s`, `x`, `a`, `b`, `vec`, `size`, `iter`, `next`,
+// `push`, `start`, `end`, … `macro size { 100 }` does not panic but fails
+// with "Unexpected token" pointing at the macro's own body, because
+// `fn size` in src/core/vector.cpl has become `fn 100`.
+//
+// 10_macros/09 records that a macro shadows a variable of the same name in
+// the user's own code. This is different: the program below never uses
+// `res` for anything else.
+//
+// The fix is to expand each file with the macros that are visible to it —
+// the core library must not see the user's.
+
+macro res {
+    7
+}
+
+fn main
+    x = res
+    out "{x}"

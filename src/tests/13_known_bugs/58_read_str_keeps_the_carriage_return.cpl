@@ -1,0 +1,25 @@
+//BUG="the input readers only know space and newline as whitespace"
+//IN="ab\r\ncd\r\n"
+//OUT="2 2"
+
+// `is_whitespace` (src/core/io.cpl) is `c == ' ' || c == '\n'`. A carriage
+// return is not in it, so on input with Windows line endings `read_str` stops
+// each word at the '\n' and keeps the '\r' in front of it as the word's last
+// character. This prints "3 3": both words are one character longer than
+// what was typed, they no longer compare equal to anything, and printing
+// them emits the stray '\r'.
+//
+// A tab is not whitespace either: `read_str` on "ab\tcd" returns the single
+// word "ab<tab>cd".
+//
+// Test data with CRLF line endings is a fact of life on judges, and the
+// source file itself is already allowed to have them (the preprocessor drops
+// '\r' outside strings). 59 is the same gap in `read_i32`.
+//
+// The fix is for `is_whitespace` to accept '\r' and tab as well — which
+// needs `char 13` and `char 9`, since neither has an escape.
+
+fn main
+    a = read_str()
+    b = read_str()
+    out "{a.size()} {b.size()}"

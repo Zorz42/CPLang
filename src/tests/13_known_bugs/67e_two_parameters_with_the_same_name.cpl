@@ -1,0 +1,22 @@
+//BUG="a function may declare the same parameter name twice"
+//ERR any
+
+// `parse_function_declaration` (src/compiler/parser/function.rs) collects
+// parameters without comparing their names, and `normalize_function`
+// registers each one with `SymbolTable::new_variable`, where a later name
+// simply replaces an earlier one. The declaration below is accepted, the
+// first argument becomes unreachable, and the program prints 2.
+//
+// The same repetition is an error for the fields of a struct
+// (08_structs/71e_a_field_declared_twice.cpl, "Field … declared twice"), and
+// here it can only be a typo: nothing can name the first parameter, so no
+// program means to write this.
+//
+// There is no `//MSG` because the diagnostic does not exist yet. Template
+// parameters have the same gap — `fn f[T T] x: T` is accepted too.
+
+fn pick a a
+    ret a
+
+fn main
+    out "{pick(1 2)}"

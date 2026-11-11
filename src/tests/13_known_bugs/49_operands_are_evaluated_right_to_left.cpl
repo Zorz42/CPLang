@@ -1,0 +1,29 @@
+//BUG="the operands of an operator are evaluated in whatever order the C compiler picks"
+//IN="10 3"
+//OUT="7"
+
+// `a - b` is lowered to the call `operator-(a, b)`, and codegen
+// (`IRExpression::InstanceCall` in src/compiler/codegen/mod.rs) emits that as
+// a plain C call with both operands written inline as arguments:
+//
+//     func12(func7(), func7())
+//
+// C leaves the order in which arguments are evaluated unspecified. gcc on
+// x86-64 evaluates them right to left, so the second `read_i32()` in the
+// source runs first, the operands arrive swapped, and this prints -7. clang
+// evaluates left to right, so the very same generated C prints 7 there —
+// the answer depends on the compiler the judge happens to use, and on its
+// version and flags.
+//
+// Reading two values in one expression is everyday code in this language's
+// niche: `read_i32() - read_i32()`, `read_i64() * read_i64()`, a struct
+// built from two reads. 50 is the same defect for the arguments of an
+// ordinary call.
+//
+// The language has to pin the order down (left to right, as written), and
+// codegen has to enforce it — by evaluating arguments that have side effects
+// into temporaries, one statement each, before the call.
+
+fn main
+    d = read_i32() - read_i32()
+    out "{d}"

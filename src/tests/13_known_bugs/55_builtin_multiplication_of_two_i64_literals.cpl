@@ -1,0 +1,22 @@
+//BUG="i64 literals reach a builtin as C int constants, so their product overflows"
+//OUT="9000000000000"
+
+// Codegen prints every integer constant as bare digits (`IRConstant::Int` in
+// src/compiler/codegen/mod.rs), whatever its type in the language. `3000000L`
+// is an i64, but in the generated C it is `3000000`, an `int`, and the
+// builtin is emitted inline as a C operator:
+//
+//     (3000000 * 3000000)
+//
+// The multiplication is done in 32 bits and overflows. This prints
+// 2043514880.
+//
+// As in 54, the `*` operator hides the problem because its operands pass
+// through `long long` parameters first, and 11_builtins/09 passes because one
+// of its operands is a variable. Two literals are what it takes.
+//
+// The fix is to emit a constant with its type: an `LL` suffix for i64, a
+// decimal point for floats.
+
+fn main
+    out "{_builtin_mul[i64](3000000L 3000000L)}"

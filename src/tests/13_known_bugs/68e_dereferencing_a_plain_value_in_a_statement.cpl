@@ -1,0 +1,32 @@
+//BUG="the type of an expression statement is never checked, so an impossible one reaches the C"
+//ERR any
+
+// `|x` dereferences `x`, and `x` is an i32, not a reference. When the result
+// is used, that is caught: 07_references/52e_dereferencing_a_plain_value.cpl
+// assigns it to a variable and gets an error.
+//
+// As a statement on its own it is not. The type resolver records that the
+// expression has "one reference fewer than an i32" — a type that does not
+// exist — but it only reports a type it is asked to produce, in
+// `gather_types` (src/compiler/type_resolver/mod.rs), and it is only asked
+// for the labels in `relevant_types`. `ASTStatement::Expression` in
+// `normalize_block` (src/compiler/normalizer/mod.rs) throws the label of its
+// expression away. So the statement is accepted and codegen emits
+//
+//     (*var0);
+//
+// which gcc rejects: "invalid type argument of unary '*' (have 'int')". The
+// compiler reports success and leaves the user with an error in generated C.
+//
+// A stray `|` is an easy slip in a language where the same character begins
+// every write through a reference. `| "text"` and `|f()` on a function that
+// returns a value fail the same way.
+//
+// The fix is to keep the label of an expression statement among the types
+// that must resolve. There is no `//MSG` because the diagnostic does not
+// exist yet.
+
+fn main
+    x = 5
+    |x
+    out "ok"

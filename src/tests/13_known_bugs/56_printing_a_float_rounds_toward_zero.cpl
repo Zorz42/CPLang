@@ -1,0 +1,25 @@
+//BUG="print truncates a float at the ninth decimal instead of rounding it"
+//OUT="4.100000000 8.200000000"
+
+// `print x: f64` (src/core/io.cpl) scales the value by 10^9 and converts it
+// with `x2 = i64 x`, a cast that drops the fraction. 4.1 is stored as
+// 4.0999999999999996…, the scaled value is 4099999999.9999995, and the cast
+// turns that into 4099999999. This prints
+//
+//     4.099999999 8.199999999
+//
+// for two literals that have one decimal each. It is not rare: of the 60000
+// values k/10, k/100 and k/1000 with k below 20000, 1296 print one unit
+// short like this — 16.4, 16.9, 32.3, 32.8 and so on.
+// The existing float cases (00_lexical/20, 03_operators/04, 12_stdlib/10)
+// all use values that are exact in binary — 1.5, 0.25, 0.125 — which is why
+// none of them notices.
+//
+// A checker with a tolerance accepts the result; one that compares text does
+// not, and neither does a reader who printed 4.1.
+//
+// The fix is to round to nearest before the cast: add 0.5 to the scaled
+// value.
+
+fn main
+    out "{4.1} {8.2}"

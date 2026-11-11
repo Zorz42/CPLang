@@ -1,0 +1,45 @@
+//BUG="a method that calls itself is instantiated again on every recursive call"
+//OUT="6"
+
+// A function may call itself because `normalize_function`
+// (src/compiler/normalizer/mod.rs) first looks the call up in the instance
+// cache: if an instance with the same argument types is already being built,
+// the call reuses it. The lookup, `check_instance_cache`, compares the
+// argument types with `TypeResolver::are_equal`, which only says yes when
+// two type labels have already been unified.
+//
+// For a method call that never holds. The lowerer wraps the receiver in an
+// `AutoRef` (src/compiler/lowerer/mod.rs, the `MethodCall` arm), so the type
+// of the first argument is a fresh label whose reference depth is still
+// open. `find_matching_function` does unify it with the candidate's
+// `self: &Counter`, but only to test the candidate, and rolls that back. The
+// argument is tied to the parameter for good a few lines *after* the cache
+// has been consulted. So the recursive call is a miss, a new instance is
+// started, its body contains the same call, and the compile ends with
+//
+//     This function is in the 100-th recursive call in the normalization phase.
+//
+// The return hint here rules out the documented cause of that message
+// (05_functions/40 and 41): the return type is known from the signature.
+// The identical function written outside the struct, taking `c: &Counter`,
+// compiles and prints 6. Two methods that call each other in a cycle fail
+// like this one, and so does every recursive method on a templated struct.
+//
+// That takes away the recursive `find` of a union-find, a segment tree's
+// `query`, a depth-first search on a graph struct — the methods this
+// language's niche is made of.
+//
+// The fix is to bind the arguments to the chosen signature before the cache
+// is looked at, so that the receiver has its final type when it is compared.
+
+struct Counter
+    step: i32
+
+    fn down n: i32 -> i32
+        if n == 0
+            ret 0
+        ret self.step + self.down(n - 1)
+
+fn main
+    c = Counter step 2
+    out "{c.down(3)}"

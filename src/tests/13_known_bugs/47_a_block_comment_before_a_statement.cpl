@@ -1,0 +1,20 @@
+//BUG="a block comment at the start of a line is counted as indentation"
+//OUT="ok"
+
+// `parse_strings_and_comments` (src/compiler/preprocessor.rs) replaces a
+// `/* … */` with one space fragment, so that `a/**/b` stays two tokens
+// (00_lexical/04_block_comment_separates_tokens.cpl). `parse_indentation`
+// then measures indentation by counting the leading space fragments of the
+// line, and it cannot tell that placeholder — or the real space after the
+// comment — from indentation. The line below counts as 4 + 1 + 1 = 6 spaces,
+// and the compile fails with "Indentation must have a multiple of 4 spaces,
+// found 6 spaces", pointing at a line whose indentation is plainly four.
+//
+// `/* why */ else` fails the same way, and so does a comment that starts a
+// line, runs over several, and has code after its closing `*/`.
+//
+// Indentation is a property of the physical line — the whitespace before its
+// first character — and should be measured before comments are rewritten.
+
+fn main
+    /* note */ out "ok"

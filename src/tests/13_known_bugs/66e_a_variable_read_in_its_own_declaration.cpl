@@ -1,0 +1,28 @@
+//BUG="a new variable is in scope inside the expression that first assigns it"
+//ERR any
+//MSG="Variable with name x not found"
+
+// `normalize_block` (src/compiler/normalizer/mod.rs) handles an assignment to
+// an unknown name by creating the variable first and normalizing the value
+// afterwards. The value can therefore mention the variable that is being
+// declared. With the type pinned by the hint, everything type-checks, and the
+// statement compiles to
+//
+//     var0 = func1(var0, 1);
+//
+// in a function whose locals are declared without an initial value. The
+// program reads an uninitialised `int`, adds one, and prints whatever was on
+// the stack — a different number from run to run and from -O0 to -O2.
+//
+// Without the hint the same line is rejected, though for an unrelated
+// reason: the type of `x` is unknown, so `x + 1` reports "Multiple candidates
+// found for this function call".
+//
+// A name used before anything was assigned to it is the mistake
+// 02_variables/50e_unknown_variable.cpl exists for, and this case expects
+// the same message. The fix is to normalize the right-hand side before the
+// new variable is added to the symbol table.
+
+fn main
+    x: i32 = x + 1
+    out "{x}"

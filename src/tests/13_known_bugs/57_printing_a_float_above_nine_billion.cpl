@@ -1,0 +1,24 @@
+//BUG="print of a float multiplies it by 10^9 into an i64, which overflows from 9.3e9 on"
+//OUT="20000000000.500000000"
+
+// `print x: f64` (src/core/io.cpl) prints nine decimals by computing
+// `x *= 1000000000` and then `x2 = i64 x`. An i64 holds at most about
+// 9.22e18, so any value of 9223372036.854775807 or more does not fit after
+// the scaling, and the cast is undefined behaviour in the generated C. On
+// x86-64 it produces the most negative i64, whose digits then come out as
+// `x2 % 10 + '0'` with a negative remainder — characters below '0'. This
+// prints
+//
+//     *.(+,))+(0(
+//
+// The value itself is fine: it is exactly representable, and `i64 x` on it
+// gives 20000000000. Only printing it fails, and nothing says so. Ten
+// billion is an ordinary magnitude for a sum, an area or an average of
+// i64 inputs.
+//
+// The fix is to print the integer part and the fractional part separately
+// instead of pushing both through one i64.
+
+fn main
+    x = 100000.0 * 200000.0 + 0.5
+    out "{x}"

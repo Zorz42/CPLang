@@ -1,0 +1,40 @@
+//BUG="a field of a temporary is treated as addressable, so the generated C does not compile"
+//OUT="1"
+
+// `size` takes `self` by reference, so the receiver `make().items` has to be
+// referenced. `is_expression_physical` (src/compiler/normalizer/reference_check.rs)
+// decides whether an expression already has an address or must first be
+// spilled into a hidden variable, and it answers "physical" for every
+// `FieldAccess` without looking at what the field is read from. Here it is
+// read from a call result, which has no address, so codegen emits
+//
+//     func25(func24((&func1().F0)))
+//
+// and gcc rejects it: "lvalue required as unary '&' operand". The compiler
+// itself reports success, so the user is left with a C error in a file they
+// did not write.
+//
+// Taking the reference of the call result directly works — it is spilled
+// (05_functions/44_a_method_on_a_call_result.cpl), and so does a field of a
+// struct literal, because a C compound literal happens to be an lvalue
+// (08_structs/34). Only the combination fails.
+//
+// Everything that needs the address of such a field breaks the same way:
+// `make().x += 5` ("lvalue required as unary '&' operand" again) and the
+// plain assignment `make().x = 5` ("lvalue required as left operand of
+// assignment"), which the "Left hand side is non-assignable." check lets
+// through for the same reason.
+//
+// The fix is for a field access to be exactly as physical as the expression
+// it is applied to.
+
+struct Wrapper
+    items: Vec[i32]
+
+fn make
+    w = Wrapper items Vec[i32]()
+    w.items.push(1)
+    ret w
+
+fn main
+    out "{make().items.size()}"
